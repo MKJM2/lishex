@@ -1,6 +1,4 @@
-//#include "Piece.h"
-class Piece {
-    public:
+namespace Piece {
     static const int None = 0;
     static const int King = 1;
     static const int Pawn = 2;
