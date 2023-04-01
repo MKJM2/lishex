@@ -1,3 +1,5 @@
+#ifndef PIECE_H_
+#define PIECE_H_
 namespace Piece {
     static const int None = 0;
     static const int King = 1;
@@ -39,3 +41,4 @@ namespace Piece {
         return (piece & 0b100) != 0;
     }
 };
+#endif // PIECE_H_

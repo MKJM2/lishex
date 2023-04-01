@@ -1,95 +1,97 @@
-#include <locale>
-#include <string>
-#include <iostream>
-#include <unordered_map>
-#include "Piece.h"
-
-#define ROWS 8
-#define COLS 8
-
-typedef int piece;
+#include "Board.h"
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 std::unordered_map<piece, char> pieceToChar = {
-    {Piece::None, '\0'},
-    {Piece::Rook   & Piece::Black, 'r'},
-    {Piece::Knight & Piece::Black, 'n'},
-    {Piece::Bishop & Piece::Black, 'b'},
-    {Piece::Queen  & Piece::Black, 'q'},
-    {Piece::King   & Piece::Black, 'k'},
-    {Piece::Pawn   & Piece::Black, 'p'},
-    {Piece::Rook   & Piece::White, 'R'},
-    {Piece::Knight & Piece::White, 'N'},
-    {Piece::Bishop & Piece::White, 'B'},
-    {Piece::Queen  & Piece::White, 'Q'},
-    {Piece::King   & Piece::White, 'K'},
-    {Piece::Pawn   & Piece::White, 'P'}
+    {Piece::None,  '0'},
+    {Piece::Rook,  'r'},
+    {Piece::Knight,'n'},
+    {Piece::Bishop,'b'},
+    {Piece::Queen, 'q'},
+    {Piece::King,  'k'},
+    {Piece::Pawn,  'p'}
 };
 std::unordered_map<char, piece> charToPiece = {
-    {'\0', Piece::None},
-    {'r', Piece::Rook   & Piece::Black},
-    {'n', Piece::Knight & Piece::Black},
-    {'b', Piece::Bishop & Piece::Black},
-    {'q', Piece::Queen  & Piece::Black},
-    {'k', Piece::King   & Piece::Black},
-    {'p', Piece::Pawn   & Piece::Black},
-    {'R', Piece::Rook   & Piece::White},
-    {'N', Piece::Knight & Piece::White},
-    {'B', Piece::Bishop & Piece::White},
-    {'Q', Piece::Queen  & Piece::White},
-    {'K', Piece::King   & Piece::White},
-    {'P', Piece::Pawn   & Piece::White},
+    {'0', Piece::None  },
+    {'r', Piece::Rook  },
+    {'n', Piece::Knight},
+    {'b', Piece::Bishop},
+    {'q', Piece::Queen },
+    {'k', Piece::King  },
+    {'p', Piece::Pawn  }
 };
 
-class Board {
-    public:
-        piece board[ROWS * COLS];
-        void printFEN() {
-            std::string row;
-            for (int i = 0; i < 8; i++) {
-                row.clear(); int spaces = 0;
-                for (int j = 0; j < 8; j++) {
-                    int curr = pieceToChar[board[i * ROWS + j]];
-                    if (curr != '\0') {
-                        if (spaces != 0) {
-                            row += std::to_string(spaces);
-                        }
-                        spaces = 0;
-                        row += curr;
-                    } else {
-                        spaces++;
-                        if (j == 7) {
-                            row += spaces;
-                        }
-                    }
-                }
-                std::cout << row << "/\n";
-            }
-        }
-        void readFEN(std::string fen) {
-            // Split the input fen into 8 parts
-            std::string fenParts[6];
-            int idx = 0;
-            for (int i = 0; i < fen.length(); i++) {
-                if (fen[i] == ' ') {
-                    idx++;
-                } else {
-                    fenParts[idx] += fen[i];
-                }
-            }
 
-            // fill board with pieces from FEN
-            int boardIdx = 0;
-            for (int i = 0; i < fenParts[0].length(); i++) {
-                char c = fenParts[0][i];
-                if (c == '/') {
-                    boardIdx += 8;
-                } else if (isdigit(c)) {
-                    boardIdx += c - '0';
-                } else {
-                    board[boardIdx] = charToPiece[c];
-                    boardIdx++;
-                }
-            }
+void Board::printFEN() {
+  std::string row;
+  for (int i = 0; i < ROWS; i++) {
+    row.clear();
+    int spaces = 0;
+    for (int j = 0; j < COLS; j++) {
+        piece p = board[i * ROWS + j];
+        char curr = pieceToChar[Piece::PieceType(p)];
+        if (Piece::IsColour(p, Piece::White)) {
+            curr = std::toupper(curr);
         }
-};
+        std::cout << curr;
+    }
+    std::cout << "\n";
+  }
+}
+
+void Board::readFEN(std::string fen) {
+
+  // Split the input fen into 6 parts
+  std::string fenParts[6];
+  int idx = 0;
+  for (size_t i = 0; i < fen.size(); i++) {
+    if (fen[i] == ' ') {
+      idx++;
+    } else {
+      fenParts[idx] += fen[i];
+    }
+  }
+
+  // initialize the board with all zeroes
+  std::memset(board, 0, ROWS * COLS * sizeof(piece));
+
+  // fill board with pieces from FEN
+  int boardIdx = 0;
+  for (size_t i = 0; i < fenParts[0].length(); i++) {
+    char c = fenParts[0][i];
+    if (c == '/') {
+        //boardIdx += 8;
+        continue;
+    } else if (isdigit(c)) {
+        boardIdx += (int)c - '0';
+    } else {
+        int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
+        int pieceType = charToPiece[std::tolower(c)];
+        board[boardIdx] = pieceColor | pieceType;
+        boardIdx++;
+    }
+  }
+
+  /* TODO: Exten this function to handle the remaining parts of the FEN */
+}
+
+void Board::loadFEN(std::string fen) {
+    int row = 7;
+    int col = 0;
+    for (char &c : fen) {
+      if (c == '/') {
+        --row;
+        col = 0;
+      } else {
+        if (isdigit(c)) {
+          // char to int
+          col += (int)c - '0';
+        } else {
+          int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
+          int pieceType = charToPiece[std::tolower(c)];
+          board[row * ROWS + col] = pieceColor | pieceType;
+          ++col;
+        }
+      }
+    }
+    return;
+}

@@ -1,6 +1,8 @@
 #include <iostream>
-#include "../include/Piece.h"
+#include "Board.h"
 int main() {
-    std::cout << "Hello, World!\n";
+    Board gameboard;
+    gameboard.readFEN(startFEN);
+    gameboard.printFEN();
     return 0;
 }
