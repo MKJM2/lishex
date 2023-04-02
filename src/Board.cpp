@@ -25,7 +25,6 @@ void Board::printFEN() {
   std::string row;
   for (int i = 0; i < ROWS; i++) {
     row.clear();
-    int spaces = 0;
     for (int j = 0; j < COLS; j++) {
         piece p = board[i * ROWS + j];
         char curr = pieceToChar[Piece::PieceType(p)];

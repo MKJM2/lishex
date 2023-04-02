@@ -1,0 +1,56 @@
+[
+  {
+    "arguments": [
+      "/sbin/g++",
+      "-march=native",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-std=c++17",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "build/Board.o",
+      "src/Board.cpp"
+    ],
+    "directory": "/home/mkjm/Projects/lishex",
+    "file": "/home/mkjm/Projects/lishex/src/Board.cpp",
+    "output": "/home/mkjm/Projects/lishex/build/Board.o"
+  },
+  {
+    "arguments": [
+      "/sbin/g++",
+      "-march=native",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-std=c++17",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "build/lishex.o",
+      "src/lishex.cpp"
+    ],
+    "directory": "/home/mkjm/Projects/lishex",
+    "file": "/home/mkjm/Projects/lishex/src/lishex.cpp",
+    "output": "/home/mkjm/Projects/lishex/build/lishex.o"
+  },
+  {
+    "arguments": [
+      "/sbin/g++",
+      "-march=native",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-std=c++17",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "build/Piece.o",
+      "src/Piece.cpp"
+    ],
+    "directory": "/home/mkjm/Projects/lishex",
+    "file": "/home/mkjm/Projects/lishex/src/Piece.cpp",
+    "output": "/home/mkjm/Projects/lishex/build/Piece.o"
+  }
+]
