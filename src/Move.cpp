@@ -24,6 +24,11 @@ unsigned short Move::getFlags() const {
     return (move >> 12) & 0xf;
 }
 
+move_t Move::getFlagAsEnum() const {
+    int flag = getFlags();
+    return static_cast<move_t>(flag);
+}
+
 /* TODO:
 bool Move::isCapture() const
 */
