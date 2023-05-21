@@ -27,7 +27,7 @@ class Move {
     unsigned short getFrom() const;
     unsigned short getFlags() const;
     move_t getFlagAsEnum() const;
-    //bool isCapture() const;
+    bool isCapture() const;
 
     void setTo(unsigned int to);
     void setFrom(unsigned int from);

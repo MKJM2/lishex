@@ -70,7 +70,7 @@ void Board::readFEN(std::string fen) {
     }
   }
 
-  /* TODO: Exten this function to handle the remaining parts of the FEN */
+  /* TODO: Extend this function to handle the remaining parts of the FEN */
 }
 
 void Board::loadFEN(std::string fen) {

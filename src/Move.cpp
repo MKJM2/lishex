@@ -25,13 +25,13 @@ unsigned short Move::getFlags() const {
 }
 
 move_t Move::getFlagAsEnum() const {
-    int flag = getFlags();
+    unsigned short flag = getFlags();
     return static_cast<move_t>(flag);
 }
 
-/* TODO:
-bool Move::isCapture() const
-*/
+bool Move::isCapture() const {
+    return (move >> 12);
+}
 
 void Move::setTo(unsigned int to) {
     // Zero out the last 6 bits
