@@ -1,5 +1,7 @@
 #ifndef PIECE_H_
 #define PIECE_H_
+
+#define OPPONENT(color) (color == Piece::White) ? Piece::Black : Piece::White
 namespace Piece {
     static const int None = 0;
     static const int King = 1;

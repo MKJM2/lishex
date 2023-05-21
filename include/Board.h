@@ -22,6 +22,7 @@ class Board {
         void printFEN();
         void readFEN(std::string fen);
         void loadFEN(std::string fen);
+        int turn = Piece::White;
 };
 
 #endif // BOARD_H_

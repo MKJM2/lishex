@@ -8,6 +8,10 @@ Move::Move (int from, int to, int flags) {
     move = ((flags & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
+Move::Move (int from, int to, move_t flags) {
+    move = ((static_cast<int>(flags) & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
+}
+
 Move::Move (int from, int to) {
     move = ((from & 0x3f) << 6) | (to & 0x3f);
 }
