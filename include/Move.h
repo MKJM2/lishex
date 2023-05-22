@@ -1,6 +1,8 @@
 #ifndef MOVE_H_
 #define MOVE_H_
 
+#include <string>
+
 /* Inspired by
 ** https://www.chessprogramming.org/Encoding_Moves
 */
@@ -24,6 +26,7 @@ public:
     Move (int from, int to);
     Move (int from, int to, int flags);
     Move (int from, int to, move_t flags);
+    Move (const std::string& s);
 
     unsigned short getTo() const;
     unsigned short getFrom() const;

@@ -3,6 +3,7 @@
 // prototypes
 //std::vector<Move> generateLegalMoves(Board& board);
 //std::vector<Move> generateMoves(Board& board);
+using namespace Piece;
 
 std::vector<Move> generateLegalMoves(Board& board) {
     /* TODO */
@@ -20,45 +21,49 @@ std::vector<Move> generateLegalMoves(Board& board) {
     return legal;
 }
 
-std::vector<Move> generateMoves(Board& board) {
+std::vector<Move> generateMoves(Board& b) {
+
+    piece* board = b.board; // array of pieces
+    int me = b.turn;
+    int opp = OPPONENT(b.turn);
 
     std::vector<Move> moves;
     // add regular moves
     for (int from = 0; from < 64; ++from) {
-        int piece = board.board[from]; // TODO, clean the code up
-        if (piece != Piece::None && Piece::IsColour(piece, board.turn)) {
-            switch (Piece::PieceType(piece)) {
-                case Piece::Pawn: {
+        int piece = board[from]; // TODO, clean the code up
+        if (piece != None && IsColour(piece, me)) {
+            switch (PieceType(piece)) {
+                case Pawn: {
                     // Generate pawn moves
                     // Example code for generating pawn moves:
                     // Check if pawn can move forward one square
                     int to = from + 8;
-                    if (board.board[to] == Piece::None) {
+                    if (board[to] == None) {
                         moves.emplace_back(from, to);
                     }
                     // Check if pawn can move forward two squares from the starting position
-                    int startingRank = (board.turn == Piece::White) ? 1 : 6;
-                    if (from / 8 == startingRank && board.board[to] == Piece::None && board.board[to + 8] == Piece::None) {
+                    int startingRank = (me == White) ? 1 : 6;
+                    if (from / 8 == startingRank && board[to] == None && board[to + 8] == None) {
                         moves.emplace_back(from, to + 8, move_t::DoublePawnPush);
                     }
                     // Check if pawn can capture diagonally
                     int captureLeft = from + 7;
                     // board.isValidSquare(captureLeft) \equiv captureLeft < ROWS * COLS
-                    if (captureLeft < ROWS * COLS && board.board[captureLeft] != Piece::None && Piece::IsColour(board.board[captureLeft], OPPONENT(board.turn))) {
+                    if (captureLeft < ROWS * COLS && board[captureLeft] != None && IsColour(board[captureLeft], opp)) {
                         moves.emplace_back(from, captureLeft, move_t::Capture);
                     }
                     int captureRight = from + 9;
-                    if (captureRight < ROWS * COLS && board.board[captureRight] != Piece::None && Piece::IsColour(board.board[captureRight], OPPONENT(board.turn))) {
+                    if (captureRight < ROWS * COLS && board[captureRight] != None && IsColour(board[captureRight], opp)) {
                         moves.emplace_back(from, captureRight, move_t::Capture);
                     }
                     break;
                 }
-                case Piece::Knight: {
+                case Knight: {
                     // Generate knight moves
                     // List all possible destination squares and check if they are valid
                     int destinations[] = {from - 17, from - 15, from - 10, from - 6, from + 6, from + 10, from + 15, from + 17};
                     for (int to : destinations) {
-                        if (to < ROWS * COLS && (board.board[to] == Piece::None || Piece::IsColour(board.board[to], OPPONENT(board.turn)))) {
+                        if (to < ROWS * COLS && (board[to] == None || IsColour(board[to], opp))) {
                             moves.emplace_back(from, to, move_t::Quiet);
                         }
                     }
@@ -72,5 +77,5 @@ std::vector<Move> generateMoves(Board& board) {
     // add en passant
 
     // add castle
-    return {};
+    return moves;
 }

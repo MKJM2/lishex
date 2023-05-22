@@ -6,6 +6,7 @@
 #include <cstring>
 #include <unordered_map>
 #include "Piece.h"
+#include "Move.h"
 
 #define ROWS 8
 #define COLS 8
@@ -20,8 +21,10 @@ class Board {
     public:
         piece board[ROWS * COLS];
         void printFEN();
+        void print();
         void readFEN(std::string fen);
         void loadFEN(std::string fen);
+        void makeMove(Move move);
         int turn = Piece::White;
 };
 

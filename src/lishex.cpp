@@ -1,10 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include "Board.h"
+#include "Move.h"
 int main() {
     Board gameboard;
     gameboard.readFEN(startFEN);
-    gameboard.printFEN();
+    gameboard.print();
 
     // UCI
     while (true) {
@@ -52,6 +53,12 @@ int main() {
             continue;
         } else if (command == "quit") {
             break;
+        } else if (command == "move") { // testing
+            std::string moveString;
+            iss >> moveString;
+            Move move(moveString);
+            gameboard.makeMove(move);
+            gameboard.print();
         }
     }
     return 0;

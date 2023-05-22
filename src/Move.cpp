@@ -1,4 +1,5 @@
 #include "Move.h"
+#include <iostream>
 
 /* Each move is represented as 16 bits:
  * 4 bits for flags
@@ -14,6 +15,32 @@ Move::Move (int from, int to, move_t flags) {
 
 Move::Move (int from, int to) {
     move = ((from & 0x3f) << 6) | (to & 0x3f);
+}
+
+// We use "XmYn" for the move string:
+// X is the starting row, m starting column, and analogously for Y and n
+Move::Move (const std::string& s) {
+    if (s.length() == 4) {
+        int fromRank = s[1] - '1';
+        int fromFile = s[0] - 'a';
+        int toRank = s[3] - '1';
+        int toFile = s[2] - 'a';
+
+        if (fromRank >= 0 && fromRank <= 7 && fromFile >= 0 && fromFile <= 7 &&
+            toRank >= 0 && toRank <= 7 && toFile >= 0 && toFile <= 7) {
+            int from = fromRank * 8 + fromFile;
+            int to = toRank * 8 + toFile;
+            move = ((from & 0x3f) << 6) | (to & 0x3f);
+        } else {
+            // Invalid square coordinates, set move to zero or handle the error as appropriate
+            move = 0;
+            std::cerr << "Invalid move specified!\n";
+        }
+    } else {
+        // Invalid move string length, set move to zero or handle the error as appropriate
+        move = 0;
+        std::cerr << "Invalid move specified!\n";
+    }
 }
 
 unsigned short Move::getTo() const {
