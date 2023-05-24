@@ -36,9 +36,7 @@ std::vector<Move> generateMoves(Board& b) {
             switch (PieceType(p)) {
                 case Pawn: {
                     // Generate pawn moves
-                    // possible destinations for a) White, b) Black pawns
-                    square_t dest[2] = {-8, +8};
-                    int dir = dest[(me == White) ? 1 : 0];
+                    int dir = pawnDest[me == White];
                     // Check if pawn can move forward one square
                     square_t to = from + dir;
                     if (board[to] == None) {
@@ -65,8 +63,8 @@ std::vector<Move> generateMoves(Board& b) {
                 case Knight: {
                     // Generate knight moves (non-capture)
                     // List all possible destination squares and check if they are valid
-                    square_t dest[] = {from - 17, from - 15, from - 10, from - 6, from + 6, from + 10, from + 15, from + 17};
-                    for (square_t& to : dest) {
+                    for (const square_t& dir : knightDest) {
+                        square_t to = from + dir;
                         if (IsOK(to) && (board[to] == None || IsColour(board[to], opp))) {
                             moves.emplace_back(from, to); // move_t::Quiet || move_t::Capture?
                         }

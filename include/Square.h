@@ -27,7 +27,8 @@ inline bool isPromote(square_t s) {
 }
 
 // possible destinations for a) White, b) Black pawns
-const square_t dest[2] = {-8, +8};
+const square_t pawnDest[2] = {-8, +8};
+const square_t knightDest[8] = {-17, -15, -10, -6, +6, +10, +15, +17};
 
 
 #endif // SQUARE_H_
