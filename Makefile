@@ -5,6 +5,12 @@ INCLUDE_DIR = include
 BUILD_DIR = build
 TARGET = lishex
 
+### Optimizations (on by default)
+optimize ?= yes
+ifeq ($(optimize),yes)
+	CXXFLAGS += -O3
+endif
+
 # List of source files
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 
@@ -24,6 +30,8 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+.PHONY: help run clean
+
 # Clean the build directory
 clean:
 	rm -f $(BUILD_DIR)/*.o $(TARGET)
@@ -31,3 +39,7 @@ clean:
 # Run the executable
 run: $(TARGET)
 	./$(TARGET)
+
+help:
+	@echo "To compile LiSHeX, type: "
+	@echo "make"

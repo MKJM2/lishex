@@ -30,7 +30,7 @@ std::vector<Move> generateMoves(Board& b) {
 
     std::vector<Move> moves;
     // add regular moves
-    for (square_t from = 0; from < 64; ++from) {
+    for (square_t from = A1; from <= H8; ++from) {
         piece p = board[from]; // TODO, clean the code up
         if (p != None && IsColour(p, me)) {
             switch (PieceType(p)) {
@@ -43,9 +43,9 @@ std::vector<Move> generateMoves(Board& b) {
                         moves.emplace_back(from, to);
                     }
                     // Check if pawn can move forward two squares from the starting position
-                    int startingRank = (me == White) ? 1 : 6;
+                    int startingRank = (me == White) ? 1 : 6; // zero-indexed
                     // Consider the opposite starting rank
-                    if (SquareRank(from) == startingRank && board[to] == None && board[to + dir] == None) {
+                    if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
                         moves.emplace_back(from, to + dir, move_t::DoublePawnPush);
                     }
                     // Check if pawn can capture diagonally to the left
@@ -71,7 +71,30 @@ std::vector<Move> generateMoves(Board& b) {
                     }
                     break;
                 }
-                // TODO: Other pieces
+                case Rook: {
+                    for (const square_t& dir : rookDest) {
+                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            moves.emplace_back(from, to);
+                        }
+                    }
+                    break;
+                }
+                case Bishop: {
+                    for (const square_t& dir : bishopDest) {
+                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            moves.emplace_back(from, to);
+                        }
+                    }
+                    break;
+                }
+                case Queen: {
+                    for (const square_t& dir : queenDest) {
+                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            moves.emplace_back(from, to);
+                        }
+                    }
+                    break;
+                }
             }
         }
     }
@@ -80,4 +103,10 @@ std::vector<Move> generateMoves(Board& b) {
 
     // add castle
     return moves;
+}
+
+
+std::vector<Move> generateCaptures(Board& b) {
+    // TODO: separate Quiet move logic from Capture logic
+    return {};
 }
