@@ -1,4 +1,5 @@
 #include "Move.h"
+#include "Square.h"
 #include <iostream>
 
 /* Each move is represented as 16 bits:
@@ -17,6 +18,15 @@ Move::Move (int from, int to) {
     move = ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
+Move::Move(const Move& other) {
+    move = other.move;
+}
+
+Move& Move::operator=(const Move& other) {
+    move = other.move;
+    return *this;
+}
+
 // We use "XmYn" for the move string:
 // X is the starting row, m starting column, and analogously for Y and n
 Move::Move (const std::string& s) {
@@ -32,12 +42,12 @@ Move::Move (const std::string& s) {
             int to = toRank * 8 + toFile;
             move = ((from & 0x3f) << 6) | (to & 0x3f);
         } else {
-            // Invalid square coordinates, set move to zero or handle the error as appropriate
+            // Invalid square coordinates, set move to zero
             move = 0;
             std::cerr << "Invalid move specified!\n";
         }
     } else {
-        // Invalid move string length, set move to zero or handle the error as appropriate
+        // Invalid move string length, set move to zero
         move = 0;
         std::cerr << "Invalid move specified!\n";
     }

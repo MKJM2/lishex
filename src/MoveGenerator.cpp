@@ -1,4 +1,5 @@
 #include "MoveGenerator.h"
+#include "Square.h"
 
 // prototypes
 //std::vector<Move> generateLegalMoves(Board& board);
@@ -29,47 +30,50 @@ std::vector<Move> generateMoves(Board& b) {
 
     std::vector<Move> moves;
     // add regular moves
-    for (int from = 0; from < 64; ++from) {
-        int piece = board[from]; // TODO, clean the code up
-        if (piece != None && IsColour(piece, me)) {
-            switch (PieceType(piece)) {
+    for (square_t from = 0; from < 64; ++from) {
+        piece p = board[from]; // TODO, clean the code up
+        if (p != None && IsColour(p, me)) {
+            switch (PieceType(p)) {
                 case Pawn: {
                     // Generate pawn moves
-                    // Example code for generating pawn moves:
+                    // possible destinations for a) White, b) Black pawns
+                    square_t dest[2] = {-8, +8};
+                    int dir = dest[(me == White) ? 1 : 0];
                     // Check if pawn can move forward one square
-                    int to = from + 8;
+                    square_t to = from + dir;
                     if (board[to] == None) {
                         moves.emplace_back(from, to);
                     }
                     // Check if pawn can move forward two squares from the starting position
                     int startingRank = (me == White) ? 1 : 6;
-                    if (from / 8 == startingRank && board[to] == None && board[to + 8] == None) {
-                        moves.emplace_back(from, to + 8, move_t::DoublePawnPush);
+                    // Consider the opposite starting rank
+                    if (SquareRank(from) == startingRank && board[to] == None && board[to + dir] == None) {
+                        moves.emplace_back(from, to + dir, move_t::DoublePawnPush);
                     }
-                    // Check if pawn can capture diagonally
-                    int captureLeft = from + 7;
-                    // board.isValidSquare(captureLeft) \equiv captureLeft < ROWS * COLS
-                    if (captureLeft < ROWS * COLS && board[captureLeft] != None && IsColour(board[captureLeft], opp)) {
-                        moves.emplace_back(from, captureLeft, move_t::Capture);
+                    // Check if pawn can capture diagonally to the left
+                    square_t captureL = from + dir - 1;
+                    if (IsOK(captureL) && board[captureL] != None && IsColour(board[captureL], opp)) {
+                        moves.emplace_back(from, captureL, move_t::Capture);
                     }
-                    int captureRight = from + 9;
-                    if (captureRight < ROWS * COLS && board[captureRight] != None && IsColour(board[captureRight], opp)) {
-                        moves.emplace_back(from, captureRight, move_t::Capture);
+                    // Check if pawn can capture diagonally to the right
+                    square_t captureR = from + dir + 1;
+                    if (IsOK(captureR) && board[captureR] != None && IsColour(board[captureR], opp)) {
+                        moves.emplace_back(from, captureR, move_t::Capture);
                     }
                     break;
                 }
                 case Knight: {
-                    // Generate knight moves
+                    // Generate knight moves (non-capture)
                     // List all possible destination squares and check if they are valid
-                    int destinations[] = {from - 17, from - 15, from - 10, from - 6, from + 6, from + 10, from + 15, from + 17};
-                    for (int to : destinations) {
-                        if (to < ROWS * COLS && (board[to] == None || IsColour(board[to], opp))) {
-                            moves.emplace_back(from, to, move_t::Quiet);
+                    square_t dest[] = {from - 17, from - 15, from - 10, from - 6, from + 6, from + 10, from + 15, from + 17};
+                    for (square_t& to : dest) {
+                        if (IsOK(to) && (board[to] == None || IsColour(board[to], opp))) {
+                            moves.emplace_back(from, to); // move_t::Quiet || move_t::Capture?
                         }
                     }
                     break;
                 }
-                // Implement logic for other piece types (Bishop, Rook, Queen, King) similarly
+                // TODO: Other pieces
             }
         }
     }

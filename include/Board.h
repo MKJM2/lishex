@@ -12,6 +12,7 @@
 #define COLS 8
 
 typedef int piece;
+typedef unsigned int uint;
 
 extern std::string startFEN;
 extern std::unordered_map<piece, char> pieceToChar;
@@ -26,6 +27,7 @@ class Board {
         void loadFEN(std::string fen);
         void makeMove(Move move);
         int turn = Piece::White;
+        uint ply = 0;
 };
 
 #endif // BOARD_H_

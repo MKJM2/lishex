@@ -27,6 +27,8 @@ public:
     Move (int from, int to, int flags);
     Move (int from, int to, move_t flags);
     Move (const std::string& s);
+    Move(const Move& other); // Copy constructor
+    Move& operator=(const Move& other); // Assignment operator
 
     unsigned short getTo() const;
     unsigned short getFrom() const;

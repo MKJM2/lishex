@@ -3,6 +3,7 @@
 
 #define OPPONENT(color) (color == Piece::White) ? Piece::Black : Piece::White
 namespace Piece {
+    // inspired by Sebastian Lague's design
     static const int None = 0;
     static const int King = 1;
     static const int Pawn = 2;
