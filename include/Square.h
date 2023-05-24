@@ -26,5 +26,8 @@ inline bool isPromote(square_t s) {
     return IsOK(s) && (rank == 0 || rank == 8);
 }
 
+// possible destinations for a) White, b) Black pawns
+const square_t dest[2] = {-8, +8};
+
 
 #endif // SQUARE_H_
