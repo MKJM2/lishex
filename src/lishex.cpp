@@ -1,11 +1,16 @@
 #include <iostream>
 #include <sstream>
+#include <chrono>
 #include "Board.h"
 #include "Move.h"
+#include "MoveGenerator.h"
+
+using namespace std::chrono;
 int main() {
     Board gameboard;
     gameboard.readFEN(startFEN);
     gameboard.print();
+    gameboard.printFEN();
 
     // UCI
     while (true) {
@@ -59,6 +64,27 @@ int main() {
             Move move(moveString);
             gameboard.makeMove(move);
             gameboard.print();
+        } else if (command == "perft") {
+            // iterative deepening
+            int depthMax = 7;
+            unsigned long long node_no;
+            int NPS = 0; // # Nodes per (mili)second
+            for (int depth = 0; depth <= depthMax; depth++) {
+                auto start = high_resolution_clock::now();
+                node_no = perft(gameboard, depth);
+                auto end = high_resolution_clock::now();
+                auto elapsed =
+                    duration_cast<milliseconds>(end - start).count();
+                NPS = static_cast<double>(node_no) / elapsed;
+                printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
+                               depth,     node_no,     elapsed,  NPS);
+            }
+        } else if (command == "moves") {
+            std::vector<Move> moves = generateMoves(gameboard);
+            for (Move& m : moves) {
+                std::cout << m.toString() << " ";
+            }
+            std::cout << "\n";
         }
     }
     return 0;

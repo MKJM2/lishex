@@ -12,8 +12,8 @@ namespace Piece {
     static const int Rook = 6;
     static const int Queen = 7;
 
-    static const int White = 8;
-    static const int Black = 16;
+    static const int White = 8;  // 0b01000
+    static const int Black = 16; // 0b10000
 
     static const int typeMask = 0b00111;
     static const int blackMask = 0b10000;

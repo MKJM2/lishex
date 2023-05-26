@@ -29,18 +29,18 @@ std::unordered_map<int, std::string> pieceToUnicode = {
     {Piece::Rook,   u8"\u2656"},  // ♖
     {Piece::Queen,  u8"\u2655"},  // ♕
     {Piece::King,   u8"\u2654"},  // ♔
-    {Piece::Black | Piece::Pawn,   u8"\u265F"},  // ♟
-    {Piece::Black | Piece::Knight, u8"\u265E"},  // ♞
-    {Piece::Black | Piece::Bishop, u8"\u265D"},  // ♝
-    {Piece::Black | Piece::Rook,   u8"\u265C"},  // ♜
-    {Piece::Black | Piece::Queen,  u8"\u265B"},  // ♛
-    {Piece::Black | Piece::King,   u8"\u265A"},  // ♚
-    {Piece::White | Piece::Pawn,   u8"\u2659"},  // ♙
-    {Piece::White | Piece::Knight, u8"\u2658"},  // ♘
-    {Piece::White | Piece::Bishop, u8"\u2657"},  // ♗
-    {Piece::White | Piece::Rook,   u8"\u2656"},  // ♖
-    {Piece::White | Piece::Queen,  u8"\u2655"},  // ♕
-    {Piece::White | Piece::King,   u8"\u2654"}   // ♔
+    {Piece::White | Piece::Pawn,   u8"\u265F"},  // ♟
+    {Piece::White | Piece::Knight, u8"\u265E"},  // ♞
+    {Piece::White | Piece::Bishop, u8"\u265D"},  // ♝
+    {Piece::White | Piece::Rook,   u8"\u265C"},  // ♜
+    {Piece::White | Piece::Queen,  u8"\u265B"},  // ♛
+    {Piece::White | Piece::King,   u8"\u265A"},  // ♚
+    {Piece::Black | Piece::Pawn,   u8"\u2659"},  // ♙
+    {Piece::Black | Piece::Knight, u8"\u2658"},  // ♘
+    {Piece::Black | Piece::Bishop, u8"\u2657"},  // ♗
+    {Piece::Black | Piece::Rook,   u8"\u2656"},  // ♖
+    {Piece::Black | Piece::Queen,  u8"\u2655"},  // ♕
+    {Piece::Black | Piece::King,   u8"\u2654"}   // ♔
 };
 
 void Board::printFEN() {
@@ -97,19 +97,19 @@ void Board::readFEN(std::string fen) {
   std::memset(board, 0, ROWS * COLS * sizeof(piece));
 
   // fill board with pieces from FEN
-  int boardIdx = 0;
+  int boardIdx = ROWS * COLS - 1;
   for (size_t i = 0; i < fenParts[0].length(); i++) {
     char c = fenParts[0][i];
     if (c == '/') {
         //boardIdx += 8;
         continue;
     } else if (isdigit(c)) {
-        boardIdx += (int)c - '0';
+        boardIdx -= (int)c - '0';
     } else {
         int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
         int pieceType = charToPiece[std::tolower(c)];
         board[boardIdx] = pieceColor | pieceType;
-        boardIdx++;
+        boardIdx--;
     }
   }
 
@@ -143,4 +143,18 @@ void Board::makeMove(Move move) {
   board[to] = board[from];
   board[from] = 0;
   turn = OPPONENT(turn);
+  ply++;
+}
+
+void Board::undoMove(Move move) {
+  ushort to = move.getTo();
+  ushort from = move.getFrom();
+  board[from] = board[to];
+  if (capturedLastPly == Piece::None) {
+    board[from] = 0;
+  } else {
+    board[from] = capturedLastPly;
+  }
+  turn = OPPONENT(turn);
+  ply--;
 }

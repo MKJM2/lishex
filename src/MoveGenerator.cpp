@@ -66,6 +66,14 @@ std::vector<Move> generateMoves(Board& b) {
                     for (const square_t& dir : knightDest) {
                         square_t to = from + dir;
                         if (IsOK(to) && (board[to] == None || IsColour(board[to], opp))) {
+                            // TODO: Find a cleaner way to do this (might have to change board rep)
+                            // ensure knight moved 2 squares Manhattan distance away, i.e. didn;t wrap around the side
+                            int xFrom = from >> 3;
+                            int yFrom = from - (xFrom << 3);
+                            int xTo = to >> 3;
+                            int yTo = to - (xTo << 3);
+                            int dst = std::max(std::abs(xTo - xFrom), std::abs(yTo - yFrom));
+                            if (dst != 2) continue;
                             moves.emplace_back(from, to); // move_t::Quiet || move_t::Capture?
                         }
                     }
@@ -99,9 +107,7 @@ std::vector<Move> generateMoves(Board& b) {
         }
     }
 
-    // add en passant
-
-    // add castle
+    b.ply++;
     return moves;
 }
 
@@ -109,4 +115,21 @@ std::vector<Move> generateMoves(Board& b) {
 std::vector<Move> generateCaptures(Board& b) {
     // TODO: separate Quiet move logic from Capture logic
     return {};
+}
+
+unsigned long long perft(Board& b, int depth) {
+    if (depth == 0) {
+        return 1ULL;
+    }
+    int n_moves, i;
+    unsigned long long nodes = 0;
+
+    std::vector<Move> moves = generateMoves(b);
+    n_moves = moves.size();
+    for (i = 0; i < n_moves; i++) {
+        b.makeMove(moves[i]);
+        nodes += perft(b, depth - 1);
+        b.undoMove(moves[i]);
+    }
+    return nodes;
 }

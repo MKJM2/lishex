@@ -39,6 +39,8 @@ public:
     void setTo(unsigned int to);
     void setFrom(unsigned int from);
 
+    std::string toString();
+
     void operator=(Move& other);
     bool operator==(Move a) const;
     bool operator!=(Move a) const;

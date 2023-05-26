@@ -6,15 +6,15 @@
  * 4 bits for flags
  * 6 bits for the destination square
  * 6 bits for the source square */
-Move::Move (int from, int to, int flags) {
+Move::Move (square_t from, square_t to, int flags) {
     move = ((flags & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
-Move::Move (int from, int to, move_t flags) {
+Move::Move (square_t from, square_t to, move_t flags) {
     move = ((static_cast<int>(flags) & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
-Move::Move (int from, int to) {
+Move::Move (square_t from, square_t to) {
     move = ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
@@ -38,8 +38,8 @@ Move::Move (const std::string& s) {
 
         if (fromRank >= 0 && fromRank <= 7 && fromFile >= 0 && fromFile <= 7 &&
             toRank >= 0 && toRank <= 7 && toFile >= 0 && toFile <= 7) {
-            int from = fromRank * 8 + fromFile;
-            int to = toRank * 8 + toFile;
+            square_t from = fromRank * 8 + fromFile;
+            square_t to = toRank * 8 + toFile;
             move = ((from & 0x3f) << 6) | (to & 0x3f);
         } else {
             // Invalid square coordinates, set move to zero
@@ -86,6 +86,19 @@ void Move::setFrom(unsigned int from) {
     move &= ~0xfc0;
     // Set those bits to the corresponding bits in from
     move |= from & 0xfc0;
+}
+
+std::string Move::toString() {
+    square_t from = getFrom();
+    square_t to = getTo();
+
+    std::string s;
+    s.push_back('a' + (from & 0b111));          // from File
+    s.push_back('1' + (char) SquareRank(from)); // from Rank
+    s.push_back('a' + (to & 0b111));            // to File
+    s.push_back('1' + (char) SquareRank(to));   // to Rank
+
+    return s;
 }
 
 void Move::operator=(Move& other) {move = other.move;}

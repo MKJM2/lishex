@@ -10,5 +10,6 @@
 extern std::vector<Move> generateLegalMoves(Board& board);
 extern std::vector<Move> generateMoves(Board& board);
 extern std::vector<Move> generateCaptures(Board& board);
+extern unsigned long long perft(Board& b, int depth);
 
 #endif // MOVEGENERATOR_H_

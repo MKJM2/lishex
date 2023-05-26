@@ -20,14 +20,16 @@ extern std::unordered_map<char, piece> charToPiece;
 
 class Board {
     public:
-        piece board[ROWS * COLS];
+        piece board[ROWS * COLS] = {};
         void printFEN();
         void print();
         void readFEN(std::string fen);
         void loadFEN(std::string fen);
         void makeMove(Move move);
+        void undoMove(Move move);
         int turn = Piece::White;
         uint ply = 0;
+        piece capturedLastPly = Piece::None;
 };
 
 #endif // BOARD_H_
