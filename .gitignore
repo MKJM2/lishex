@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Emacs-specific
+.ccls-cache
+.ccls-cache/

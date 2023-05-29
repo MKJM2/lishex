@@ -76,6 +76,7 @@ int main() {
                 auto elapsed =
                     duration_cast<milliseconds>(end - start).count();
                 NPS = static_cast<double>(node_no) / elapsed;
+                NPS *= 1000; // nodes per ms -> nodes per s
                 printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
                                depth,     node_no,     elapsed,  NPS);
             }

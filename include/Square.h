@@ -19,6 +19,15 @@ inline int SquareRank(square_t s, int p = Piece::White) {
     return (s >> 3) ^ (p == Piece::White ? 0 : 0b111); // div by 8
 }
 
+// TODO: Improve this
+inline int distance(square_t a, square_t b) {
+    int xa = a >> 3;
+    int ya = a - (xa << 3);
+    int xb = b >> 3;
+    int yb = b - (xb << 3);
+    return std::max(std::abs(xa - xb), std::abs(ya - yb)); // max(|x_a - x_b|, |y_a - y_b|)
+}
+
 inline bool IsOK(square_t s) {
      // check for presense of highset 6 bits
      return (s & ~0x3F) == 0;

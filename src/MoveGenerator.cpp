@@ -68,12 +68,7 @@ std::vector<Move> generateMoves(Board& b) {
                         if (IsOK(to) && (board[to] == None || IsColour(board[to], opp))) {
                             // TODO: Find a cleaner way to do this (might have to change board rep)
                             // ensure knight moved 2 squares Manhattan distance away, i.e. didn;t wrap around the side
-                            int xFrom = from >> 3;
-                            int yFrom = from - (xFrom << 3);
-                            int xTo = to >> 3;
-                            int yTo = to - (xTo << 3);
-                            int dst = std::max(std::abs(xTo - xFrom), std::abs(yTo - yFrom));
-                            if (dst != 2) continue;
+                            if (distance(to, from) != 2) continue;
                             moves.emplace_back(from, to); // move_t::Quiet || move_t::Capture?
                         }
                     }
@@ -82,6 +77,7 @@ std::vector<Move> generateMoves(Board& b) {
                 case Rook: {
                     for (const square_t& dir : rookDest) {
                         for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            if (distance(to, to - dir) > 2) continue; // off board move
                             moves.emplace_back(from, to);
                         }
                     }
@@ -90,6 +86,7 @@ std::vector<Move> generateMoves(Board& b) {
                 case Bishop: {
                     for (const square_t& dir : bishopDest) {
                         for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            if (distance(to, to - dir) > 2) continue; // off board move
                             moves.emplace_back(from, to);
                         }
                     }
@@ -98,6 +95,7 @@ std::vector<Move> generateMoves(Board& b) {
                 case Queen: {
                     for (const square_t& dir : queenDest) {
                         for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
+                            if (distance(to, to - dir) > 2) continue; // off board move
                             moves.emplace_back(from, to);
                         }
                     }
