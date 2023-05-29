@@ -1,6 +1,8 @@
 #include "Board.h"
 
-std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+static std::mt19937_64 rng;
 
 // Constructor
 Board::Board() {
@@ -121,27 +123,38 @@ void Board::readFEN(std::string fen) {
   }
 
   /* TODO: Extend this function to handle the remaining parts of the FEN */
-}
 
-void Board::loadFEN(std::string fen) {
-    int row = 7;
-    int col = 0;
-    for (char &c : fen) {
-      if (c == '/') {
-        --row;
-        col = 0;
-      } else {
-        if (isdigit(c)) {
-          // char to int
-          col += (int)c - '0';
-        } else {
-          int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
-          int pieceType = charToPiece[std::tolower(c)];
-          board[row * ROWS + col] = pieceColor | pieceType;
-          ++col;
-        }
-      }
+  // set the side to move
+  turn = (fenParts[1] == "w") ? Piece::White : Piece::Black;
+
+  // set the castling permissions
+  if (fenParts[2] != "-") {
+    if (fenParts[2].find('K') != std::string::npos) {
+      castlePerm |= WKCastle;
     }
+    if (fenParts[2].find('Q') != std::string::npos) {
+      castlePerm |= WQCastle;
+    }
+    if (fenParts[2].find('k') != std::string::npos) {
+      castlePerm |= BKCastle;
+    }
+    if (fenParts[2].find('q') != std::string::npos) {
+      castlePerm |= BQCastle;
+    }
+  }
+
+  // set the en passant square
+  if (fenParts[3] != "-") {
+    int file = fenParts[3][0] - 'a';
+    int rank = fenParts[3][1] - '1';
+    epSquare = rank * 8 + file;
+  }
+
+  // set the halfmove clock since last capture/pawn push (ply)
+  ply = stoi(fenParts[4]);
+
+  // set the fullmove clock
+  fullMove = stoi(fenParts[5]);
 }
 
 void Board::makeMove(Move move) {
@@ -160,8 +173,10 @@ void Board::makeMove(Move move) {
   board[from] = 0;
 
   // Bookkeeping
+  if (turn == Piece::Black) fullMove++;
   turn = OPPONENT(turn);
   ply++;
+  generatePosKey();
 
   boardHistory.push(undo);
 }
@@ -174,6 +189,7 @@ void Board::undoMove(Move move) {
   //board[to] = capturedLastPly; // Piece::None if nothing captured
   //capturedLastPly = Piece::None;
   turn = OPPONENT(turn);
+  if (turn == Piece::Black) fullMove--;
   ply--;
 }
 
@@ -185,24 +201,30 @@ void Board::undoLast() {
   ushort to = last.move.getTo();
   ushort from = last.move.getFrom();
   board[from] = board[to];
-  // ??
+  // Restore last captured piece (if any)
   board[to] = last.captured;
-  turn = OPPONENT(turn);
 
+  // Bookkeeping
+  turn = OPPONENT(turn);
+  if (turn == Piece::Black) fullMove--;
   ply--;
 }
 
 inline u64 Board::rand64() {
+  return rng();
+  /*
   return (u64)std::rand() + \
          ((u64)std::rand() << 15) + \
          ((u64)std::rand() << 30) + \
          ((u64)std::rand() << 45) + \
          (((u64)std::rand() & 0xf) << 60);
+  */
 }
 
-void Board::initKeys(unsigned seed) {
+void Board::initKeys(unsigned rng_seed) {
   // Seed the RNG
-  std::srand(seed);
+  //std::srand(seed);
+  rng.seed(rng_seed);
   // For each piece type and square generate a random hashkey
   for (int p = 0; p < 24; p++) {
     for (square_t s = A1; s <= H8; s++) {
@@ -213,7 +235,7 @@ void Board::initKeys(unsigned seed) {
   // Generate hash key for White's side to play
   this->turnKey = this->rand64();
 
-  //Generate hash key for castling
+  // Generate hash key for castling
   for (int i = 0; i < 16; i++) {
     this->castleKeys[i] = this->rand64();
   }
@@ -235,10 +257,10 @@ void Board::generatePosKey() {
   key ^= (turn == White) ? turnKey : 0;
 
   // Hash in castle permissions
-  // TODO
+  key ^= castlePerm;
 
-  // Hash in the en passante square (if set)
-  // TODO
+  // Hash in the en passant square (if set)
+  key ^= pieceKeys[Piece::None][epSquare];
 
   // Store the position key for the Board
   this->posKey = key;
