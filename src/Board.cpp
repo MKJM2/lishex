@@ -159,11 +159,10 @@ void Board::readFEN(std::string fen) {
 
 void Board::makeMove(Move move) {
 
-  // Hash in the current board state
+  // Zoobrist hash in the current board state
   undo_t undo;
   undo.move = move;
-  generatePosKey();
-  undo.posKey = this->posKey;
+  undo.posKey = generatePosKey();
 
   ushort to = move.getTo();
   ushort from = move.getFrom();
@@ -176,7 +175,7 @@ void Board::makeMove(Move move) {
   if (turn == Piece::Black) fullMove++;
   turn = OPPONENT(turn);
   ply++;
-  generatePosKey();
+  this->posKey = generatePosKey();
 
   boardHistory.push(undo);
 }
@@ -186,8 +185,7 @@ void Board::undoMove(Move move) {
   ushort to = move.getTo();
   ushort from = move.getFrom();
   board[from] = board[to];
-  //board[to] = capturedLastPly; // Piece::None if nothing captured
-  //capturedLastPly = Piece::None;
+
   turn = OPPONENT(turn);
   if (turn == Piece::Black) fullMove--;
   ply--;
@@ -208,6 +206,7 @@ void Board::undoLast() {
   turn = OPPONENT(turn);
   if (turn == Piece::Black) fullMove--;
   ply--;
+  this->posKey = generatePosKey();
 }
 
 inline u64 Board::rand64() {
@@ -241,7 +240,7 @@ void Board::initKeys(unsigned rng_seed) {
   }
 }
 
-void Board::generatePosKey() {
+u64 Board::generatePosKey() {
   using namespace Piece;
   u64 key = 0;
 
@@ -265,5 +264,5 @@ void Board::generatePosKey() {
   // Store the position key for the Board
   this->posKey = key;
 
-  //return key;
+  return key;
 }

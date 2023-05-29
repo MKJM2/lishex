@@ -57,7 +57,7 @@ class Board {
         u64 castleKeys[16]; // TODO: 4bits depending on which side castle
         u64 posKey = 0;
         void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
-        void generatePosKey();
+        u64 generatePosKey();
         std::stack<undo_t> boardHistory;
 
 };
