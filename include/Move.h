@@ -5,6 +5,9 @@
 
 /* Inspired by
 ** https://www.chessprogramming.org/Encoding_Moves
+
+ 0b  0000  000000  000000
+     flag  from    to
 */
 
 // Types of moves (flags)
@@ -39,6 +42,7 @@ public:
 
     void setTo(unsigned int to);
     void setFrom(unsigned int from);
+    void setFlags(unsigned int flags);
 
     std::string toString();
 

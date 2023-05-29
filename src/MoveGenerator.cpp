@@ -47,13 +47,18 @@ std::vector<Move> generateMoves(Board& b) {
                     // Consider the opposite starting rank
                     if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
                         moves.emplace_back(from, to + dir, move_t::DoublePawnPush);
+                        //Move move;
+                        //move.setFrom(from);
+                        //move.setTo(to + dir);
+                        //move.setFlags(static_cast<ushort>(move_t::DoublePawnPush));
+                        //moves.push_back(move);
                     }
-                    // Check if pawn can capture diagonally to the left
+                    // Check if pawn can capture diagonally to the west
                     square_t captureL = from + dir - 1;
                     if (IsOK(captureL) && board[captureL] != None && IsColour(board[captureL], opp)) {
                         moves.emplace_back(from, captureL, move_t::Capture);
                     }
-                    // Check if pawn can capture diagonally to the right
+                    // Check if pawn can capture diagonally to the east
                     square_t captureR = from + dir + 1;
                     if (IsOK(captureR) && board[captureR] != None && IsColour(board[captureR], opp)) {
                         moves.emplace_back(from, captureR, move_t::Capture);
@@ -104,8 +109,6 @@ std::vector<Move> generateMoves(Board& b) {
             }
         }
     }
-
-    b.ply++;
     return moves;
 }
 

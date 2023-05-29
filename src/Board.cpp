@@ -1,4 +1,6 @@
 #include "Board.h"
+#include "Piece.h"
+#include <bitset>
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -8,6 +10,15 @@ static std::mt19937_64 rng;
 Board::Board() {
   this->initKeys();
   this->readFEN(startFEN);
+
+  // initialize history stack
+  undo_t initial;
+  initial.move = Move(NO_SQ, NO_SQ);
+  initial.castlePerm = WKCastle | WQCastle | BKCastle | BQCastle;
+  initial.enPas = NO_SQ;
+  initial.posKey = generatePosKey();
+  initial.captured = Piece::None;
+  //boardHistory.push(initial);
 }
 
 std::unordered_map<piece, char> pieceToChar = {
@@ -68,7 +79,7 @@ void Board::printFEN() {
   }
 }
 
-void Board::print() {
+void Board::print(bool verbose) {
     const std::string horizontalLine = "  +---+---+---+---+---+---+---+---+";
     const std::string emptyRow = "  |   |   |   |   |   |   |   |   |";
     const std::string rankSeparator = "  ---------------------------------";
@@ -86,6 +97,25 @@ void Board::print() {
         std::cout << horizontalLine << std::endl;
     }
     std::cout << "    a   b   c   d   e   f   g   h" << std::endl;
+
+    if (!verbose) return;
+    // Print additional information, like castle permissions
+    std::cout << "Side to play: " \
+              << ((turn == Piece::White) ? "White" : "Black") << std::endl;
+    std::cout << "En Passant square: " \
+              << ((epSquare == NO_SQ) ? "null" : toString(epSquare)) << std::endl;
+    std::cout << "Castle permissions: ";
+
+    // TODO: Make into a separate function
+    std::string s;
+    if (castlePerm & WKCastle) s.push_back('K');
+    if (castlePerm & WQCastle) s.push_back('Q');
+    if (castlePerm & BKCastle) s.push_back('k');
+    if (castlePerm & BQCastle) s.push_back('q');
+    std::cout << s << std::endl;
+
+    std::cout << "Zobrist hash key: " \
+              << posKey << std::endl;
 }
 
 
@@ -122,8 +152,6 @@ void Board::readFEN(std::string fen) {
     }
   }
 
-  /* TODO: Extend this function to handle the remaining parts of the FEN */
-
   // set the side to move
   turn = (fenParts[1] == "w") ? Piece::White : Piece::Black;
 
@@ -157,17 +185,114 @@ void Board::readFEN(std::string fen) {
   fullMove = stoi(fenParts[5]);
 }
 
-void Board::makeMove(Move move) {
+std::string Board::toFEN() const {
+  std::string fen;
 
-  // Zoobrist hash in the current board state
-  undo_t undo;
-  undo.move = move;
-  undo.posKey = generatePosKey();
+  // Board state
+  for (int rank = ROWS - 1; rank >= 0; --rank) {
+    int emptySquares = 0;
+    for (int file = 0; file < COLS; ++file) {
+      square_t square = rank * COLS + file;
+      piece p = board[square];
+
+      if (p == Piece::None) {
+        ++emptySquares;
+      } else {
+        if (emptySquares > 0) {
+          fen += std::to_string(emptySquares);
+          emptySquares = 0;
+        }
+
+        bool isWhite = Piece::IsColour(p, Piece::White);
+        int pieceType = Piece::PieceType(p);
+        char c = pieceToChar[pieceType];
+
+        if (isWhite) {
+          c = std::toupper(c);
+        }
+        fen += c;
+      }
+    }
+
+    if (emptySquares > 0) {
+      fen += std::to_string(emptySquares);
+    }
+
+    if (rank > 0) {
+      fen += '/';
+    }
+  }
+
+  fen += ' ';
+
+  // Side to move
+  fen += (turn == Piece::White) ? 'w' : 'b';
+  fen += ' ';
+
+  // Castling permissions
+  if (castlePerm == 0) {
+    fen += '-';
+  } else {
+    if (castlePerm & WKCastle) {
+      fen += 'K';
+    }
+    if (castlePerm & WQCastle) {
+      fen += 'Q';
+    }
+    if (castlePerm & BKCastle) {
+      fen += 'k';
+    }
+    if (castlePerm & BQCastle) {
+      fen += 'q';
+    }
+  }
+  fen += ' ';
+
+  // En passant square
+  if (epSquare != NO_SQ) {
+    int rank = epSquare / COLS;
+    int file = epSquare % COLS;
+    fen += ('a' + file);
+    fen += ('1' + rank);
+  } else {
+    fen += '-';
+  }
+  fen += ' ';
+
+  // Halfmove clock
+  fen += std::to_string(ply);
+  fen += ' ';
+
+  // Fullmove clock
+  fen += std::to_string(fullMove);
+
+  return fen;
+}
+
+void Board::makeMove(Move move) {
 
   ushort to = move.getTo();
   ushort from = move.getFrom();
 
+  // Store the pre-move state
+  undo_t undo;
+  undo.move = move;
+  undo.enPas = epSquare;
+  undo.posKey = generatePosKey();
   undo.captured = board[to];
+  undo.ply = ply;
+
+  boardHistory.push(undo);
+
+  /* Update state */
+
+  // Handle en passant square
+  if (move.getFlagAsEnum() == move_t::DoublePawnPush) {
+    epSquare = (to + from) / 2;
+  } else {
+    epSquare = NO_SQ;
+  }
+
   board[to] = board[from];
   board[from] = 0;
 
@@ -175,38 +300,35 @@ void Board::makeMove(Move move) {
   if (turn == Piece::Black) fullMove++;
   turn = OPPONENT(turn);
   ply++;
+  fiftyMoveCounter++;
   this->posKey = generatePosKey();
 
-  boardHistory.push(undo);
 }
 
 // Buggy:
 void Board::undoMove(Move move) {
   ushort to = move.getTo();
   ushort from = move.getFrom();
+
+  if (boardHistory.size() < 1) return;
+  undo_t last = boardHistory.top();
+  boardHistory.pop();
+
   board[from] = board[to];
+  board[to] = last.captured;
+  epSquare = last.enPas;
 
   turn = OPPONENT(turn);
   if (turn == Piece::Black) fullMove--;
-  ply--;
+  ply = last.ply;
+  fiftyMoveCounter--;
+  this->posKey = generatePosKey();
 }
 
 void Board::undoLast() {
   if (boardHistory.size() < 1) return;
   undo_t last = boardHistory.top();
-  boardHistory.pop();
-
-  ushort to = last.move.getTo();
-  ushort from = last.move.getFrom();
-  board[from] = board[to];
-  // Restore last captured piece (if any)
-  board[to] = last.captured;
-
-  // Bookkeeping
-  turn = OPPONENT(turn);
-  if (turn == Piece::Black) fullMove--;
-  ply--;
-  this->posKey = generatePosKey();
+  this->undoMove(last.move);
 }
 
 inline u64 Board::rand64() {

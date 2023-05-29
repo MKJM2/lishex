@@ -5,7 +5,11 @@
 /* Each move is represented as 16 bits:
  * 4 bits for flags
  * 6 bits for the destination square
- * 6 bits for the source square */
+ * 6 bits for the source square
+ 0b  0000  000000  000000
+     flag  from    to
+*/
+
 
 // Null move constructor
 Move::Move () {};
@@ -14,7 +18,7 @@ Move::Move (square_t from, square_t to, int flags) {
 }
 
 Move::Move (square_t from, square_t to, move_t flags) {
-    move = ((static_cast<int>(flags) & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
+    move = ((static_cast<ushort>(flags) & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
 Move::Move (square_t from, square_t to) {
@@ -70,11 +74,13 @@ unsigned short Move::getFlags() const {
 
 move_t Move::getFlagAsEnum() const {
     unsigned short flag = getFlags();
+
     return static_cast<move_t>(flag);
 }
 
 bool Move::isCapture() const {
-    return (move >> 12);
+    return (move >> 12) == (unsigned short) move_t::Capture ||
+           (move >> 12) == (unsigned short) move_t::EpCapture;
 }
 
 void Move::setTo(unsigned int to) {
@@ -89,6 +95,13 @@ void Move::setFrom(unsigned int from) {
     move &= ~0xfc0;
     // Set those bits to the corresponding bits in from
     move |= from & 0xfc0;
+}
+
+void Move::setFlags(unsigned int flags) {
+    // Zero out the first 4 bits
+    move &= ~0xf000;
+    // Set those bits to the corresponding bits in flags
+    move |= (flags << 12) & 0xf000;
 }
 
 std::string Move::toString() {

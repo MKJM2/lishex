@@ -9,8 +9,7 @@
 using namespace std::chrono;
 int main() {
     Board gameboard;
-    gameboard.print();
-    gameboard.printFEN();
+    gameboard.print(true);
 
     // UCI
     while (true) {
@@ -59,11 +58,22 @@ int main() {
         } else if (command == "quit") {
             break;
         } else if (command == "move") { // testing
+            // Get user input
             std::string moveString;
             iss >> moveString;
-            Move move(moveString);
-            gameboard.makeMove(move);
-            gameboard.print();
+
+            // Validate the move (ugly way to handle flags but works for now)
+            std::vector<Move> moves = generateMoves(gameboard);
+            std::vector<std::string> movesStr;
+            for (Move& m : moves) {
+                movesStr.push_back(m.toString());
+            }
+            for (size_t i = 0; i < movesStr.size(); i++) {
+                if (movesStr[i] == moveString) {
+                    gameboard.makeMove(moves[i]);
+                    gameboard.print(true); // verbose = true
+                }
+            }
         } else if (command == "perft") {
             // iterative deepening
             int depthMax = 5;
@@ -87,8 +97,22 @@ int main() {
             }
             std::cout << "\n";
         } else if (command == "undo") {
-            gameboard.undoLast();
-            gameboard.print();
+            // Get user input
+            std::string moveString;
+            iss >> moveString;
+
+            // Undo the specified move
+            if (moveString.empty()) {
+                gameboard.undoLast();
+            } else {
+                gameboard.undoMove(Move(moveString));
+            }
+            gameboard.print(true); // verbose = true
+
+        } else if (command == "print") {
+            gameboard.print(true);
+        } else if (command == "fen") {
+            std::cout << gameboard.toFEN() << std::endl;
         }
     }
     return 0;
