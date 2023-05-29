@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <chrono>
+#include <stack>
 #include "Board.h"
 #include "Move.h"
 #include "MoveGenerator.h"
@@ -8,7 +9,6 @@
 using namespace std::chrono;
 int main() {
     Board gameboard;
-    gameboard.readFEN(startFEN);
     gameboard.print();
     gameboard.printFEN();
 
@@ -66,7 +66,7 @@ int main() {
             gameboard.print();
         } else if (command == "perft") {
             // iterative deepening
-            int depthMax = 7;
+            int depthMax = 5;
             unsigned long long node_no;
             int NPS = 0; // # Nodes per (mili)second
             for (int depth = 0; depth <= depthMax; depth++) {
@@ -85,6 +85,9 @@ int main() {
                 std::cout << m.toString() << " ";
             }
             std::cout << "\n";
+        } else if (command == "undo") {
+            gameboard.undoLast();
+            gameboard.print();
         }
     }
     return 0;

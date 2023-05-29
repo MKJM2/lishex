@@ -23,6 +23,7 @@ enum class move_t {
 
 class Move {
 public:
+    Move (); // null move constructor
     Move (int from, int to);
     Move (int from, int to, int flags);
     Move (int from, int to, move_t flags);

@@ -29,7 +29,7 @@ inline bool isPromote(square_t s) {
     return IsOK(s) && (rank == 0 || rank == 8);
 }
 
-// possible destinations for a) White, b) Black pawns
+// possible destinations for 0) Black 1) White pawns
 const square_t pawnDest[2] = {-8, +8};
 const square_t knightDest[8] = {-17, -15, -10, -6, +6, +10, +15, +17};
 const square_t rookDest[4] = {-8, -1, +1, +8};

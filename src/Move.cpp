@@ -6,6 +6,9 @@
  * 4 bits for flags
  * 6 bits for the destination square
  * 6 bits for the source square */
+
+// Null move constructor
+Move::Move () {};
 Move::Move (square_t from, square_t to, int flags) {
     move = ((flags & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }

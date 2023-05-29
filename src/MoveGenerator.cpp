@@ -43,7 +43,7 @@ std::vector<Move> generateMoves(Board& b) {
                         moves.emplace_back(from, to);
                     }
                     // Check if pawn can move forward two squares from the starting position
-                    int startingRank = (me == White) ? 1 : 6; // zero-indexed
+                    int startingRank = 1; // (me == White) ? 1 : 6; // zero-indexed
                     // Consider the opposite starting rank
                     if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
                         moves.emplace_back(from, to + dir, move_t::DoublePawnPush);
@@ -129,7 +129,8 @@ unsigned long long perft(Board& b, int depth) {
     for (i = 0; i < n_moves; i++) {
         b.makeMove(moves[i]);
         nodes += perft(b, depth - 1);
-        b.undoMove(moves[i]);
+        //b.undoMove(moves[i]);
+        b.undoLast();
     }
     return nodes;
 }
