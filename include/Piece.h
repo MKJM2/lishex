@@ -20,27 +20,27 @@ namespace Piece {
     static const int whiteMask = 0b01000;
     static const int colorMask = whiteMask | blackMask;
 
-    static bool IsColour (int piece, int colour) {
+    inline static bool IsColour (int piece, int colour) {
         return (piece & colorMask) == colour;
     }
 
-    static int Colour (int piece) {
+    inline static int Colour (int piece) {
         return piece & colorMask;
     }
 
-    static int PieceType (int piece) {
+    inline static int PieceType (int piece) {
         return piece & typeMask;
     }
 
-    static bool IsRookOrQueen (int piece) {
+    inline static bool IsRookOrQueen (int piece) {
         return (piece & 0b110) == 0b110;
     }
 
-    static bool IsBishopOrQueen (int piece) {
+    inline static bool IsBishopOrQueen (int piece) {
         return (piece & 0b101) == 0b101;
     }
 
-    static bool IsSlidingPiece (int piece) {
+    inline static bool IsSlidingPiece (int piece) {
         return (piece & 0b100) != 0;
     }
 };

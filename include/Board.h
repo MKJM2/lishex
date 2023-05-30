@@ -63,7 +63,7 @@ class Board {
         void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
         u64 generatePosKey();
         std::stack<undo_t> boardHistory;
-
+        bool SquareAttacked(const square_t sq, const int color);
 };
 
 #endif // BOARD_H_

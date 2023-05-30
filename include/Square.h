@@ -56,6 +56,8 @@ const square_t knightDest[8] = {-17, -15, -10, -6, +6, +10, +15, +17};
 const square_t rookDest[4] = {-8, -1, +1, +8};
 const square_t bishopDest[4] = {-7, -9, +7, +9};
 const square_t queenDest[8] = {-9, -8, -7, -1, +1, +7, +8, +9};
+const square_t kingDest[8] = {-9, -8, -7, -1, +1, +7, +8, +9};
+
 
 
 #endif // SQUARE_H_

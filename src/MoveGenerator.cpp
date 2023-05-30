@@ -55,12 +55,12 @@ std::vector<Move> generateMoves(Board& b) {
                     }
                     // Check if pawn can capture diagonally to the west
                     square_t captureL = from + dir - 1;
-                    if (IsOK(captureL) && board[captureL] != None && IsColour(board[captureL], opp)) {
+                    if (IsOK(captureL) && distance(captureL, from) <= 2 && board[captureL] != None && IsColour(board[captureL], opp)) {
                         moves.emplace_back(from, captureL, move_t::Capture);
                     }
                     // Check if pawn can capture diagonally to the east
                     square_t captureR = from + dir + 1;
-                    if (IsOK(captureR) && board[captureR] != None && IsColour(board[captureR], opp)) {
+                    if (IsOK(captureR) && distance(captureL, from) <= 2 && board[captureR] != None && IsColour(board[captureR], opp)) {
                         moves.emplace_back(from, captureR, move_t::Capture);
                     }
                     break;
@@ -101,6 +101,16 @@ std::vector<Move> generateMoves(Board& b) {
                     for (const square_t& dir : queenDest) {
                         for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
                             if (distance(to, to - dir) > 2) continue; // off board move
+                            moves.emplace_back(from, to);
+                        }
+                    }
+                    break;
+                }
+                // checks?
+                case King: {
+                    for (const square_t& dir : kingDest) {
+                        square_t to = from + dir;
+                        if (IsOK(to) && distance(to, from) < 2 && board[to] == None) {
                             moves.emplace_back(from, to);
                         }
                     }

@@ -10,15 +10,6 @@ static std::mt19937_64 rng;
 Board::Board() {
   this->initKeys();
   this->readFEN(startFEN);
-
-  // initialize history stack
-  undo_t initial;
-  initial.move = Move(NO_SQ, NO_SQ);
-  initial.castlePerm = WKCastle | WQCastle | BKCastle | BQCastle;
-  initial.enPas = NO_SQ;
-  initial.posKey = generatePosKey();
-  initial.captured = Piece::None;
-  //boardHistory.push(initial);
 }
 
 std::unordered_map<piece, char> pieceToChar = {
@@ -136,19 +127,19 @@ void Board::readFEN(std::string fen) {
   std::memset(board, 0, ROWS * COLS * sizeof(piece));
 
   // fill board with pieces from FEN
-  int boardIdx = ROWS * COLS - 1;
-  for (size_t i = 0; i < fenParts[0].length(); i++) {
+  int boardIdx = (ROWS - 1) * COLS;
+  for (size_t i = 0; i < fenParts[0].length(); ++i) {
     char c = fenParts[0][i];
     if (c == '/') {
-        //boardIdx += 8;
-        continue;
+      boardIdx -= 2 * COLS;
+      continue;
     } else if (isdigit(c)) {
-        boardIdx -= (int)c - '0';
+      boardIdx += (int)c - '0';
     } else {
         int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
         int pieceType = charToPiece[std::tolower(c)];
         board[boardIdx] = pieceColor | pieceType;
-        boardIdx--;
+        boardIdx++;
     }
   }
 
@@ -387,4 +378,62 @@ u64 Board::generatePosKey() {
   this->posKey = key;
 
   return key;
+}
+
+bool Board::SquareAttacked(const square_t sq, const int color) {
+  using namespace Piece;
+
+  // Check if sq attacked by a pawn
+  piece p = White | Pawn;
+  if (color == White) {
+    if (board[sq - 7] == p || board[sq - 9] == p) {
+      return true;
+    }
+  } else { // color == Black
+    p ^= White; p |= Black;
+    if (board[sq + 7] == p || board[sq + 9] == p) {
+      return true;
+    }
+  }
+
+  // Check if sq attacked by a knight
+  for (const square_t& dir : knightDest) {
+    square_t from = sq + dir;
+    if (!IsOK(from) || !(distance(sq, from) == 2)) continue;
+    p = board[from];
+    if (PieceType(p) == Knight && IsColour(p, color)) {
+      return true;
+    }
+  }
+
+  // Check if square attacked by a rook/queen (N, E, S, W)
+  for (const square_t& dir : rookDest) {
+    for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+      p = board[from];
+      if (IsRookOrQueen(p) && IsColour(p, color)) {
+        return true;
+      }
+    }
+  }
+
+  // Check if square attacked by a bishop/queen (NE, SE, SW, NW)
+  for (const square_t& dir : bishopDest) {
+    for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+      p = board[from];
+      if (IsBishopOrQueen(p) && IsColour(p, color)) {
+        return true;
+      }
+    }
+  }
+
+  // Check if square attacked by a King
+  for (const square_t& dir : kingDest) {
+      square_t from = sq + dir;
+      if (!IsOK(from) || !(distance(sq, from) <= 2)) continue;
+      p = board[from];
+      if (PieceType(p) == King && IsColour(p, color)) {
+        return true;
+      }
+  }
+  return false;
 }
