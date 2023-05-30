@@ -114,6 +114,13 @@ std::string Move::toString() {
     s.push_back('a' + (to & 0b111));            // to File
     s.push_back('1' + (char) SquareRank(to));   // to Rank
 
+    // Handle promotions
+    move_t flags = getFlagAsEnum();
+    if (flags == move_t::KnightPromo) s.push_back('n');
+    if (flags == move_t::BishopPromo) s.push_back('b');
+    if (flags == move_t::RookPromo) s.push_back('r');
+    if (flags == move_t::QueenPromo) s.push_back('q');
+
     return s;
 }
 
