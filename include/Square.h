@@ -58,6 +58,21 @@ const square_t bishopDest[4] = {-7, -9, +7, +9};
 const square_t queenDest[8] = {-9, -8, -7, -1, +1, +7, +8, +9};
 const square_t kingDest[8] = {-9, -8, -7, -1, +1, +7, +8, +9};
 
+// Castle permissions handling
+// CastlePerm[from] determines how to change castle permissions
+// for a given (from, to) move
+// Here: 15 = 0b1111 = WKCastle | WQCastle | BKCastle | BQCastle
+const int castlePermDelta[64] = {
+      13, 15, 15, 15, 12, 15, 15, 14,
+      15, 15, 15, 15, 15, 15, 15, 15,
+      15, 15, 15, 15, 15, 15, 15, 15,
+      15, 15, 15, 15, 15, 15, 15, 15,
+      15, 15, 15, 15, 15, 15, 15, 15,
+      15, 15, 15, 15, 15, 15, 15, 15,
+      15, 15, 15, 15, 15, 15, 15, 15,
+       7, 15, 15, 15,  3, 15, 15, 11
+};
+
 
 
 #endif // SQUARE_H_

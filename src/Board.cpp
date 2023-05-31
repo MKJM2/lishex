@@ -272,6 +272,7 @@ void Board::makeMove(Move move) {
   undo.enPas = epSquare;
   undo.posKey = generatePosKey();
   undo.captured = board[to];
+  undo.castlePerm = castlePerm;
   undo.ply = ply;
 
 
@@ -283,6 +284,10 @@ void Board::makeMove(Move move) {
     piece capturedPawn = board[epSquare + pawnDest[turn == Piece::Black]];
     board[epSquare + pawnDest[turn == Piece::Black]] = Piece::None;
     undo.captured = capturedPawn;
+  } else if (flags == KingCastle) {
+
+  } else if (flags == QueenCastle) {
+
   }
 
   // Handle en passant square
@@ -292,7 +297,15 @@ void Board::makeMove(Move move) {
     epSquare = NO_SQ;
   }
 
+  // Handle castle permissions
+  castlePerm &= castlePermDelta[from];
+  castlePerm &= castlePermDelta[to];
+
   boardHistory.push(undo);
+
+  // TODO: Handle fifty move rule
+  // TODO: Handle promotions
+  // TODO: Handle castle perms
 
   board[to] = board[from];
   board[from] = 0;
@@ -304,6 +317,9 @@ void Board::makeMove(Move move) {
   fiftyMoveCounter++;
   this->posKey = generatePosKey();
 
+  if (SquareAttacked(kingSquare[turn == Piece::White], OPPONENT(turn))) {
+    undoMove(move);
+  }
 }
 
 // Buggy:
