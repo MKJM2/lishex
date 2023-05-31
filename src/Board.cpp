@@ -380,6 +380,22 @@ u64 Board::generatePosKey() {
   return key;
 }
 
+void updateMaterial() {
+  using namespace Piece;
+
+  material[0] = material[1] = 0;
+
+  for (square_t s = A1; s <= H8; s++) {
+    piece p = board[s];
+    if (p != None) {
+      material[Colour(p) == White] += value[PieceType(p)];
+    }
+    if (PieceType(p) == King) {
+      kingSquare[Colour(p) == White] = s;
+    }
+  }
+}
+
 bool Board::SquareAttacked(const square_t sq, const int color) {
   using namespace Piece;
 

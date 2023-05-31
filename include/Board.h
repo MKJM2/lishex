@@ -48,12 +48,15 @@ class Board {
         void makeMove(Move move);
         void undoMove(Move move);
         void undoLast();
+        void updateMaterial();
         enum { WKCastle = 1, WQCastle = 2, BKCastle = 4, BQCastle = 8};
         int turn = Piece::White;
+        int material[2] = {0, 0};
         uint ply = 0;
         uint fullMove = 1;
         uint castlePerm = WKCastle | WQCastle | BKCastle | BQCastle;
         square_t epSquare = NO_SQ;
+        square_t kingSquare[2] = {E8, E1};
         inline u64 rand64();
         u64 pieceKeys[24][64];
         u64 turnKey = 0; // we hash in a random number if it's White's move
