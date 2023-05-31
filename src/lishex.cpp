@@ -13,6 +13,7 @@ int main() {
 
     // UCI
     while (true) {
+        std::cout << ">> ";
         std::string input;
         std::getline(std::cin, input);
 

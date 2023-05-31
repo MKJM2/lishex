@@ -159,6 +159,39 @@ std::vector<Move> generateMoves(Board& b) {
             }
         }
     }
+
+    // handle castling moves (TODO: Fix ugly nested ifs)
+    if (b.turn == White) {
+        if (b.castlePerm & b.WKCastle) {
+            if (board[F1] == None && board[G1] == None) {
+                if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(F1, Black)) {
+                    moves.emplace_back(E1, G1, KingCastle);
+                }
+            }
+        }
+        if (b.castlePerm & b.WQCastle) {
+            if (board[D1] == None && board[C1] == None && board[B1] == None) {
+                if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(D1, Black)) {
+                    moves.emplace_back(E1, C1, QueenCastle);
+                }
+            }
+        }
+    } else {
+        if (b.castlePerm & b.BKCastle) {
+            if (board[F8] == None && board[G8] == None) {
+                if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(F8, White)) {
+                    moves.emplace_back(E8, G8, KingCastle);
+                }
+            }
+        }
+        if (b.castlePerm & b.BQCastle) {
+            if (board[D8] == None && board[C8] == None && board[B8] == None) {
+                if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(D8, White)) {
+                    moves.emplace_back(E8, C8, QueenCastle);
+                }
+            }
+        }
+    }
     return moves;
 }
 
