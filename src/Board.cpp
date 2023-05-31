@@ -10,6 +10,7 @@ static std::mt19937_64 rng;
 Board::Board() {
   this->initKeys();
   this->readFEN(startFEN);
+  this->posKey = generatePosKey();
 }
 
 std::unordered_map<piece, char> pieceToChar = {
