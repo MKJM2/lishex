@@ -17,10 +17,6 @@ Move::Move (square_t from, square_t to, int flags) {
     move = ((flags & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
 }
 
-Move::Move (square_t from, square_t to, move_t flags) {
-    move = ((static_cast<ushort>(flags) & 0xf) << 12) | ((from & 0x3f) << 6) | (to & 0x3f);
-}
-
 Move::Move (square_t from, square_t to) {
     move = ((from & 0x3f) << 6) | (to & 0x3f);
 }
@@ -72,15 +68,9 @@ unsigned short Move::getFlags() const {
     return (move >> 12) & 0xf;
 }
 
-move_t Move::getFlagAsEnum() const {
-    unsigned short flag = getFlags();
-
-    return static_cast<move_t>(flag);
-}
-
 bool Move::isCapture() const {
-    return (move >> 12) == (unsigned short) move_t::Capture ||
-           (move >> 12) == (unsigned short) move_t::EpCapture;
+    return (move >> 12) == (unsigned short) Capture ||
+           (move >> 12) == (unsigned short) EpCapture;
 }
 
 void Move::setTo(unsigned int to) {
@@ -115,11 +105,11 @@ std::string Move::toString() {
     s.push_back('1' + (char) SquareRank(to));   // to Rank
 
     // Handle promotions
-    move_t flags = getFlagAsEnum();
-    if (flags == move_t::KnightPromo) s.push_back('n');
-    if (flags == move_t::BishopPromo) s.push_back('b');
-    if (flags == move_t::RookPromo) s.push_back('r');
-    if (flags == move_t::QueenPromo) s.push_back('q');
+    int flags = getFlags();
+    if (flags == KnightPromo) s.push_back('n');
+    if (flags == BishopPromo) s.push_back('b');
+    if (flags == RookPromo) s.push_back('r');
+    if (flags == QueenPromo) s.push_back('q');
 
     return s;
 }

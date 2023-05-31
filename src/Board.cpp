@@ -264,6 +264,7 @@ void Board::makeMove(Move move) {
 
   ushort to = move.getTo();
   ushort from = move.getFrom();
+  int flags = move.getFlags();
 
   // Store the pre-move state
   undo_t undo;
@@ -273,16 +274,25 @@ void Board::makeMove(Move move) {
   undo.captured = board[to];
   undo.ply = ply;
 
-  boardHistory.push(undo);
 
   /* Update state */
 
+  // If en passant performed, remove captured pawn
+  if (flags == EpCapture) {
+    //std::cout << "Holy hell!\n";
+    piece capturedPawn = board[epSquare + pawnDest[turn == Piece::Black]];
+    board[epSquare + pawnDest[turn == Piece::Black]] = Piece::None;
+    undo.captured = capturedPawn;
+  }
+
   // Handle en passant square
-  if (move.getFlagAsEnum() == move_t::DoublePawnPush) {
+  if (flags == DoublePawnPush) {
     epSquare = (to + from) / 2;
   } else {
     epSquare = NO_SQ;
   }
+
+  boardHistory.push(undo);
 
   board[to] = board[from];
   board[from] = 0;
@@ -300,14 +310,23 @@ void Board::makeMove(Move move) {
 void Board::undoMove(Move move) {
   ushort to = move.getTo();
   ushort from = move.getFrom();
+  int flags = move.getFlags();
 
   if (boardHistory.size() < 1) return;
   undo_t last = boardHistory.top();
   boardHistory.pop();
 
   board[from] = board[to];
-  board[to] = last.captured;
+
   epSquare = last.enPas;
+  // If en passant performed, remove captured pawn
+  if (flags == EpCapture) {
+    //std::cout << "New response just dropped"
+    board[epSquare + pawnDest[turn == Piece::White]] = last.captured;
+    board[to] = Piece::None;
+  } else {
+    board[to] = last.captured;
+  }
 
   turn = OPPONENT(turn);
   if (turn == Piece::Black) fullMove--;
@@ -380,7 +399,7 @@ u64 Board::generatePosKey() {
   return key;
 }
 
-void updateMaterial() {
+void Board::updateMaterial() {
   using namespace Piece;
 
   material[0] = material[1] = 0;
@@ -396,6 +415,7 @@ void updateMaterial() {
   }
 }
 
+// Returns true if square sq is attacked by color
 bool Board::SquareAttacked(const square_t sq, const int color) {
   using namespace Piece;
 
@@ -452,4 +472,10 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
       }
   }
   return false;
+}
+
+// Returns true if side color is in check
+bool Board::inCheck(const int color) {
+  // for (square_t s; ...)
+  return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
 }

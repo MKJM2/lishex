@@ -11,7 +11,7 @@
 */
 
 // Types of moves (flags)
-enum class move_t {
+enum {
     Quiet          = 0b0000,
     DoublePawnPush = 0b0001,
     KingCastle     = 0b0010,
@@ -29,7 +29,6 @@ public:
     Move (); // null move constructor
     Move (int from, int to);
     Move (int from, int to, int flags);
-    Move (int from, int to, move_t flags);
     Move (const std::string& s);
     Move(const Move& other); // Copy constructor
     Move& operator=(const Move& other); // Assignment operator
@@ -37,7 +36,6 @@ public:
     unsigned short getTo() const;
     unsigned short getFrom() const;
     unsigned short getFlags() const;
-    move_t getFlagAsEnum() const;
     bool isCapture() const;
 
     void setTo(unsigned int to);

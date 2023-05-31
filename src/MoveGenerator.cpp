@@ -40,28 +40,68 @@ std::vector<Move> generateMoves(Board& b) {
                     // Check if pawn can move forward one square
                     square_t to = from + dir;
                     if (board[to] == None) {
-                        moves.emplace_back(from, to);
+                        if (SquareRank(to, me) == 7) {
+                            moves.emplace_back(from, to, KnightPromo);
+                            moves.emplace_back(from, to, BishopPromo);
+                            moves.emplace_back(from, to, QueenPromo);
+                            moves.emplace_back(from, to, RookPromo);
+                        } else {
+                            moves.emplace_back(from, to);
+                        }
                     }
                     // Check if pawn can move forward two squares from the starting position
                     int startingRank = 1; // (me == White) ? 1 : 6; // zero-indexed
                     // Consider the opposite starting rank
                     if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
-                        moves.emplace_back(from, to + dir, move_t::DoublePawnPush);
-                        //Move move;
-                        //move.setFrom(from);
-                        //move.setTo(to + dir);
-                        //move.setFlags(static_cast<ushort>(move_t::DoublePawnPush));
-                        //moves.push_back(move);
+                        moves.emplace_back(from, to + dir, DoublePawnPush);
                     }
                     // Check if pawn can capture diagonally to the west
                     square_t captureL = from + dir - 1;
                     if (IsOK(captureL) && distance(captureL, from) <= 2 && board[captureL] != None && IsColour(board[captureL], opp)) {
-                        moves.emplace_back(from, captureL, move_t::Capture);
+                        if (SquareRank(captureL, me) == 7) {
+                           moves.emplace_back(from, captureL, Capture | KnightPromo);
+                           moves.emplace_back(from, captureL, Capture | BishopPromo);
+                           moves.emplace_back(from, captureL, Capture | QueenPromo);
+                           moves.emplace_back(from, captureL, Capture | RookPromo);
+                        } else {
+                            moves.emplace_back(from, captureL, Capture);
+                        }
                     }
                     // Check if pawn can capture diagonally to the east
                     square_t captureR = from + dir + 1;
-                    if (IsOK(captureR) && distance(captureL, from) <= 2 && board[captureR] != None && IsColour(board[captureR], opp)) {
-                        moves.emplace_back(from, captureR, move_t::Capture);
+                    if (IsOK(captureR) && distance(captureR, from) <= 2 && board[captureR] != None && IsColour(board[captureR], opp)) {
+                        if (SquareRank(captureR, me) == 7) {
+                           moves.emplace_back(from, captureR, Capture | KnightPromo);
+                           moves.emplace_back(from, captureR, Capture | BishopPromo);
+                           moves.emplace_back(from, captureR, Capture | QueenPromo);
+                           moves.emplace_back(from, captureR, Capture | RookPromo);
+                        } else {
+                            moves.emplace_back(from, captureR, Capture);
+                        }
+                    }
+                    // Check if can perform en passant
+                    // std::cout << "google en passant" << std::endl;
+                    if (IsOK(captureL) && distance(captureL, from) <= 2 && captureL == b.epSquare) {
+                        if (SquareRank(captureL, me) == 7) {
+                           moves.emplace_back(from, captureL, EpCapture | KnightPromo);
+                           moves.emplace_back(from, captureL, EpCapture | BishopPromo);
+                           moves.emplace_back(from, captureL, EpCapture | QueenPromo);
+                           moves.emplace_back(from, captureL, EpCapture | RookPromo);
+                        } else {
+                            moves.emplace_back(from, captureL, EpCapture);
+                        }
+
+                    }
+                    if (IsOK(captureR) && distance(captureR, from) <= 2 && captureR == b.epSquare) {
+                        if (SquareRank(captureR, me) == 7) {
+                           moves.emplace_back(from, captureR, EpCapture | KnightPromo);
+                           moves.emplace_back(from, captureR, EpCapture | BishopPromo);
+                           moves.emplace_back(from, captureR, EpCapture | QueenPromo);
+                           moves.emplace_back(from, captureR, EpCapture | RookPromo);
+                        } else {
+                            moves.emplace_back(from, captureR, EpCapture);
+                        }
+
                     }
                     break;
                 }
@@ -74,7 +114,7 @@ std::vector<Move> generateMoves(Board& b) {
                             // TODO: Find a cleaner way to do this (might have to change board rep)
                             // ensure knight moved 2 squares Manhattan distance away, i.e. didn;t wrap around the side
                             if (distance(to, from) != 2) continue;
-                            moves.emplace_back(from, to); // move_t::Quiet || move_t::Capture?
+                            moves.emplace_back(from, to); // Quiet || Capture?
                         }
                     }
                     break;

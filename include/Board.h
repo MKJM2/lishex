@@ -67,6 +67,7 @@ class Board {
         u64 generatePosKey();
         std::stack<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
+        bool inCheck(const int color);
 };
 
 #endif // BOARD_H_
