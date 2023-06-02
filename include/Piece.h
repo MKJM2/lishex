@@ -1,7 +1,7 @@
 #ifndef PIECE_H_
 #define PIECE_H_
 
-#define OPPONENT(color) (color == Piece::White) ? Piece::Black : Piece::White
+#define OPPONENT(color) (color ^ 0b11000)
 namespace Piece {
     // inspired by Sebastian Lague's design
     static const int None = 0;   // 0b00000

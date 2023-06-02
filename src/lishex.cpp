@@ -76,8 +76,12 @@ int main() {
                 }
             }
         } else if (command == "perft") {
+            // Get user argument
+            std::string depthStr;
+            iss >> depthStr;
+
             // iterative deepening
-            int depthMax = 5;
+            int depthMax = depthStr.empty() ? 5 : stoi(depthStr);
             unsigned long long node_no;
             int NPS = 0; // # Nodes per (mili)second
             for (int depth = 0; depth <= depthMax; depth++) {
@@ -114,6 +118,11 @@ int main() {
             gameboard.print(true);
         } else if (command == "fen") {
             std::cout << gameboard.toFEN() << std::endl;
+        } else if (command == "test") {
+            std::string testFEN1 = "8/6q1/8/8/8/2Q5/8/8 w - - 0 1";
+            std::string testFEN2 = "3k4/3q4/2Q5/8/8/8/8/3K4 b - - 0 1";
+            gameboard.readFEN(testFEN2);
+            gameboard.printAttacked();
         }
     }
     return 0;

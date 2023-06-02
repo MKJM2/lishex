@@ -69,6 +69,20 @@ void Board::printFEN() {
   }
 }
 
+// prints squares attacked by the opponent
+void Board::printAttacked() {
+  int op = OPPONENT(turn);
+  // Print the board out
+  for (int rank = ROWS - 1; rank >= 0; --rank) {
+      for (int file = 0; file < COLS; ++file) {
+          piece p = board[rank * ROWS + file];
+          std::string curr = (SquareAttacked(rank * ROWS + file, op)) ? "X" : pieceToUnicode[p];
+          std::cout << curr;
+      }
+      std::cout << std::endl;
+  }
+}
+
 void Board::print(bool verbose) {
     const std::string horizontalLine = "  +---+---+---+---+---+---+---+---+";
     const std::string emptyRow = "  |   |   |   |   |   |   |   |   |";
@@ -106,6 +120,10 @@ void Board::print(bool verbose) {
 
     std::cout << "Zobrist hash key: " \
               << posKey << std::endl;
+
+    std::cout << "King squares: White at " \
+              << toString(kingSquare[1]) << ", Black at " \
+              << toString(kingSquare[0]) << std::endl;
 }
 
 
@@ -259,8 +277,10 @@ std::string Board::toFEN() const {
   return fen;
 }
 
-void Board::makeMove(Move move) {
+// Returns True if move was legal, False otherwise
+bool Board::makeMove(Move move) {
 
+  // Extract move data
   ushort to = move.getTo();
   ushort from = move.getFrom();
   int flags = move.getFlags();
@@ -269,8 +289,8 @@ void Board::makeMove(Move move) {
   undo_t undo;
   undo.move = move;
   undo.enPas = epSquare;
-  undo.posKey = generatePosKey();
   undo.captured = board[to];
+  undo.posKey = this->posKey;
   undo.castlePerm = castlePerm;
   undo.ply = ply;
 
@@ -317,10 +337,11 @@ void Board::makeMove(Move move) {
   // TODO: Handle fifty move rule
   // TODO: Handle promotions
 
+  // Perform the move
   board[to] = board[from];
-  board[from] = 0;
+  board[from] = Piece::None;
 
-  // Handle the king square
+  // Update the king square iff the king was moved
   if (Piece::PieceType(board[to]) == Piece::King) {
     kingSquare[turn == Piece::White] = to;
   }
@@ -334,10 +355,12 @@ void Board::makeMove(Move move) {
   this->posKey = generatePosKey();
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
-  if (SquareAttacked(kingSquare[turn == Piece::Black], op)) {
+  if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
     std::cout << "Move " << move.toString() << " puts " << ((OPPONENT(op) == Piece::White) ? "White" : "Black") << " in check!\n";
     undoMove(move);
+    return false;
   }
+  return true;
 }
 
 void Board::undoMove(Move move) {
@@ -345,17 +368,22 @@ void Board::undoMove(Move move) {
   ushort from = move.getFrom();
   int flags = move.getFlags();
 
+
   if (boardHistory.size() < 1) return;
   undo_t last = boardHistory.top();
   boardHistory.pop();
 
+  int op = OPPONENT(turn);
+  turn = op;
+
+  // undo the actual move
   board[from] = board[to];
 
   epSquare = last.enPas;
   // If en passant performed, remove captured pawn
   if (flags == EpCapture) {
     //std::cout << "New response just dropped"
-    board[epSquare + pawnDest[turn == Piece::White]] = last.captured;
+    board[epSquare + pawnDest[turn == Piece::Black]] = last.captured;
     board[to] = Piece::None;
   } else if (flags == KingCastle) {
     // Move the rook back to its original place pre-castling
@@ -367,6 +395,7 @@ void Board::undoMove(Move move) {
       board[H8] = board[F8];
       board[F8] = Piece::None;
     }
+    board[to] = Piece::None;
   } else if (flags == QueenCastle) {
     if (to == C1) {
       board[A1] = board[D1];
@@ -376,6 +405,7 @@ void Board::undoMove(Move move) {
       board[A8] = board[D8];
       board[D8] = Piece::None;
     }
+    board[to] = Piece::None;
   } else {
     board[to] = last.captured;
   }
@@ -386,12 +416,21 @@ void Board::undoMove(Move move) {
 
   // restore king's square
   if (Piece::PieceType(board[from]) == Piece::King) {
+    std::cout << "Last move performed: ";
+    std::cout << move.toString() << " by ";
+    std::cout << ((turn == Piece::White) ? "White" : "Black") << std::endl;
+    std::cout << "Updating the king square for " << ((turn == Piece::White) ? "White" : "Black");
+    std::cout << " to " << toString(from) << std::endl;
     kingSquare[turn == Piece::White] = from;
+    std::cout << "New king square should be: " \
+      << toString(kingSquare[turn == Piece::White]) \
+      << std::endl;
+    std::cout << "New king squares are: White at " \
+              << toString(kingSquare[1]) << ", Black at " \
+              << toString(kingSquare[0]) << std::endl;
   }
 
   // Bookkeeping
-  int op = OPPONENT(turn);
-  turn = op;
   if (turn == Piece::Black) fullMove--;
   assert(last.ply == ply - 1);
   ply = last.ply;
@@ -510,8 +549,11 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   for (const square_t& dir : rookDest) {
     for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
       p = board[from];
-      if (IsRookOrQueen(p) && IsColour(p, color)) {
-        return true;
+      if (p != Piece::None) {
+        if (IsRookOrQueen(p) && IsColour(p, color)) {
+          return true;
+        }
+        break; // if not enemy, block
       }
     }
   }
@@ -520,8 +562,11 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   for (const square_t& dir : bishopDest) {
     for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
       p = board[from];
-      if (IsBishopOrQueen(p) && IsColour(p, color)) {
-        return true;
+      if (p != Piece::None) {
+        if (IsBishopOrQueen(p) && IsColour(p, color)) {
+          return true;
+        }
+        break;
       }
     }
   }

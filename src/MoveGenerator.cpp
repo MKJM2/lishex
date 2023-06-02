@@ -211,7 +211,7 @@ unsigned long long perft(Board& b, int depth) {
     std::vector<Move> moves = generateMoves(b);
     n_moves = moves.size();
     for (i = 0; i < n_moves; i++) {
-        b.makeMove(moves[i]);
+        if (!b.makeMove(moves[i])) continue;
         nodes += perft(b, depth - 1);
         //b.undoMove(moves[i]);
         b.undoLast();

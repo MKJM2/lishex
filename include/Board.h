@@ -46,10 +46,11 @@ class Board {
         Board ();
         piece board[ROWS * COLS] = {};
         void printFEN();
+        void printAttacked();
         void print(bool verbose = false);
         void readFEN(std::string fen);
         std::string toFEN() const;
-        void makeMove(Move move);
+        bool makeMove(Move move);
         void undoMove(Move move);
         void undoLast();
         void updateMaterial();

@@ -4,8 +4,8 @@
 
 /* Each move is represented as 16 bits:
  * 4 bits for flags
- * 6 bits for the destination square
  * 6 bits for the source square
+ * 6 bits for the destination square
  0b  0000  000000  000000
      flag  from    to
 */
@@ -108,8 +108,8 @@ std::string Move::toString() {
     int flags = getFlags();
     if (flags == KnightPromo) s.push_back('n');
     if (flags == BishopPromo) s.push_back('b');
-    if (flags == RookPromo) s.push_back('r');
-    if (flags == QueenPromo) s.push_back('q');
+    if (flags == RookPromo)   s.push_back('r');
+    if (flags == QueenPromo)  s.push_back('q');
 
     return s;
 }
