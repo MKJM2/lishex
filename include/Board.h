@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <stack>
 #include <random>
+#include <bitset>
+#include <cassert>
 #include "Piece.h"
 #include "Move.h"
 #include "Square.h"
@@ -33,6 +35,8 @@ typedef struct {
         u64 posKey;
         // Last piece captured (if any)
         piece captured;
+        // Fifty move counter
+        uint fiftyMoveCounter;
         // halfmove clock
         uint ply;
 } undo_t;

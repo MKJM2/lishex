@@ -1,6 +1,4 @@
 #include "Board.h"
-#include "Piece.h"
-#include <bitset>
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -282,21 +280,33 @@ void Board::makeMove(Move move) {
   // If en passant performed, remove captured pawn
   if (flags == EpCapture) {
     //std::cout << "Holy hell!\n";
-    piece capturedPawn = board[epSquare + pawnDest[turn == Piece::Black]];
-    board[epSquare + pawnDest[turn == Piece::Black]] = Piece::None;
+    square_t targetSquare = epSquare + pawnDest[turn == Piece::Black];
+    piece capturedPawn = board[targetSquare];
+    board[targetSquare] = Piece::None;
     undo.captured = capturedPawn;
   } else if (flags == KingCastle) {
-
+    // Move the rook to its new square
+    if (to == G1) {
+      board[F1] = board[H1];
+      board[H1] = Piece::None;
+    } else {
+      assert(to == G8);
+      board[F8] = board[H8];
+      board[H8] = Piece::None;
+    }
   } else if (flags == QueenCastle) {
-
+    if (to == C1) {
+      board[D1] = board[A1];
+      board[A1] = Piece::None;
+    } else {
+      assert(to == C8);
+      board[D8] = board[A8];
+      board[A8] = Piece::None;
+    }
   }
 
   // Handle en passant square
-  if (flags == DoublePawnPush) {
-    epSquare = (to + from) / 2;
-  } else {
-    epSquare = NO_SQ;
-  }
+  epSquare = (flags == DoublePawnPush) ? (to + from) / 2 : NO_SQ;
 
   // Handle castle permissions
   castlePerm &= castlePermDelta[from];
@@ -306,24 +316,30 @@ void Board::makeMove(Move move) {
 
   // TODO: Handle fifty move rule
   // TODO: Handle promotions
-  // TODO: Handle castle perms
 
   board[to] = board[from];
   board[from] = 0;
 
+  // Handle the king square
+  if (Piece::PieceType(board[to]) == Piece::King) {
+    kingSquare[turn == Piece::White] = to;
+  }
+
   // Bookkeeping
   if (turn == Piece::Black) fullMove++;
-  turn = OPPONENT(turn);
+  int op = OPPONENT(turn);
+  turn = op;
   ply++;
   fiftyMoveCounter++;
   this->posKey = generatePosKey();
 
-  if (SquareAttacked(kingSquare[turn == Piece::White], OPPONENT(turn))) {
+  // Finally, undo the move if puts the player in check (pseudolegal movegen)
+  if (SquareAttacked(kingSquare[turn == Piece::Black], op)) {
+    std::cout << "Move " << move.toString() << " puts " << ((OPPONENT(op) == Piece::White) ? "White" : "Black") << " in check!\n";
     undoMove(move);
   }
 }
 
-// Buggy:
 void Board::undoMove(Move move) {
   ushort to = move.getTo();
   ushort from = move.getFrom();
@@ -341,12 +357,43 @@ void Board::undoMove(Move move) {
     //std::cout << "New response just dropped"
     board[epSquare + pawnDest[turn == Piece::White]] = last.captured;
     board[to] = Piece::None;
+  } else if (flags == KingCastle) {
+    // Move the rook back to its original place pre-castling
+    if (to == G1) {
+      board[H1] = board[F1];
+      board[F1] = Piece::None;
+    } else {
+      assert(to == G8);
+      board[H8] = board[F8];
+      board[F8] = Piece::None;
+    }
+  } else if (flags == QueenCastle) {
+    if (to == C1) {
+      board[A1] = board[D1];
+      board[D1] = Piece::None;
+    } else {
+      assert(to == C8);
+      board[A8] = board[D8];
+      board[D8] = Piece::None;
+    }
   } else {
     board[to] = last.captured;
   }
 
-  turn = OPPONENT(turn);
+  // restore castling permissions
+  castlePerm = last.castlePerm;
+  fiftyMoveCounter = last.fiftyMoveCounter;
+
+  // restore king's square
+  if (Piece::PieceType(board[from]) == Piece::King) {
+    kingSquare[turn == Piece::White] = from;
+  }
+
+  // Bookkeeping
+  int op = OPPONENT(turn);
+  turn = op;
   if (turn == Piece::Black) fullMove--;
+  assert(last.ply == ply - 1);
   ply = last.ply;
   fiftyMoveCounter--;
   this->posKey = generatePosKey();
