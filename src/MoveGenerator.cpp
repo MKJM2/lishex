@@ -121,27 +121,48 @@ std::vector<Move> generateMoves(Board& b) {
                 }
                 case Rook: {
                     for (const square_t& dir : rookDest) {
-                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
-                            if (distance(to, to - dir) > 2) continue; // off board move
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    moves.emplace_back(from, to, Capture);
+                                }
+                                break;
+                            }
                             moves.emplace_back(from, to);
+                            to += dir;
                         }
                     }
                     break;
                 }
                 case Bishop: {
                     for (const square_t& dir : bishopDest) {
-                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
-                            if (distance(to, to - dir) > 2) continue; // off board move
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    moves.emplace_back(from, to, Capture);
+                                }
+                                break;
+                            }
                             moves.emplace_back(from, to);
+                            to += dir;
                         }
                     }
                     break;
                 }
                 case Queen: {
                     for (const square_t& dir : queenDest) {
-                        for (square_t to = from + dir; IsOK(to) && board[to] == None; to += dir) {
-                            if (distance(to, to - dir) > 2) continue; // off board move
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    moves.emplace_back(from, to, Capture);
+                                }
+                                break;
+                            }
                             moves.emplace_back(from, to);
+                            to += dir;
                         }
                     }
                     break;
@@ -151,6 +172,12 @@ std::vector<Move> generateMoves(Board& b) {
                     for (const square_t& dir : kingDest) {
                         square_t to = from + dir;
                         if (IsOK(to) && distance(to, from) < 2 && board[to] == None) {
+                            if (board[to] != None) {
+                                    if (IsColour(board[to], opp)) {
+                                        moves.emplace_back(from, to, Capture);
+                                    }
+                                    break;
+                            }
                             moves.emplace_back(from, to);
                         }
                     }
@@ -201,18 +228,23 @@ std::vector<Move> generateCaptures(Board& b) {
     return {};
 }
 
-unsigned long long perft(Board& b, int depth) {
+unsigned long long perft(Board& b, int depth, bool verbose) {
     if (depth == 0) {
         return 1ULL;
     }
-    int n_moves, i;
+    int n_moves, i, curr;
     unsigned long long nodes = 0;
 
     std::vector<Move> moves = generateMoves(b);
     n_moves = moves.size();
     for (i = 0; i < n_moves; i++) {
         if (!b.makeMove(moves[i])) continue;
-        nodes += perft(b, depth - 1);
+        curr = perft(b, depth - 1);
+        if (verbose) {
+            std::cout << moves[i].toString() << ": " \
+                      << curr << std::endl;
+        }
+        nodes += curr;
         //b.undoMove(moves[i]);
         b.undoLast();
     }

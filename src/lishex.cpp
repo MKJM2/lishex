@@ -80,21 +80,18 @@ int main() {
             std::string depthStr;
             iss >> depthStr;
 
-            // iterative deepening
-            int depthMax = depthStr.empty() ? 5 : stoi(depthStr);
+            int depth = depthStr.empty() ? 5 : stoi(depthStr);
             unsigned long long node_no;
             int NPS = 0; // # Nodes per (mili)second
-            for (int depth = 0; depth <= depthMax; depth++) {
-                auto start = high_resolution_clock::now();
-                node_no = perft(gameboard, depth);
-                auto end = high_resolution_clock::now();
-                auto elapsed =
-                    duration_cast<milliseconds>(end - start).count();
-                NPS = static_cast<double>(node_no) / elapsed;
-                NPS *= 1000; // nodes per ms -> nodes per s
-                printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
-                               depth,     node_no,     elapsed,  NPS);
-            }
+            auto start = high_resolution_clock::now();
+            node_no = perft(gameboard, depth, true);
+            auto end = high_resolution_clock::now();
+            auto elapsed =
+                duration_cast<milliseconds>(end - start).count();
+            NPS = static_cast<double>(node_no) / elapsed;
+            NPS *= 1000; // nodes per ms -> nodes per s
+            printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
+                            depth,     node_no,     elapsed,  NPS);
         } else if (command == "moves") {
             std::vector<Move> moves = generateMoves(gameboard);
             for (Move& m : moves) {

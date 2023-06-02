@@ -356,7 +356,6 @@ bool Board::makeMove(Move move) {
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
   if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
-    std::cout << "Move " << move.toString() << " puts " << ((OPPONENT(op) == Piece::White) ? "White" : "Black") << " in check!\n";
     undoMove(move);
     return false;
   }
@@ -416,18 +415,7 @@ void Board::undoMove(Move move) {
 
   // restore king's square
   if (Piece::PieceType(board[from]) == Piece::King) {
-    std::cout << "Last move performed: ";
-    std::cout << move.toString() << " by ";
-    std::cout << ((turn == Piece::White) ? "White" : "Black") << std::endl;
-    std::cout << "Updating the king square for " << ((turn == Piece::White) ? "White" : "Black");
-    std::cout << " to " << toString(from) << std::endl;
     kingSquare[turn == Piece::White] = from;
-    std::cout << "New king square should be: " \
-      << toString(kingSquare[turn == Piece::White]) \
-      << std::endl;
-    std::cout << "New king squares are: White at " \
-              << toString(kingSquare[1]) << ", Black at " \
-              << toString(kingSquare[0]) << std::endl;
   }
 
   // Bookkeeping

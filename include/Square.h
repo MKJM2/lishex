@@ -29,12 +29,13 @@ inline int distance(square_t a, square_t b) {
     int ya = a - (xa << 3);
     int xb = b >> 3;
     int yb = b - (xb << 3);
-    return std::max(std::abs(xa - xb), std::abs(ya - yb)); // max(|x_a - x_b|, |y_a - y_b|)
+    // max(|x_a - x_b|, |y_a - y_b|)
+    return std::max(std::abs(xa - xb), std::abs(ya - yb));
 }
 
 inline bool IsOK(square_t s) {
      // check for presense of highset 6 bits
-     return (s & ~0x3F) == 0;
+     return (s >= -1) && (s & ~0x3F) == 0;
 }
 
 inline bool isPromote(square_t s) {
