@@ -37,6 +37,7 @@ public:
     unsigned short getFrom() const;
     unsigned short getFlags() const;
     bool isCapture() const;
+    bool isPromotion() const;
 
     void setTo(unsigned int to);
     void setFrom(unsigned int from);

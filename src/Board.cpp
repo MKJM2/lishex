@@ -155,6 +155,9 @@ void Board::readFEN(std::string fen) {
     } else {
         int pieceColor = std::isupper(c) ? Piece::White : Piece::Black;
         int pieceType = charToPiece[std::tolower(c)];
+        if (pieceType == Piece::King) {
+          kingSquare[pieceColor == Piece::White] = boardIdx;
+        }
         board[boardIdx] = pieceColor | pieceType;
         boardIdx++;
     }
@@ -164,6 +167,7 @@ void Board::readFEN(std::string fen) {
   turn = (fenParts[1] == "w") ? Piece::White : Piece::Black;
 
   // set the castling permissions
+  castlePerm = 0;
   if (fenParts[2] != "-") {
     if (fenParts[2].find('K') != std::string::npos) {
       castlePerm |= WKCastle;
@@ -184,6 +188,8 @@ void Board::readFEN(std::string fen) {
     int file = fenParts[3][0] - 'a';
     int rank = fenParts[3][1] - '1';
     epSquare = rank * 8 + file;
+  } else {
+    epSquare = NO_SQ;
   }
 
   // set the halfmove clock since last capture/pawn push (ply)
@@ -191,6 +197,42 @@ void Board::readFEN(std::string fen) {
 
   // set the fullmove clock
   fullMove = stoi(fenParts[5]);
+}
+
+void Board::readPosition(std::string pos) {
+    size_t startPos = pos.find("startpos");
+    size_t fenPos = pos.find("fen");
+    size_t movesPos = pos.find("moves");
+
+    if (startPos != std::string::npos) {
+        readFEN(startFEN);
+    } else if (fenPos != std::string::npos) {
+        size_t fenStartPos = pos.find_first_not_of(" ", fenPos + 3);
+        size_t fenEndPos = pos.find(" moves", fenStartPos);
+        if (movesPos == std::string::npos) {
+          fenEndPos = pos.size();
+        }
+        std::string fenString = pos.substr(fenStartPos, fenEndPos - fenStartPos);
+        readFEN(fenString);
+    } else {
+        readFEN(startFEN);
+    }
+
+    if (movesPos != std::string::npos) {
+        size_t movesStartPos = pos.find_first_not_of(" ", movesPos + 5);
+        if (movesStartPos == std::string::npos) return;
+        std::string movesString = pos.substr(movesStartPos);
+        std::istringstream iss(movesString);
+        std::string moveString;
+
+        while (iss >> moveString) {
+            Move move(moveString);
+            // TODO: Handle invalid moves
+            makeMove(move);
+            this->ply = 0;
+        }
+    }
+    this->updateMaterial();
 }
 
 std::string Board::toFEN() const {
@@ -335,11 +377,25 @@ bool Board::makeMove(Move move) {
   boardHistory.push(undo);
 
   // TODO: Handle fifty move rule
-  // TODO: Handle promotions
 
   // Perform the move
   board[to] = board[from];
   board[from] = Piece::None;
+
+  // Handle promotions
+  if (move.isPromotion()) {
+    // clear the capture bit
+    switch (flags & ~Capture) {
+      case KnightPromo:
+        board[to] = Piece::Knight | turn; break;
+      case BishopPromo:
+        board[to] = Piece::Bishop | turn; break;
+      case RookPromo:
+        board[to] = Piece::Rook | turn; break;
+      default: /* + Queen case */
+        board[to] = Piece::Queen | turn; break;
+    }
+  }
 
   // Update the king square iff the king was moved
   if (Piece::PieceType(board[to]) == Piece::King) {
@@ -416,6 +472,11 @@ void Board::undoMove(Move move) {
   // restore king's square
   if (Piece::PieceType(board[from]) == Piece::King) {
     kingSquare[turn == Piece::White] = from;
+  }
+
+  // Undo promotions
+  if (move.isPromotion()) {
+    board[from] = Piece::Pawn | turn;
   }
 
   // Bookkeeping

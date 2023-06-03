@@ -171,12 +171,12 @@ std::vector<Move> generateMoves(Board& b) {
                 case King: {
                     for (const square_t& dir : kingDest) {
                         square_t to = from + dir;
-                        if (IsOK(to) && distance(to, from) < 2 && board[to] == None) {
+                        if (IsOK(to) && distance(to, from) < 2) {
                             if (board[to] != None) {
                                     if (IsColour(board[to], opp)) {
                                         moves.emplace_back(from, to, Capture);
                                     }
-                                    break;
+                                    continue;
                             }
                             moves.emplace_back(from, to);
                         }
@@ -241,7 +241,7 @@ unsigned long long perft(Board& b, int depth, bool verbose) {
         if (!b.makeMove(moves[i])) continue;
         curr = perft(b, depth - 1);
         if (verbose) {
-            std::cout << moves[i].toString() << ": " \
+            std::cout << moves[i].toString() << " " \
                       << curr << std::endl;
         }
         nodes += curr;

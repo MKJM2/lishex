@@ -73,6 +73,10 @@ bool Move::isCapture() const {
            (move >> 12) == (unsigned short) EpCapture;
 }
 
+bool Move::isPromotion() const {
+    return (move & 0b1000'000000'000000);
+}
+
 void Move::setTo(unsigned int to) {
     // Zero out the last 6 bits
     move &= ~0x3f;
@@ -106,11 +110,19 @@ std::string Move::toString() {
 
     // Handle promotions
     int flags = getFlags();
-    if (flags == KnightPromo) s.push_back('n');
-    if (flags == BishopPromo) s.push_back('b');
-    if (flags == RookPromo)   s.push_back('r');
-    if (flags == QueenPromo)  s.push_back('q');
-
+    if (isPromotion()) {
+        // clear the capture bit
+        switch (flags & ~Capture) {
+            case KnightPromo:
+                s.push_back('n'); break;
+            case BishopPromo:
+                s.push_back('b'); break;
+            case RookPromo:
+                s.push_back('r'); break;
+            default: /* + Queen case */
+                s.push_back('q'); break;
+        }
+    }
     return s;
 }
 

@@ -1,8 +1,9 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-#include <string>
 #include <iostream>
+#include <string>
+#include <sstream>
 #include <cstring>
 #include <unordered_map>
 #include <stack>
@@ -49,6 +50,7 @@ class Board {
         void printAttacked();
         void print(bool verbose = false);
         void readFEN(std::string fen);
+        void readPosition(std::string fen);
         std::string toFEN() const;
         bool makeMove(Move move);
         void undoMove(Move move);

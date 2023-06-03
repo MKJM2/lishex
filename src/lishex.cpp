@@ -1,5 +1,4 @@
 #include <iostream>
-#include <sstream>
 #include <chrono>
 #include <stack>
 #include "Board.h"
@@ -9,11 +8,9 @@
 using namespace std::chrono;
 int main() {
     Board gameboard;
-    gameboard.print(true);
 
     // UCI
     while (true) {
-        std::cout << ">> ";
         std::string input;
         std::getline(std::cin, input);
 
@@ -38,11 +35,9 @@ int main() {
         } else if (command == "position") {
             // Parse the position command and update the board accordingly
             // Example: position startpos moves e2e4 e7e5
-            // Parse the FEN or moves and update the board
-
-            // Handle the "startpos" or "fen" keyword
-
-            // Handle the moves provided (if any)
+            std::string positionStr;
+            std::getline(iss, positionStr);
+            gameboard.readPosition(positionStr);
 
         } else if (command == "go") {
             // Parse and handle the go command
@@ -72,7 +67,7 @@ int main() {
             for (size_t i = 0; i < movesStr.size(); i++) {
                 if (movesStr[i] == moveString) {
                     gameboard.makeMove(moves[i]);
-                    gameboard.print(true); // verbose = true
+                    //gameboard.print(true); // verbose = true
                 }
             }
         } else if (command == "perft") {
@@ -90,8 +85,12 @@ int main() {
                 duration_cast<milliseconds>(end - start).count();
             NPS = static_cast<double>(node_no) / elapsed;
             NPS *= 1000; // nodes per ms -> nodes per s
+            /*
             printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
                             depth,     node_no,     elapsed,  NPS);
+            */
+            std::cout << std::endl;
+            std::cout << node_no << std::endl;
         } else if (command == "moves") {
             std::vector<Move> moves = generateMoves(gameboard);
             for (Move& m : moves) {
@@ -111,7 +110,7 @@ int main() {
             }
             gameboard.print(true); // verbose = true
 
-        } else if (command == "print") {
+        } else if (command == "print" || command == "d") {
             gameboard.print(true);
         } else if (command == "fen") {
             std::cout << gameboard.toFEN() << std::endl;
