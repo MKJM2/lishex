@@ -59,8 +59,19 @@ typedef struct {
     pventry_t *pvtable = nullptr;
 } pvtable_t;
 
-// Detect whether the current board state has been seen before on the board stack
-bool isRepetition(Board& b);
+typedef struct {
+    int startTime;
+    int endTime;
+    int depth;
+    int depthSet;
+    int timeSet;
+    int movesToGo;
+    long long nodes;
+
+    bool infinite;
+    bool quit;
+    bool stopped;
+} searchinfo_t;
 
 // Searches the position defined by Board b
 void search(Board& b);
@@ -68,6 +79,11 @@ void search(Board& b);
 // Initialize the pv table
 extern void init_PVtable(pvtable_t *table);
 
+extern Move checkPvTable(Board& b);
+
+extern bool moveExists(Board& b, Move m);
+
+extern int getPV(Board& b, const int depth);
 
 class Board {
     public:
@@ -105,6 +121,8 @@ class Board {
         bool inCheck(const int color);
         pvtable_t PVtable;
         std::vector<Move> pv; // stores the principal variation extracted from PVtable
+        int historyH[24][64]; // Tables for the history heuristic
+        int killersH[2][64]; // Tables for the killer heuristic (beta cutoffs)
 };
 
 #endif // BOARD_H_

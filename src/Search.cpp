@@ -4,6 +4,11 @@
 // 10 MiB PV table size
 static const int PV_SIZE = 0xA00000;
 
+static void checkUp() {
+    // TODO: Check if time is up
+    // or interrupted by GUI
+}
+
 void init_PVtable(pvtable_t *table) {
     table->no_entries = PV_SIZE / sizeof(pventry_t) - 1;
     if (table->pvtable != nullptr) {
@@ -13,9 +18,11 @@ void init_PVtable(pvtable_t *table) {
     table->pvtable = new pventry_t[table->no_entries]();
 }
 
+// Detect whether the current board state has been seen before on the board stack
+
 // TODO: Can use the fiftyMoveRule counter to optimize this
 // since we don't need to search the *entire* history
-bool isRepetition(Board& b) {
+static bool isRepetition(Board& b) {
     std::vector<undo_t>& hist = b.boardHistory;
     int i = 0, n = hist.size();
     for (; i < n - 1; i++) {
@@ -34,7 +41,7 @@ void storePvMove(const Board& b, const Move move) {
     b.PVtable.pvtable[key].posKey = b.posKey;
 }
 
-Move checkPvTable(const Board& b) {
+Move checkPvTable(Board& b) {
     int key = b.posKey % b.PVtable.no_entries;
     if (b.PVtable.pvtable[key].posKey == b.posKey) {
         return b.PVtable.pvtable[key].move;
@@ -82,5 +89,32 @@ int getPV(Board& b, const int depth) {
     return currDepth;
 }
 
+/* Evaluation */
+
+const int
+
+// Evaluates the position from the side's POV
+int evaluate(Board& b) {
+    // TODO:
+    return 0;
+}
+
+static void clearForSearch(searchinfo_t *info) {
+    memset(info, 0, sizeof(searchinfo_t));
+}
+
+static int quiescenceSearch(Board& b, searchinfo_t, int alpha, int beta) {
+    // TODO: Implement
+    return 0;
+}
+
+static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
+    // TODO: Implement alpha beta
+    return 0;
+}
+
 // Searches the position defined by Board b
-void search(Board& b);
+void search(Board& b, searchinfo_t *info) {
+    // TODO: iterative deepening negamax
+    // TODO: search init
+}

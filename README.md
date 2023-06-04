@@ -6,6 +6,7 @@ A chess-engine built in C++.
 - iterative deepening Negamax framework
 - Alpha-beta pruning 
 - Square-centered 8x8 board representation 
+- Piece-square tables for evaluation
 - Universal Chess Interface (UCI) compatible
 
 ### Acknowledgments
