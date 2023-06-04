@@ -222,12 +222,6 @@ std::vector<Move> generateMoves(Board& b) {
     return moves;
 }
 
-
-std::vector<Move> generateCaptures(Board& b) {
-    // TODO: separate Quiet move logic from Capture logic
-    return {};
-}
-
 unsigned long long perft(Board& b, int depth, bool verbose) {
     if (depth == 0) {
         return 1ULL;

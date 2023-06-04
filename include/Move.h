@@ -54,4 +54,7 @@ protected:
     unsigned short move;
 };
 
+#define NULLMV Move(0, 0)
+
+
 #endif // MOVE_H_

@@ -9,6 +9,13 @@ Board::Board() {
   this->initKeys();
   this->readFEN(startFEN);
   this->posKey = generatePosKey();
+  init_PVtable(&PVtable);
+}
+
+Board::~Board() {
+  if (this->PVtable.pvtable != nullptr) {
+      delete[] PVtable.pvtable;
+  }
 }
 
 std::unordered_map<piece, char> pieceToChar = {
@@ -374,7 +381,7 @@ bool Board::makeMove(Move move) {
   castlePerm &= castlePermDelta[from];
   castlePerm &= castlePermDelta[to];
 
-  boardHistory.push(undo);
+  boardHistory.push_back(undo);
 
   // TODO: Handle fifty move rule
 
@@ -425,8 +432,8 @@ void Board::undoMove(Move move) {
 
 
   if (boardHistory.size() < 1) return;
-  undo_t last = boardHistory.top();
-  boardHistory.pop();
+  undo_t last = boardHistory.back();
+  boardHistory.pop_back();
 
   int op = OPPONENT(turn);
   turn = op;
@@ -489,7 +496,7 @@ void Board::undoMove(Move move) {
 
 void Board::undoLast() {
   if (boardHistory.size() < 1) return;
-  undo_t last = boardHistory.top();
+  undo_t last = boardHistory.back();
   this->undoMove(last.move);
 }
 

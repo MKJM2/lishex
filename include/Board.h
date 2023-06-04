@@ -25,6 +25,8 @@ extern std::string startFEN;
 extern std::unordered_map<piece, char> pieceToChar;
 extern std::unordered_map<char, piece> charToPiece;
 
+class Board;
+
 typedef struct {
         // Last move
         Move move;
@@ -42,9 +44,35 @@ typedef struct {
         uint ply;
 } undo_t;
 
+
+typedef struct {
+    // Move in the principal variation
+    Move move;
+    // The zobrist hash key that led to the above move
+    u64 posKey;
+} pventry_t;
+
+typedef struct {
+    // Number of moves stored
+    int no_entries;
+    // Pointer to an element
+    pventry_t *pvtable = nullptr;
+} pvtable_t;
+
+// Detect whether the current board state has been seen before on the board stack
+bool isRepetition(Board& b);
+
+// Searches the position defined by Board b
+void search(Board& b);
+
+// Initialize the pv table
+extern void init_PVtable(pvtable_t *table);
+
+
 class Board {
     public:
         Board ();
+        ~Board ();
         piece board[ROWS * COLS] = {};
         void printFEN();
         void printAttacked();
@@ -72,9 +100,11 @@ class Board {
         uint fiftyMoveCounter = 0;
         void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
         u64 generatePosKey();
-        std::stack<undo_t> boardHistory;
+        std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
         bool inCheck(const int color);
+        pvtable_t PVtable;
+        std::vector<Move> pv; // stores the principal variation extracted from PVtable
 };
 
 #endif // BOARD_H_

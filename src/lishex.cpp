@@ -1,3 +1,13 @@
+/*
+**
+    /\ \       __/\  _`\ /\ \/\ \         /\ \ /\ \
+    \ \ \     /\_\ \,\L\_\ \ \_\ \     __ \ `\`\/'/'
+     \ \ \  __\/\ \/_\__ \\ \  _  \  /'__`\`\/ > <
+      \ \ \L\ \\ \ \/\ \L\ \ \ \ \ \/\  __/   \/'/\`\
+       \ \____/ \ \_\ `\____\ \_\ \_\ \____\  /\_\\ \_\
+        \/___/   \/_/\/_____/\/_/\/_/\/____/  \/_/ \/_/;
+** 
+*/
 #include <iostream>
 #include <chrono>
 #include <stack>
@@ -67,7 +77,7 @@ int main() {
             for (size_t i = 0; i < movesStr.size(); i++) {
                 if (movesStr[i] == moveString) {
                     gameboard.makeMove(moves[i]);
-                    //gameboard.print(true); // verbose = true
+                    gameboard.print(true);
                 }
             }
         } else if (command == "perft") {
