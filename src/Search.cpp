@@ -1,7 +1,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 
-#define MATE INT32_MAX;
+#define MATE 69000;
 
 // 10 MiB PV table size
 static const int PV_SIZE = 0xA00000;
@@ -36,7 +36,6 @@ static bool isRepetition(Board& b) {
 }
 
 void storePvMove(const Board& b, const Move move) {
-
     // we use the posKey as a hash into our table!
     int key = b.posKey % b.PVtable.no_entries;
     b.PVtable.pvtable[key].move = move;
@@ -48,7 +47,7 @@ Move checkPvTable(Board& b) {
     if (b.PVtable.pvtable[key].posKey == b.posKey) {
         return b.PVtable.pvtable[key].move;
     }
-    return Move(0, 0); // Null (zero) move
+    return NULLMV;
 }
 
 bool moveExists(Board& b, Move m) {
@@ -72,6 +71,7 @@ int getPV(Board& b, const int depth) {
     Move move = checkPvTable(b);
     int currDepth = 0;
 
+    b.pv.clear();
     while (move != NULLMV && currDepth < depth) {
         if (moveExists(b, move)) {
             b.makeMove(move);
@@ -204,16 +204,24 @@ int evaluate(Board& b) {
                     }
                     break;
                 }
-                default:
+                default: {
                     break;
+                }
             }
             score += delta;
+        }
     }
-    return score;
+    return (b.turn == Piece::White) ? score : -score;
 }
 
-static void clearForSearch(searchinfo_t *info) {
-    memset(info, 0, sizeof(searchinfo_t));
+void clearForSearch(Board& b, searchinfo_t *info) {
+    // TODO: Better way to do this?
+    b.ply = 0;
+
+    info->fh = 0;
+    info->fhf = 0;
+	info->stopped = 0;
+	info->nodes = 0;
 }
 
 static int quiescenceSearch(Board& b, searchinfo_t, int alpha, int beta) {
@@ -225,21 +233,24 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
     info->nodes++;
 
-    if (depth == 0) {
+    if (depth <= 0) {
         return evaluate(b);
     }
 
     // Check if position is a draw
-    if (isRepetition(b) || b.fiftyMoveCounter >= 100) {
+    // TODO: Handle the fifyMoveCounter here: || b.fiftyMoveCounter >= 100
+    if (isRepetition(b)) {
+        printf("Repetition reached!\n");
         return 0;
     }
 
     // Generate pseudolegal moves
     std::vector<Move> moves = generateMoves(b);
-    int moveNum = 0, legal = 0;
+    size_t moveNum = 0;
+    int legal = 0;
     int oldAlpha = alpha;
     Move bestMv = NULLMV;
-    int score = -INT32_MAX;
+    int score = INT32_MIN;
 
     for (; moveNum < moves.size(); ++moveNum) {
         if (!b.makeMove(moves[moveNum])) continue;
@@ -249,6 +260,11 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
         if (score > alpha) {
             if (score >= beta) {
+                /* Beta cutoff */
+                if (legal == 1) {
+                    info->fhf++;
+                }
+                info->fh++;
                 return beta;
             }
             alpha = score;
@@ -275,14 +291,14 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 // Searches the position defined by Board b
 void search(Board& b, searchinfo_t *info) {
     Move bestMv = NULLMV;
-    int bestScore = -INT32_MAX; // - Infinity
+    int bestScore = INT32_MIN; // - Infinity
     int currDepth = 0;
     int pvMoves = 0;
     int pvNum = 0;
-    clearForSearch(info);
+    clearForSearch(b, info);
 
     // Iterative Deepening
-    for (currDepth = 0; currDepth < info->depth; ++currDepth) {
+    for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
         bestScore = alphaBeta(b, info, -INT32_MAX, +INT32_MAX, currDepth, true);
         pvMoves = getPV(b, currDepth);
         bestMv = b.pv[0];
@@ -296,6 +312,7 @@ void search(Board& b, searchinfo_t *info) {
             printf(" %s", b.pv[pvNum].toString().c_str());
         }
         printf("\n");
+        printf("Ordering:%.2f\n", (info->fhf/info->fh));
     }
 
 }

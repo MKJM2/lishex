@@ -55,9 +55,13 @@ int main() {
             // Extract and handle the search parameters (time, depth, etc.)
 
             // search
+            searchinfo_t info[1];
+            //std::string testFEN3 = "2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - - 0 1";
+            //gameboard.readFEN(testFEN3);
+            info->depth = 4;
+            search(gameboard, info);
 
-            // the best move:
-            std::cout << "bestmove " << "= ?" << std::endl;
+
         } else if (command == "stop") {
             // Ignore the stop command if the engine is not calculating
             continue;

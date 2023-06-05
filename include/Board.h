@@ -71,10 +71,15 @@ typedef struct {
     bool infinite;
     bool quit;
     bool stopped;
+
+    float fh;  // Fail-high
+    float fhf; // Fail-high first
 } searchinfo_t;
 
+void clearForSearch(Board& b, searchinfo_t *info);
+
 // Searches the position defined by Board b
-void search(Board& b);
+void search(Board& b, searchinfo_t *info);
 
 // Initialize the pv table
 extern void init_PVtable(pvtable_t *table);
