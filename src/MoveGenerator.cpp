@@ -167,7 +167,6 @@ std::vector<Move> generateMoves(Board& b) {
                     }
                     break;
                 }
-                // checks?
                 case King: {
                     for (const square_t& dir : kingDest) {
                         square_t to = from + dir;

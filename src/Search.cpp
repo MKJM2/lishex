@@ -93,10 +93,123 @@ int getPV(Board& b, const int depth) {
 
 /* Evaluation */
 
+// Piece-square tables
+
+const int PawnTable[64] = {
+     0,   0,   0,   0,   0,   0,   0,   0,
+    10,  10,   0, -10, -10,   0,  10,  10,
+     5,   0,   0,   5,   5,   0,   0,   5,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     5,   5,   5,  10,  10,   5,   5,   5,
+    10,  10,  10,  20,  20,  10,  10,  10,
+    20,  20,  20,  30,  30,  20,  20,  20,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+const int KnightTable[64] = {
+     0, -10,   0,   0,   0,   0, -10,   0,
+     0,   0,   0,   5,   5,   0,   0,   0,
+     0,   0,  10,  10,  10,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   5,   0,
+     5,  10,  15,  20,  20,  15,  10,   5,
+     5,  10,  10,  20,  20,  10,  10,   5,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+const int BishopTable[64] = {
+     0,   0, -10,   0,   0, -10,   0,   0,
+     0,   0,   0,  10,  10,   0,   0,   0,
+     0,   0,  10,  15,  15,  10,   0,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,   0,  10,  15,  15,  10,   0,   0,
+     0,   0,   0,  10,  10,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+const int RookTable[64] = {
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+    25,  25,  25,  25,  25,  25,  25,  25,
+     0,   0,   5,  10,  10,   5,   0,   0
+};
+
+// Table for mirroring the piece square table
+const int Mirror64[64] = {
+    56, 57, 58, 59, 60, 61, 62, 63,
+    48, 49, 50, 51, 52, 53, 54, 55,
+    40, 41, 42, 43, 44, 45, 46, 47,
+    32, 33, 34, 35, 36, 37, 38, 39,
+    24, 25, 26, 27, 28, 29, 30, 31,
+    16, 17, 18, 19, 20, 21, 22, 23,
+    8,  9,  10, 11, 12, 13, 14, 15,
+    0,  1,  2,  3,  4,  5,  6,  7
+};
+
 // Evaluates the position from the side's POV
 int evaluate(Board& b) {
-    // TODO:
-    return 0;
+    using namespace Piece;
+    //          White           Black
+    int score = b.material[1] - b.material[0];
+    int delta = 0;
+    piece* board = b.board;
+    for (square_t s = A1; s <= H8; ++s) {
+        piece p = board[s];
+        if (p != None) {
+
+            switch (PieceType(p)) {
+                case Pawn: {
+                    if (IsColour(p, White)) {
+                        delta = PawnTable[s];
+                    } else {
+                        delta = -PawnTable[Mirror64[s]];
+                    }
+                    break;
+                }
+                case Knight: {
+                    if (IsColour(p, White)) {
+                        delta = KnightTable[s];
+                    } else {
+                        delta = -KnightTable[Mirror64[s]];
+                    }
+                    break;
+                }
+                case Rook: {
+                    if (IsColour(p, White)) {
+                        delta = RookTable[s];
+                    } else {
+                        delta = -RookTable[Mirror64[s]];
+                    }
+                    break;
+                }
+                case Bishop: {
+                    if (IsColour(p, White)) {
+                        delta = BishopTable[s];
+                    } else {
+                        delta = -BishopTable[Mirror64[s]];
+                    }
+                    break;
+                }
+                // TODO: Tune this
+                case Queen: {
+                    if (IsColour(p, White)) {
+                        delta = (BishopTable[s] + RookTable[s]) / 2;
+                    } else {
+                        delta = -(BishopTable[Mirror64[s]] + RookTable[Mirror64[s]]) / 2;
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            score += delta;
+    }
+    return score;
 }
 
 static void clearForSearch(searchinfo_t *info) {
