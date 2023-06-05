@@ -58,7 +58,7 @@ int main() {
             searchinfo_t info[1];
             //std::string testFEN3 = "2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - - 0 1";
             //gameboard.readFEN(testFEN3);
-            info->depth = 4;
+            info->depth = 6;
             search(gameboard, info);
 
 

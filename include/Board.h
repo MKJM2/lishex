@@ -23,6 +23,7 @@ typedef unsigned long long u64;
 
 extern std::string startFEN;
 extern std::unordered_map<piece, char> pieceToChar;
+extern std::unordered_map<piece, std::string> pieceToUnicode;
 extern std::unordered_map<char, piece> charToPiece;
 
 class Board;

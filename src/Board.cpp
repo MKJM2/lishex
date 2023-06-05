@@ -38,7 +38,7 @@ std::unordered_map<char, piece> charToPiece = {
 };
 
 // Unicode chars used: ♘♗♖♕♔♞♝♜♛♚
-std::unordered_map<int, std::string> pieceToUnicode = {
+std::unordered_map<piece, std::string> pieceToUnicode = {
     {Piece::None,   " "},
     {Piece::Pawn,   u8"\u2659"},  // ♙
     {Piece::Knight, u8"\u2658"},  // ♘
@@ -417,6 +417,9 @@ bool Board::makeMove(Move move) {
   fiftyMoveCounter++;
   this->posKey = generatePosKey();
 
+  // This should be more incremental (to be fast) but works for now
+  this->updateMaterial();
+
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
   if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
     undoMove(move);
@@ -492,6 +495,9 @@ void Board::undoMove(Move move) {
   ply = last.ply;
   fiftyMoveCounter--;
   this->posKey = generatePosKey();
+
+  // This should be more incremental but works for now
+  this->updateMaterial();
 }
 
 void Board::undoLast() {
