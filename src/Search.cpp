@@ -1,6 +1,8 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 
+#define MATE INT32_MAX;
+
 // 10 MiB PV table size
 static const int PV_SIZE = 0xA00000;
 
@@ -91,8 +93,6 @@ int getPV(Board& b, const int depth) {
 
 /* Evaluation */
 
-const int
-
 // Evaluates the position from the side's POV
 int evaluate(Board& b) {
     // TODO:
@@ -109,12 +109,80 @@ static int quiescenceSearch(Board& b, searchinfo_t, int alpha, int beta) {
 }
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
-    // TODO: Implement alpha beta
-    return 0;
+
+    info->nodes++;
+
+    if (depth == 0) {
+        return evaluate(b);
+    }
+
+    // Check if position is a draw
+    if (isRepetition(b) || b.fiftyMoveCounter >= 100) {
+        return 0;
+    }
+
+    // Generate pseudolegal moves
+    std::vector<Move> moves = generateMoves(b);
+    int moveNum = 0, legal = 0;
+    int oldAlpha = alpha;
+    Move bestMv = NULLMV;
+    int score = -INT32_MAX;
+
+    for (; moveNum < moves.size(); ++moveNum) {
+        if (!b.makeMove(moves[moveNum])) continue;
+        legal++;
+        score = -alphaBeta(b, info, -beta, -alpha, depth - 1, true);
+        b.undoMove(moves[moveNum]);
+
+        if (score > alpha) {
+            if (score >= beta) {
+                return beta;
+            }
+            alpha = score;
+            bestMv = moves[moveNum];
+        }
+    }
+
+    // Detect mate / stalemate
+    if (!legal) {
+        if (b.SquareAttacked(b.kingSquare[b.turn == Piece::White], OPPONENT(b.turn))) {
+            return -MATE + b.ply;
+        } else {
+            return 0; // stalemate
+        }
+    }
+
+    if (alpha != oldAlpha) {
+        storePvMove(b, bestMv);
+    }
+
+    return alpha;
 }
 
 // Searches the position defined by Board b
 void search(Board& b, searchinfo_t *info) {
-    // TODO: iterative deepening negamax
-    // TODO: search init
+    Move bestMv = NULLMV;
+    int bestScore = -INT32_MAX; // - Infinity
+    int currDepth = 0;
+    int pvMoves = 0;
+    int pvNum = 0;
+    clearForSearch(info);
+
+    // Iterative Deepening
+    for (currDepth = 0; currDepth < info->depth; ++currDepth) {
+        bestScore = alphaBeta(b, info, -INT32_MAX, +INT32_MAX, currDepth, true);
+        pvMoves = getPV(b, currDepth);
+        bestMv = b.pv[0];
+        printf("Depth:%d score:%d move:%s nodes:%lld ",
+                currDepth, bestScore, bestMv.toString().c_str(), info->nodes);
+
+        // TODO:
+        //pvMoves = getPV(b, currDepth);
+        printf("pv");
+        for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
+            printf(" %s", b.pv[pvNum].toString().c_str());
+        }
+        printf("\n");
+    }
+
 }
