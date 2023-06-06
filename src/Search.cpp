@@ -12,7 +12,7 @@ static void checkUp() {
 }
 
 void init_PVtable(pvtable_t *table) {
-    table->no_entries = PV_SIZE / sizeof(pventry_t) - 1;
+    table->no_entries = PV_SIZE / sizeof(pventry_t);
     if (table->pvtable != nullptr) {
         delete[] table->pvtable;
     }
@@ -35,14 +35,14 @@ static bool isRepetition(Board& b) {
     return false;
 }
 
-void storePvMove(const Board& b, const move_t move) {
+void storePvMove(Board& b, const move_t move) {
     // we use the posKey as a hash into our table!
     int key = b.posKey % b.PVtable.no_entries;
     b.PVtable.pvtable[key].move = move;
     b.PVtable.pvtable[key].posKey = b.posKey;
 }
 
-move_t checkPvTable(Board& b) {
+move_t checkPvTable(const Board& b) {
     int key = b.posKey % b.PVtable.no_entries;
     if (b.PVtable.pvtable[key].posKey == b.posKey) {
         return b.PVtable.pvtable[key].move;
@@ -59,7 +59,13 @@ bool moveExists(Board& b, move_t m) {
         }
         b.undoMove(move);
         // Check if move is the move m we're looking for
-        if (move == m) {
+        /*
+        Warning: moves from the generator might be scored
+        differently than a move m that was e.g.
+        chosen for the primary variation, hence
+        a simple == comparison might fail
+        */
+        if (movecmp(move, m)) {
             return true;
         }
     }
@@ -152,9 +158,9 @@ const int Mirror64[64] = {
 };
 
 /* Pick the highest scoring move according to heuristics */
-static void pickNextMove(int moveIdx, std::vector<move_t>& moves) {
+static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
     // swaps the move at moveIdx with the best move in moves
-    int idx = moveIdx;
+    size_t idx = moveIdx;
     int bestScore = 0;
     int bestIdx = moveIdx;
 
@@ -238,21 +244,20 @@ int evaluate(Board& b) {
 
 
 void clearForSearch(Board& b, searchinfo_t *info) {
-    b.ply = 0;
-
-    int i = 0, j = 0;
+    int i, j;
     // Clear history heuristic table
-    for (; i < 24; ++i) {
-        for (; j < 64; ++j) {
+    for (i = 0; i < 24; ++i) {
+        for (j = 0; j < 64; ++j) {
             b.historyH[i][j] = 0;
         }
     }
 
     // Clear killer heuristic table
-    i = 0;
-    for (; i < 64; ++i) {
+    for (i = 0; i < 64; ++i) {
         b.killersH[0][i] = b.killersH[1][i] = 0;
     }
+
+    b.ply = 0;
 
     info->fh = 0;
     info->fhf = 0;
@@ -260,9 +265,50 @@ void clearForSearch(Board& b, searchinfo_t *info) {
 	info->nodes = 0;
 }
 
-static int quiescenceSearch(Board& b, searchinfo_t, int alpha, int beta) {
-    // TODO: Implement
-    return 0;
+static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
+    info->nodes++;
+
+    // || b.fiftyMove >= 100
+	if(isRepetition(b)) {
+		return 0;
+	}
+    int score = evaluate(b);
+
+	if(score >= beta) {
+		return beta;
+	}
+
+	if(score > alpha) {
+		alpha = score;
+	}
+
+    std::vector<move_t> captures = generateCaptures(b);
+    size_t moveIdx;
+    int legal = 0;
+	score = INT32_MIN;
+
+	for (moveIdx = 0; moveIdx < captures.size(); ++moveIdx) {
+		pickNextMove(moveIdx, captures);
+        if (!b.makeMove(captures[moveIdx]))  {
+            continue;
+        }
+        legal++;
+        // update score
+        score = -quiescenceSearch(b, info, -beta, -alpha);
+        b.undoMove(captures[moveIdx]);
+
+		if (score > alpha) {
+			if (score >= beta) {
+				if (legal == 1) {
+					info->fhf++;
+				}
+				info->fh++;
+				return beta;
+			}
+			alpha = score;
+		}
+    }
+	return alpha;
 }
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
@@ -270,8 +316,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     info->nodes++;
 
     if (depth <= 0) {
-        int a = evaluate(b);
-        return a;
+        return quiescenceSearch(b,info, alpha, beta);
     }
 
     // Check if position is a draw
@@ -302,7 +347,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     }
 
     for (moveIdx = 0; moveIdx < moves.size(); ++moveIdx) {
-        // pick best scoring move (according to heuristic)
+        // pick best scoring move (according to heuristics)
         pickNextMove(moveIdx, moves);
 
         if (!b.makeMove(moves[moveIdx])) continue;
@@ -354,7 +399,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 // Searches the position defined by Board b
 void search(Board& b, searchinfo_t *info) {
     move_t bestMv = NULLMV;
-    int bestScore = INT32_MIN; // - Infinity
+    int bestScore = -INT32_MAX; // - Infinity
     int currDepth = 0;
     int pvMoves = 0;
     int pvNum = 0;
@@ -362,15 +407,15 @@ void search(Board& b, searchinfo_t *info) {
 
     // Iterative Deepening
     for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
-        bestScore = alphaBeta(b, info, -INT32_MAX, +INT32_MAX, currDepth, true);
+        bestScore = alphaBeta(b, info, -INT32_MAX, INT32_MAX, currDepth, true);
         pvMoves = getPV(b, currDepth);
         bestMv = b.pv[0];
         printf("Depth:%d score:%d move:%s nodes:%lld ",
                 currDepth, bestScore, toString(bestMv).c_str(), info->nodes);
 
         // TODO:
-        pvMoves = getPV(b, currDepth);
-        printf("pv");
+        //pvMoves = getPV(b, currDepth);
+        printf("pv (%d moves)", pvMoves);
         for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
             printf(" %s", toString(b.pv[pvNum]).c_str());
         }

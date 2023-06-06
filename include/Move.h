@@ -56,6 +56,9 @@ typedef uint32_t move_t;
 
 #define isPromotion(move) (((move) >> 12) & 0b1000)
 
+/* Compares two moves ignoring their assigned scores */
+#define movecmp(m1, m2) (((m1) << 16) == ((m2) << 16))
+
 std::string toString(move_t m);
 move_t fromString(std::string s);
 

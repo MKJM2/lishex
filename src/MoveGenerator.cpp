@@ -56,13 +56,12 @@ void initMVVLVA() {
  */
 
 inline static void addQuiet(const move_t m, std::vector<move_t>& moves, const Board& b) {
-    if (m == b.killersH[0][b.ply]) {
+    if (movecmp(m, b.killersH[0][b.ply])) {
         moves.emplace_back(setScore(m, 45000));
-    } else if (m == b.killersH[1][b.ply]) {
+    } else if (movecmp(m, b.killersH[1][b.ply])) {
         moves.emplace_back(setScore(m, 40000));
     } else {
-        //moves.emplace_back(setScore(m, b.historyH[b.board[getFrom(m)]][getTo(m)]));
-        moves.emplace_back(m);
+        moves.emplace_back(setScore(m, b.historyH[b.board[getFrom(m)]][getTo(m)]));
     }
 }
 
@@ -139,7 +138,8 @@ std::vector<move_t> generateMoves(Board& b) {
                     int startingRank = 1; // (me == White) ? 1 : 6; // zero-indexed
                     // Consider the opposite starting rank
                     if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
-                        moves.emplace_back(Move(from, to + dir, DoublePawnPush, 0));
+                        //moves.emplace_back(Move(from, to + dir, DoublePawnPush, 0));
+                        addQuiet(Move(from, to + dir, DoublePawnPush, 0), moves, b);
                     }
                     // Check if pawn can capture diagonally to the west
                     square_t captureL = from + dir - 1;
@@ -278,6 +278,121 @@ std::vector<move_t> generateMoves(Board& b) {
     }
     return moves;
 }
+
+/* For quiescence search */
+std::vector<move_t> generateCaptures(Board& b) {
+
+    piece* board = b.board; // array of pieces
+    int me = b.turn;
+    int opp = OPPONENT(b.turn);
+
+    std::vector<move_t> moves;
+    // add capture moves
+    for (square_t from = A1; from <= H8; ++from) {
+        piece p = board[from]; // TODO, clean the code up
+        if (p != None && IsColour(p, me)) {
+            switch (PieceType(p)) {
+                case Pawn: {
+                    // Generate pawn captures
+                    int dir = pawnDest[me == White];
+                    // Check if pawn can capture diagonally to the west
+                    square_t captureL = from + dir - 1;
+                    if (IsOK(captureL) && distance(captureL, from) <= 2 && board[captureL] != None && IsColour(board[captureL], opp)) {
+                        addPawnCapture(from, captureL, moves, b);
+                    }
+                    // Check if pawn can capture diagonally to the east
+                    square_t captureR = from + dir + 1;
+                    if (IsOK(captureR) && distance(captureR, from) <= 2 && board[captureR] != None && IsColour(board[captureR], opp)) {
+                        addPawnCapture(from, captureR, moves, b);
+                    }
+                    // Check if can perform en passant
+                    // std::cout << "google en passant" << std::endl;
+                    if (IsOK(captureL) && distance(captureL, from) <= 2 && captureL == b.epSquare) {
+                        addEnPassant(from, captureL, moves);
+                    }
+                    if (IsOK(captureR) && distance(captureR, from) <= 2 && captureR == b.epSquare) {
+                        addEnPassant(from, captureR, moves);
+                    }
+                    break;
+                }
+                case Knight: {
+                    // Generate knight moves (non-capture)
+                    // List all possible destination squares and check if they are valid
+                    for (const square_t& dir : knightDest) {
+                        square_t to = from + dir;
+                        if (IsOK(to) && distance(to, from) == 2) {
+                            if (IsColour(board[to], opp)) {
+                                addCapture(Move(from, to, 0, 0), moves, b);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case Rook: {
+                    for (const square_t& dir : rookDest) {
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    addCapture(Move(from, to, 0, 0), moves, b);
+                                }
+                                break;
+                            }
+                            to += dir;
+                        }
+                    }
+                    break;
+                }
+                case Bishop: {
+                    for (const square_t& dir : bishopDest) {
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    addCapture(Move(from, to, 0, 0), moves, b);
+                                }
+                                break;
+                            }
+                            to += dir;
+                        }
+                    }
+                    break;
+                }
+                case Queen: {
+                    for (const square_t& dir : queenDest) {
+                        square_t to = from + dir;
+                        while (IsOK(to) && distance(to, to - dir) <= 2) {
+                            if (board[to] != None) {
+                                if (IsColour(board[to], opp)) {
+                                    addCapture(Move(from, to, 0, 0), moves, b);
+                                }
+                                break;
+                            }
+                            to += dir;
+                        }
+                    }
+                    break;
+                }
+                case King: {
+                    for (const square_t& dir : kingDest) {
+                        square_t to = from + dir;
+                        if (IsOK(to) && distance(to, from) < 2) {
+                            if (board[to] != None) {
+                                    if (IsColour(board[to], opp)) {
+                                        addCapture(Move(from, to, 0, 0), moves, b);
+                                    }
+                                    continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return moves;
+}
+
 
 unsigned long long perft(Board& b, int depth, bool verbose) {
     if (depth == 0) {

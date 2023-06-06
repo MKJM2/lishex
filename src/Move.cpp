@@ -13,6 +13,7 @@
 std::string toString(move_t m) {
     square_t from = getFrom(m);
     square_t to = getTo(m);
+    int flags = getFlags(m);
 
     std::string s;
     s.push_back('a' + (from & 0b111));          // from File
@@ -21,7 +22,6 @@ std::string toString(move_t m) {
     s.push_back('1' + (char) SquareRank(to));   // to Rank
 
     // Handle promotions
-    int flags = getFlags(m);
     if (isPromotion(m)) {
         // clear the capture bit
         switch (flags & ~Capture) {

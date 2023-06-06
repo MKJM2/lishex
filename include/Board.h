@@ -89,7 +89,7 @@ extern void init_PVtable(pvtable_t *table);
 // Initialize the values for the MVVLVA heuristic
 extern void initMVVLVA();
 
-extern move_t checkPvTable(Board& b);
+extern move_t checkPvTable(const Board& b);
 
 extern bool moveExists(Board& b, move_t m);
 
@@ -129,7 +129,7 @@ class Board {
         std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
         bool inCheck(const int color);
-        pvtable_t PVtable;
+        pvtable_t PVtable; // hash table implementation (might switch to triangular)
         std::vector<move_t> pv; // stores the principal variation extracted from PVtable
         // Table for the history heuristic
         // Indexed by piece-type and ply depth
