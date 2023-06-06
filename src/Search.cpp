@@ -75,7 +75,7 @@ int getPV(Board& b, const int depth) {
     while (move != NULLMV && currDepth < depth) {
         if (moveExists(b, move)) {
             b.makeMove(move);
-            b.pv.push_back(move);
+            b.pv.emplace_back(move);
             currDepth++;
         } else {
             break;
@@ -140,18 +140,6 @@ const int RookTable[64] = {
 };
 
 // Table for mirroring the piece square table
-/*
-const int Mirror64[64] = {
-    56, 57, 58, 59, 60, 61, 62, 63,
-    48, 49, 50, 51, 52, 53, 54, 55,
-    40, 41, 42, 43, 44, 45, 46, 47,
-    32, 33, 34, 35, 36, 37, 38, 39,
-    24, 25, 26, 27, 28, 29, 30, 31,
-    16, 17, 18, 19, 20, 21, 22, 23,
-    8,  9,  10, 11, 12, 13, 14, 15,
-    0,  1,  2,  3,  4,  5,  6,  7
-};
-*/
 const int Mirror64[64] = {
     63, 62, 61, 60, 59, 58, 57, 56,
     55, 54, 53, 52, 51, 50, 49, 48,
@@ -162,6 +150,27 @@ const int Mirror64[64] = {
     15, 14, 13, 12, 11, 10, 9,  8,
     7,  6,  5,  4,  3,  2,  1,  0
 };
+
+/* Pick the highest scoring move according to heuristics */
+static void pickNextMove(int moveIdx, std::vector<move_t>& moves) {
+    // swaps the move at moveIdx with the best move in moves
+    int idx = moveIdx;
+    int bestScore = 0;
+    int bestIdx = moveIdx;
+
+    for (; idx < moves.size(); ++idx) {
+        int score = getScore(moves[idx]);
+        if (score > bestScore) {
+            bestScore = score;
+            bestIdx = idx;
+        }
+    }
+    // Swap the two moves
+    move_t tmp;
+    tmp = moves[moveIdx];
+    moves[moveIdx] = moves[bestIdx];
+    moves[bestIdx] = tmp;
+}
 
 // Evaluates the position from the side's POV
 int evaluate(Board& b) {
@@ -227,40 +236,6 @@ int evaluate(Board& b) {
 }
 
 
-/* MVV-LVA heuristic */
-
-// score of a victim, by piece type
-const int VictimScore[8] = {
-      0, // None
-      0, // King (never actually captured)
-    100, // Pawn
-    200, // Knight
-      0, // -
-    300, // Bishop
-    400, // Rook
-    500  // Queen
-};
-
-static int MVVLVAScores[8][8];
-
-void initMVVLVA() {
-  using namespace Piece;
-  int attacker;
-  int victim;
-  for (attacker = None; attacker <= Queen; attacker++) {
-    for (victim = None; victim <= Queen; victim++) {
-        MVVLVAScores[victim][attacker] =
-            VictimScore[victim] + 6 - (VictimScore[attacker] / 100);
-    }
-  }
-
-  // debug
-  for (victim = None; victim <= Queen; victim++) {
-    for (attacker = None; attacker <= Queen; attacker++) {
-        printf("%s x %s = %d\n", pieceToUnicode[attacker].c_str(), pieceToUnicode[victim].c_str(), MVVLVAScores[victim][attacker]);
-    }
-  }
-}
 
 void clearForSearch(Board& b, searchinfo_t *info) {
     // TODO: Better way to do this?
@@ -282,7 +257,8 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     info->nodes++;
 
     if (depth <= 0) {
-        return evaluate(b);
+        int a = evaluate(b);
+        return a;
     }
 
     // Check if position is a draw
@@ -293,17 +269,20 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
     // Generate pseudolegal moves
     std::vector<move_t> moves = generateMoves(b);
-    size_t moveNum = 0;
+    size_t moveIdx = 0;
     int legal = 0;
     int oldAlpha = alpha;
     move_t bestMv = NULLMV;
     int score = INT32_MIN;
 
-    for (; moveNum < moves.size(); ++moveNum) {
-        if (!b.makeMove(moves[moveNum])) continue;
+    for (; moveIdx < moves.size(); ++moveIdx) {
+        // pick best scoring move (according to heuristic)
+        pickNextMove(moveIdx, moves);
+
+        if (!b.makeMove(moves[moveIdx])) continue;
         legal++;
         score = -alphaBeta(b, info, -beta, -alpha, depth - 1, true);
-        b.undoMove(moves[moveNum]);
+        b.undoMove(moves[moveIdx]);
 
         if (score > alpha) {
             if (score >= beta) {
@@ -315,7 +294,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                 return beta;
             }
             alpha = score;
-            bestMv = moves[moveNum];
+            bestMv = moves[moveIdx];
         }
     }
 

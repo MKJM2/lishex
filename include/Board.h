@@ -10,6 +10,7 @@
 #include <random>
 #include <bitset>
 #include <cassert>
+#include <cstdint>
 #include "Piece.h"
 #include "Move.h"
 #include "Square.h"
@@ -84,6 +85,9 @@ void search(Board& b, searchinfo_t *info);
 
 // Initialize the pv table
 extern void init_PVtable(pvtable_t *table);
+
+// Initialize the values for the MVVLVA heuristic
+extern void initMVVLVA();
 
 extern move_t checkPvTable(Board& b);
 

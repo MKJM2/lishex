@@ -49,7 +49,7 @@ move_t fromString(std::string s) {
             toRank >= 0 && toRank <= 7 && toFile >= 0 && toFile <= 7) {
             square_t from = fromRank * 8 + fromFile;
             square_t to = toRank * 8 + toFile;
-            return Move(from, to, 0);
+            return Move(from, to, 0, 0);
         } else {
             // Invalid square coordinates, set move to zero
             std::cerr << "Invalid move specified!\n";

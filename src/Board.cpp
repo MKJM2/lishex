@@ -10,6 +10,7 @@ Board::Board() {
   this->readFEN(startFEN);
   this->posKey = generatePosKey();
   init_PVtable(&PVtable);
+  initMVVLVA();
 }
 
 Board::~Board() {

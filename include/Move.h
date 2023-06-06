@@ -3,19 +3,18 @@
 
 #include <string>
 #include "Square.h"
+#include <cstdint>
 
 /* Inspired by
-** https://www.chessprogramming.org/Encoding_Moves
+ * https://www.chessprogramming.org/Encoding_Moves
+ * Each move is represented as a 32 bit integer:
+ *  4 bits for flags
+ *  6 bits for the source square
+ *  6 bits for the destination square
+ * 16 bits for the score (move ordering)
 
- 0b  0000  000000  000000
-     flag  from    to
-*/
-/* Each move is represented as 16 bits:
- * 4 bits for flags
- * 6 bits for the source square
- * 6 bits for the destination square
- 0b  0000  000000  000000
-     flag  from    to
+   0b  0000000000000000 0000  000000  000000
+       score            flag  from    to
 */
 
 // Types of moves (flags)
@@ -32,16 +31,14 @@ enum {
     QueenPromo     = 0b1011
 };
 
-typedef unsigned short move_t;
-
-// Scored move
-typedef struct {
-    move_t m;
-    unsigned short score;
-} move_scored;
+typedef uint32_t move_t;
 
 // Constructor
-#define Move(from, to, flags) ((((flags) & 0xf) << 12) | (((from) & 0x3f) << 6) | ((to) & 0x3f))
+#define Move(from, to, flags, score) \
+       ((((score) & 0xffff) << 16) | \
+        (((flags) & 0xf)    << 12) | \
+        (((from) & 0x3f)    <<  6) | \
+        ((to) & 0x3f))
 
 #define NULLMV ((move_t) 0)
 
@@ -51,7 +48,11 @@ typedef struct {
 
 #define getFlags(move) (((move) >> 12) & 0xf)
 
-#define isCapture(move) (((move) >> 12) == (unsigned short) Capture || ((move) >> 12) == (unsigned short) EpCapture)
+#define getScore(move) (((move) >> 16) & 0xffff)
+
+#define setScore(move, score) (((score) & 0xffff) << 16 | move)
+
+#define isCapture(move) (((move) >> 12) == Capture || ((move) >> 12) == EpCapture)
 
 #define isPromotion(move) (((move) >> 12) & 0b1000)
 
