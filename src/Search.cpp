@@ -288,7 +288,20 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     move_t bestMv = NULLMV;
     int score = INT32_MIN;
 
-    for (; moveIdx < moves.size(); ++moveIdx) {
+    // Heuristic: start searching from pv moves
+    move_t pvMv = checkPvTable(b);
+
+    if (pvMv != NULLMV) {
+        for (; moveIdx < moves.size(); ++moveIdx) {
+            if (moves[moveIdx] == pvMv) {
+                // search this move first
+                moves[moveIdx] = setScore(moves[moveIdx], 60000);
+                break;
+            }
+        }
+    }
+
+    for (moveIdx = 0; moveIdx < moves.size(); ++moveIdx) {
         // pick best scoring move (according to heuristic)
         pickNextMove(moveIdx, moves);
 
@@ -356,7 +369,7 @@ void search(Board& b, searchinfo_t *info) {
                 currDepth, bestScore, toString(bestMv).c_str(), info->nodes);
 
         // TODO:
-        //pvMoves = getPV(b, currDepth);
+        pvMoves = getPV(b, currDepth);
         printf("pv");
         for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
             printf(" %s", toString(b.pv[pvNum]).c_str());
