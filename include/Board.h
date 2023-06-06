@@ -131,8 +131,12 @@ class Board {
         bool inCheck(const int color);
         pvtable_t PVtable;
         std::vector<move_t> pv; // stores the principal variation extracted from PVtable
-        int historyH[24][64]; // Tables for the history heuristic
-        int killersH[2][64]; // Tables for the killer heuristic (beta cutoffs)
+        // Table for the history heuristic
+        // Indexed by piece-type and ply depth
+        move_t historyH[24][64] = {};
+        // Table for the killer (beta cutoffs non-capturing) heuristic
+        // We store two killer moves, indexed by ply search depth
+        move_t killersH[2][64] = {};
 };
 
 #endif // BOARD_H_

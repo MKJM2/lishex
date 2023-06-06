@@ -47,40 +47,55 @@ void initMVVLVA() {
   }
 }
 
-inline static void addQuiet(const move_t m, std::vector<move_t>& moves) {
-    moves.emplace_back(setScore(m, 0));
+/* Heuristic values
+ *
+ * Capture  +50000
+ * Killer 1 +45000
+ * Killer 2 +40000
+ * History  +search depth
+ */
+
+inline static void addQuiet(const move_t m, std::vector<move_t>& moves, const Board& b) {
+    if (m == b.killersH[0][b.ply]) {
+        moves.emplace_back(setScore(m, 45000));
+    } else if (m == b.killersH[1][b.ply]) {
+        moves.emplace_back(setScore(m, 40000));
+    } else {
+        //moves.emplace_back(setScore(m, b.historyH[b.board[getFrom(m)]][getTo(m)]));
+        moves.emplace_back(m);
+    }
 }
 
 inline static void addCapture(const move_t m, std::vector<move_t>& moves, const Board& b) {
-    moves.emplace_back(setScore(m, MVVLVA[b.board[getTo(m)]][b.board[getFrom(m)]]));
+    moves.emplace_back(setScore(m, MVVLVA[b.board[getTo(m)]][b.board[getFrom(m)]] + 50000));
 }
 
 inline static void addEnPassant(const square_t from, const square_t to, std::vector<move_t>& moves) {
     // Here, MVVLVA[Pawn][Pawn] = 105, and since that's always the case for en passant
-    // we simply hardcode it
-    moves.emplace_back(Move(from, to, EpCapture, 105));
+    // we simply hardcode it (+50000 for Capture, see above)
+    moves.emplace_back(Move(from, to, EpCapture, 105 + 50000));
 }
 
 inline static void addPawnPush(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
     if (SquareRank(to, b.turn) == 7) {
-        addQuiet(Move(from, to, KnightPromo, 0), moves);
-        addQuiet(Move(from, to, BishopPromo, 0), moves);
-        addQuiet(Move(from, to, QueenPromo, 0),  moves);
-        addQuiet(Move(from, to, RookPromo, 0),   moves);
+        addQuiet(Move(from, to, KnightPromo, 0), moves, b);
+        addQuiet(Move(from, to, BishopPromo, 0), moves, b);
+        addQuiet(Move(from, to, QueenPromo, 0),  moves, b);
+        addQuiet(Move(from, to, RookPromo, 0),   moves, b);
     } else {
-        addQuiet(Move(from, to, Quiet, 0), moves);
+        addQuiet(Move(from, to, Quiet, 0), moves, b);
     }
 }
 
 inline static void addPawnCapture(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
     int score = MVVLVA[b.board[to]][b.board[from]];
     if (SquareRank(to, b.turn) == 7) {
-        moves.emplace_back(Move(from, to, KnightPromo | Capture, score));
-        moves.emplace_back(Move(from, to, BishopPromo | Capture, score));
-        moves.emplace_back(Move(from, to, QueenPromo  | Capture, score));
-        moves.emplace_back(Move(from, to, RookPromo   | Capture, score));
+        moves.emplace_back(Move(from, to, KnightPromo | Capture, score + 50000));
+        moves.emplace_back(Move(from, to, BishopPromo | Capture, score + 50000));
+        moves.emplace_back(Move(from, to, QueenPromo  | Capture, score + 50000));
+        moves.emplace_back(Move(from, to, RookPromo   | Capture, score + 50000));
     } else {
-        moves.emplace_back(Move(from, to, Capture, score));
+        moves.emplace_back(Move(from, to, Capture, score + 50000));
     }
 }
 
@@ -153,7 +168,7 @@ std::vector<move_t> generateMoves(Board& b) {
                         square_t to = from + dir;
                         if (IsOK(to) && distance(to, from) == 2) {
                             if (board[to] == None) {
-                                addQuiet(Move(from, to, 0, 0), moves);
+                                addQuiet(Move(from, to, 0, 0), moves, b);
                             }
                             if (IsColour(board[to], opp)) {
                                 addCapture(Move(from, to, 0, 0), moves, b);
@@ -172,7 +187,7 @@ std::vector<move_t> generateMoves(Board& b) {
                                 }
                                 break;
                             }
-                            addQuiet(Move(from, to, 0, 0), moves);
+                            addQuiet(Move(from, to, 0, 0), moves, b);
                             to += dir;
                         }
                     }
@@ -188,7 +203,7 @@ std::vector<move_t> generateMoves(Board& b) {
                                 }
                                 break;
                             }
-                            addQuiet(Move(from, to, 0, 0), moves);
+                            addQuiet(Move(from, to, 0, 0), moves, b);
                             to += dir;
                         }
                     }
@@ -204,7 +219,7 @@ std::vector<move_t> generateMoves(Board& b) {
                                 }
                                 break;
                             }
-                            addQuiet(Move(from, to, 0, 0), moves);
+                            addQuiet(Move(from, to, 0, 0), moves, b);
                             to += dir;
                         }
                     }
@@ -220,7 +235,7 @@ std::vector<move_t> generateMoves(Board& b) {
                                     }
                                     continue;
                             }
-                            addQuiet(Move(from, to, 0, 0), moves);
+                            addQuiet(Move(from, to, 0, 0), moves, b);
                         }
                     }
                     break;
@@ -234,14 +249,14 @@ std::vector<move_t> generateMoves(Board& b) {
         if (b.castlePerm & b.WKCastle) {
             if (board[F1] == None && board[G1] == None) {
                 if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(F1, Black)) {
-                    addQuiet(Move(E1, G1, KingCastle, 0), moves);
+                    addQuiet(Move(E1, G1, KingCastle, 0), moves, b);
                 }
             }
         }
         if (b.castlePerm & b.WQCastle) {
             if (board[D1] == None && board[C1] == None && board[B1] == None) {
                 if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(D1, Black)) {
-                    addQuiet(Move(E1, C1, QueenCastle, 0), moves);
+                    addQuiet(Move(E1, C1, QueenCastle, 0), moves, b);
                 }
             }
         }
@@ -249,14 +264,14 @@ std::vector<move_t> generateMoves(Board& b) {
         if (b.castlePerm & b.BKCastle) {
             if (board[F8] == None && board[G8] == None) {
                 if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(F8, White)) {
-                    addQuiet(Move(E8, G8, KingCastle, 0), moves);
+                    addQuiet(Move(E8, G8, KingCastle, 0), moves, b);
                 }
             }
         }
         if (b.castlePerm & b.BQCastle) {
             if (board[D8] == None && board[C8] == None && board[B8] == None) {
                 if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(D8, White)) {
-                    addQuiet(Move(E8, C8, QueenCastle, 0), moves);
+                    addQuiet(Move(E8, C8, QueenCastle, 0), moves, b);
                 }
             }
         }

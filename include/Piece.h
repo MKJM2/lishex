@@ -43,7 +43,7 @@ namespace Piece {
     inline static bool IsSlidingPiece (int piece) {
         return (piece & 0b100) != 0;
     }
-    /* -, K, P, N, -, B, R, Q */
-    const int value[8] = {0, 50000, 100, 325, 0, 350, 550, 1000};
+    /*                    -, K,     P,   N,   -, B,   R,   Q */
+    const int value[8] = {0, 50000, 100, 305, 0, 335, 565, 1000};
 };
 #endif // PIECE_H_

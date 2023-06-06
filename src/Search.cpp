@@ -238,8 +238,21 @@ int evaluate(Board& b) {
 
 
 void clearForSearch(Board& b, searchinfo_t *info) {
-    // TODO: Better way to do this?
     b.ply = 0;
+
+    int i = 0, j = 0;
+    // Clear history heuristic table
+    for (; i < 24; ++i) {
+        for (; j < 64; ++j) {
+            b.historyH[i][j] = 0;
+        }
+    }
+
+    // Clear killer heuristic table
+    i = 0;
+    for (; i < 64; ++i) {
+        b.killersH[0][i] = b.killersH[1][i] = 0;
+    }
 
     info->fh = 0;
     info->fhf = 0;
@@ -291,10 +304,21 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                     info->fhf++;
                 }
                 info->fh++;
+
+                // Killer moves (cause a beta cutoff but aren't capture)
+                if (!isCapture(moves[moveIdx])) {
+                    b.killersH[1][b.ply] = b.killersH[0][b.ply];
+                    b.killersH[0][b.ply] = moves[moveIdx];
+                }
                 return beta;
             }
             alpha = score;
             bestMv = moves[moveIdx];
+
+            // History heuristic
+            if (!isCapture(bestMv)) {
+                b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth;
+            }
         }
     }
 
