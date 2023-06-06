@@ -2,33 +2,65 @@
 #include "Square.h"
 
 // prototypes
-//std::vector<Move> generateLegalMoves(Board& board);
-//std::vector<Move> generateMoves(Board& board);
 using namespace Piece;
 
-std::vector<Move> generateLegalMoves(Board& board) {
+inline static void addQuiet(const move_t m, std::vector<move_t>& moves) {
+    moves.emplace_back(m);
+}
+
+inline static void addCapture(const move_t m, std::vector<move_t>& moves) {
+    moves.emplace_back(m);
+}
+
+inline static void addEnPassant(const square_t from, const square_t to, std::vector<move_t>& moves) {
+    addCapture(Move(from, to, EpCapture), moves);
+}
+
+inline static void addPawnPush(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
+    if (SquareRank(to, b.turn) == 7) {
+        addQuiet(Move(from, to, KnightPromo), moves);
+        addQuiet(Move(from, to, BishopPromo), moves);
+        addQuiet(Move(from, to, QueenPromo),  moves);
+        addQuiet(Move(from, to, RookPromo),   moves);
+    } else {
+        addQuiet(Move(from, to, 0), moves);
+    }
+}
+
+inline static void addPawnCapture(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
+    if (SquareRank(to, b.turn) == 7) {
+        addCapture(Move(from, to, KnightPromo | Capture), moves);
+        addCapture(Move(from, to, BishopPromo | Capture), moves);
+        addCapture(Move(from, to, QueenPromo  | Capture), moves);
+        addCapture(Move(from, to, RookPromo   | Capture), moves);
+    } else {
+        addCapture(Move(from, to, Capture), moves);
+    }
+}
+
+std::vector<move_t> generateLegalMoves(Board& board) {
     /* TODO */
     // find attacks
 
     // if in check
 
     // else
-    std::vector<Move> pseudoLegal = generateMoves(board);
+    std::vector<move_t> pseudoLegal = generateMoves(board);
 
     // TODO filter out illegal moves
-    std::vector<Move> legal = pseudoLegal;
+    std::vector<move_t> legal = pseudoLegal;
 
     // return legal moves
     return legal;
 }
 
-std::vector<Move> generateMoves(Board& b) {
+std::vector<move_t> generateMoves(Board& b) {
 
     piece* board = b.board; // array of pieces
     int me = b.turn;
     int opp = OPPONENT(b.turn);
 
-    std::vector<Move> moves;
+    std::vector<move_t> moves;
     // add regular moves
     for (square_t from = A1; from <= H8; ++from) {
         piece p = board[from]; // TODO, clean the code up
@@ -40,68 +72,31 @@ std::vector<Move> generateMoves(Board& b) {
                     // Check if pawn can move forward one square
                     square_t to = from + dir;
                     if (board[to] == None) {
-                        if (SquareRank(to, me) == 7) {
-                            moves.emplace_back(from, to, KnightPromo);
-                            moves.emplace_back(from, to, BishopPromo);
-                            moves.emplace_back(from, to, QueenPromo);
-                            moves.emplace_back(from, to, RookPromo);
-                        } else {
-                            moves.emplace_back(from, to);
-                        }
+                        addPawnPush(from, to, moves, b);
                     }
                     // Check if pawn can move forward two squares from the starting position
                     int startingRank = 1; // (me == White) ? 1 : 6; // zero-indexed
                     // Consider the opposite starting rank
                     if (SquareRank(from, me) == startingRank && board[to] == None && board[to + dir] == None) {
-                        moves.emplace_back(from, to + dir, DoublePawnPush);
+                        moves.emplace_back(Move(from, to + dir, DoublePawnPush));
                     }
                     // Check if pawn can capture diagonally to the west
                     square_t captureL = from + dir - 1;
                     if (IsOK(captureL) && distance(captureL, from) <= 2 && board[captureL] != None && IsColour(board[captureL], opp)) {
-                        if (SquareRank(captureL, me) == 7) {
-                           moves.emplace_back(from, captureL, Capture | KnightPromo);
-                           moves.emplace_back(from, captureL, Capture | BishopPromo);
-                           moves.emplace_back(from, captureL, Capture | QueenPromo);
-                           moves.emplace_back(from, captureL, Capture | RookPromo);
-                        } else {
-                            moves.emplace_back(from, captureL, Capture);
-                        }
+                        addPawnCapture(from, captureL, moves, b);
                     }
                     // Check if pawn can capture diagonally to the east
                     square_t captureR = from + dir + 1;
                     if (IsOK(captureR) && distance(captureR, from) <= 2 && board[captureR] != None && IsColour(board[captureR], opp)) {
-                        if (SquareRank(captureR, me) == 7) {
-                           moves.emplace_back(from, captureR, Capture | KnightPromo);
-                           moves.emplace_back(from, captureR, Capture | BishopPromo);
-                           moves.emplace_back(from, captureR, Capture | QueenPromo);
-                           moves.emplace_back(from, captureR, Capture | RookPromo);
-                        } else {
-                            moves.emplace_back(from, captureR, Capture);
-                        }
+                        addPawnCapture(from, captureR, moves, b);
                     }
                     // Check if can perform en passant
                     // std::cout << "google en passant" << std::endl;
                     if (IsOK(captureL) && distance(captureL, from) <= 2 && captureL == b.epSquare) {
-                        if (SquareRank(captureL, me) == 7) {
-                           moves.emplace_back(from, captureL, EpCapture | KnightPromo);
-                           moves.emplace_back(from, captureL, EpCapture | BishopPromo);
-                           moves.emplace_back(from, captureL, EpCapture | QueenPromo);
-                           moves.emplace_back(from, captureL, EpCapture | RookPromo);
-                        } else {
-                            moves.emplace_back(from, captureL, EpCapture);
-                        }
-
+                        addEnPassant(from, captureL, moves);
                     }
                     if (IsOK(captureR) && distance(captureR, from) <= 2 && captureR == b.epSquare) {
-                        if (SquareRank(captureR, me) == 7) {
-                           moves.emplace_back(from, captureR, EpCapture | KnightPromo);
-                           moves.emplace_back(from, captureR, EpCapture | BishopPromo);
-                           moves.emplace_back(from, captureR, EpCapture | QueenPromo);
-                           moves.emplace_back(from, captureR, EpCapture | RookPromo);
-                        } else {
-                            moves.emplace_back(from, captureR, EpCapture);
-                        }
-
+                        addEnPassant(from, captureR, moves);
                     }
                     break;
                 }
@@ -110,11 +105,13 @@ std::vector<Move> generateMoves(Board& b) {
                     // List all possible destination squares and check if they are valid
                     for (const square_t& dir : knightDest) {
                         square_t to = from + dir;
-                        if (IsOK(to) && (board[to] == None || IsColour(board[to], opp))) {
-                            // TODO: Find a cleaner way to do this (might have to change board rep)
-                            // ensure knight moved 2 squares Manhattan distance away, i.e. didn;t wrap around the side
-                            if (distance(to, from) != 2) continue;
-                            moves.emplace_back(from, to); // Quiet || Capture?
+                        if (IsOK(to) && distance(to, from) == 2) {
+                            if (board[to] == None) {
+                                addQuiet(Move(from, to, 0), moves);
+                            }
+                            if (IsColour(board[to], opp)) {
+                                addCapture(Move(from, to, 0), moves);
+                            }
                         }
                     }
                     break;
@@ -125,11 +122,11 @@ std::vector<Move> generateMoves(Board& b) {
                         while (IsOK(to) && distance(to, to - dir) <= 2) {
                             if (board[to] != None) {
                                 if (IsColour(board[to], opp)) {
-                                    moves.emplace_back(from, to, Capture);
+                                    addCapture(Move(from, to, 0), moves);
                                 }
                                 break;
                             }
-                            moves.emplace_back(from, to);
+                            addQuiet(Move(from, to, 0), moves);
                             to += dir;
                         }
                     }
@@ -141,11 +138,11 @@ std::vector<Move> generateMoves(Board& b) {
                         while (IsOK(to) && distance(to, to - dir) <= 2) {
                             if (board[to] != None) {
                                 if (IsColour(board[to], opp)) {
-                                    moves.emplace_back(from, to, Capture);
+                                    addCapture(Move(from, to, 0), moves);
                                 }
                                 break;
                             }
-                            moves.emplace_back(from, to);
+                            addQuiet(Move(from, to, 0), moves);
                             to += dir;
                         }
                     }
@@ -157,11 +154,11 @@ std::vector<Move> generateMoves(Board& b) {
                         while (IsOK(to) && distance(to, to - dir) <= 2) {
                             if (board[to] != None) {
                                 if (IsColour(board[to], opp)) {
-                                    moves.emplace_back(from, to, Capture);
+                                    addCapture(Move(from, to, 0), moves);
                                 }
                                 break;
                             }
-                            moves.emplace_back(from, to);
+                            addQuiet(Move(from, to, 0), moves);
                             to += dir;
                         }
                     }
@@ -173,11 +170,11 @@ std::vector<Move> generateMoves(Board& b) {
                         if (IsOK(to) && distance(to, from) < 2) {
                             if (board[to] != None) {
                                     if (IsColour(board[to], opp)) {
-                                        moves.emplace_back(from, to, Capture);
+                                        addCapture(Move(from, to, 0), moves);
                                     }
                                     continue;
                             }
-                            moves.emplace_back(from, to);
+                            addQuiet(Move(from, to, 0), moves);
                         }
                     }
                     break;
@@ -191,14 +188,14 @@ std::vector<Move> generateMoves(Board& b) {
         if (b.castlePerm & b.WKCastle) {
             if (board[F1] == None && board[G1] == None) {
                 if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(F1, Black)) {
-                    moves.emplace_back(E1, G1, KingCastle);
+                    addQuiet(Move(E1, G1, KingCastle), moves);
                 }
             }
         }
         if (b.castlePerm & b.WQCastle) {
             if (board[D1] == None && board[C1] == None && board[B1] == None) {
                 if (!b.SquareAttacked(E1, Black) && !b.SquareAttacked(D1, Black)) {
-                    moves.emplace_back(E1, C1, QueenCastle);
+                    addQuiet(Move(E1, C1, QueenCastle), moves);
                 }
             }
         }
@@ -206,14 +203,14 @@ std::vector<Move> generateMoves(Board& b) {
         if (b.castlePerm & b.BKCastle) {
             if (board[F8] == None && board[G8] == None) {
                 if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(F8, White)) {
-                    moves.emplace_back(E8, G8, KingCastle);
+                    addQuiet(Move(E8, G8, KingCastle), moves);
                 }
             }
         }
         if (b.castlePerm & b.BQCastle) {
             if (board[D8] == None && board[C8] == None && board[B8] == None) {
                 if (!b.SquareAttacked(E8, White) && !b.SquareAttacked(D8, White)) {
-                    moves.emplace_back(E8, C8, QueenCastle);
+                    addQuiet(Move(E8, C8, QueenCastle), moves);
                 }
             }
         }
@@ -228,13 +225,13 @@ unsigned long long perft(Board& b, int depth, bool verbose) {
     int n_moves, i, curr;
     unsigned long long nodes = 0;
 
-    std::vector<Move> moves = generateMoves(b);
+    std::vector<move_t> moves = generateMoves(b);
     n_moves = moves.size();
     for (i = 0; i < n_moves; i++) {
         if (!b.makeMove(moves[i])) continue;
         curr = perft(b, depth - 1);
         if (verbose) {
-            std::cout << moves[i].toString() << " " \
+            std::cout << toString(moves[i]) << " " \
                       << curr << std::endl;
         }
         nodes += curr;

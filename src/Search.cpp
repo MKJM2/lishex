@@ -1,7 +1,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 
-#define MATE 69000;
+#define MATE (69000);
 
 // 10 MiB PV table size
 static const int PV_SIZE = 0xA00000;
@@ -35,14 +35,14 @@ static bool isRepetition(Board& b) {
     return false;
 }
 
-void storePvMove(const Board& b, const Move move) {
+void storePvMove(const Board& b, const move_t move) {
     // we use the posKey as a hash into our table!
     int key = b.posKey % b.PVtable.no_entries;
     b.PVtable.pvtable[key].move = move;
     b.PVtable.pvtable[key].posKey = b.posKey;
 }
 
-Move checkPvTable(Board& b) {
+move_t checkPvTable(Board& b) {
     int key = b.posKey % b.PVtable.no_entries;
     if (b.PVtable.pvtable[key].posKey == b.posKey) {
         return b.PVtable.pvtable[key].move;
@@ -50,9 +50,9 @@ Move checkPvTable(Board& b) {
     return NULLMV;
 }
 
-bool moveExists(Board& b, Move m) {
-    std::vector<Move> moves = generateMoves(b);
-    for (Move& move : moves) {
+bool moveExists(Board& b, move_t m) {
+    std::vector<move_t> moves = generateMoves(b);
+    for (move_t& move : moves) {
         // Check if legal move
         if (!b.makeMove(move)) {
             continue;
@@ -68,7 +68,7 @@ bool moveExists(Board& b, Move m) {
 }
 
 int getPV(Board& b, const int depth) {
-    Move move = checkPvTable(b);
+    move_t move = checkPvTable(b);
     int currDepth = 0;
 
     b.pv.clear();
@@ -243,7 +243,7 @@ const int VictimScore[8] = {
 
 static int MVVLVAScores[8][8];
 
-int initMVVLVA() {
+void initMVVLVA() {
   using namespace Piece;
   int attacker;
   int victim;
@@ -255,12 +255,11 @@ int initMVVLVA() {
   }
 
   // debug
-for (victim = None; victim <= Queen; victim++) {
+  for (victim = None; victim <= Queen; victim++) {
     for (attacker = None; attacker <= Queen; attacker++) {
         printf("%s x %s = %d\n", pieceToUnicode[attacker].c_str(), pieceToUnicode[victim].c_str(), MVVLVAScores[victim][attacker]);
     }
   }
-
 }
 
 void clearForSearch(Board& b, searchinfo_t *info) {
@@ -293,11 +292,11 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     }
 
     // Generate pseudolegal moves
-    std::vector<Move> moves = generateMoves(b);
+    std::vector<move_t> moves = generateMoves(b);
     size_t moveNum = 0;
     int legal = 0;
     int oldAlpha = alpha;
-    Move bestMv = NULLMV;
+    move_t bestMv = NULLMV;
     int score = INT32_MIN;
 
     for (; moveNum < moves.size(); ++moveNum) {
@@ -323,7 +322,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // Detect mate / stalemate
     if (!legal) {
         if (b.SquareAttacked(b.kingSquare[b.turn == Piece::White], OPPONENT(b.turn))) {
-            return -MATE + b.ply;
+            return b.ply - MATE;
         } else {
             return 0; // stalemate
         }
@@ -338,7 +337,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
 // Searches the position defined by Board b
 void search(Board& b, searchinfo_t *info) {
-    Move bestMv = NULLMV;
+    move_t bestMv = NULLMV;
     int bestScore = INT32_MIN; // - Infinity
     int currDepth = 0;
     int pvMoves = 0;
@@ -351,13 +350,13 @@ void search(Board& b, searchinfo_t *info) {
         pvMoves = getPV(b, currDepth);
         bestMv = b.pv[0];
         printf("Depth:%d score:%d move:%s nodes:%lld ",
-                currDepth, bestScore, bestMv.toString().c_str(), info->nodes);
+                currDepth, bestScore, toString(bestMv).c_str(), info->nodes);
 
         // TODO:
         //pvMoves = getPV(b, currDepth);
         printf("pv");
         for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
-            printf(" %s", b.pv[pvNum].toString().c_str());
+            printf(" %s", toString(b.pv[pvNum]).c_str());
         }
         printf("\n");
         printf("Ordering:%.2f\n", (info->fhf/info->fh));

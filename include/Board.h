@@ -30,7 +30,7 @@ class Board;
 
 typedef struct {
         // Last move
-        Move move;
+        move_t move;
         // Castle permissions
         uint castlePerm;
         // EP square
@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct {
     // Move in the principal variation
-    Move move;
+    move_t move;
     // The zobrist hash key that led to the above move
     u64 posKey;
 } pventry_t;
@@ -85,9 +85,9 @@ void search(Board& b, searchinfo_t *info);
 // Initialize the pv table
 extern void init_PVtable(pvtable_t *table);
 
-extern Move checkPvTable(Board& b);
+extern move_t checkPvTable(Board& b);
 
-extern bool moveExists(Board& b, Move m);
+extern bool moveExists(Board& b, move_t m);
 
 extern int getPV(Board& b, const int depth);
 
@@ -102,8 +102,8 @@ class Board {
         void readFEN(std::string fen);
         void readPosition(std::string fen);
         std::string toFEN() const;
-        bool makeMove(Move move);
-        void undoMove(Move move);
+        bool makeMove(move_t move);
+        void undoMove(move_t move);
         void undoLast();
         void updateMaterial();
         enum { WKCastle = 1, WQCastle = 2, BKCastle = 4, BQCastle = 8};
@@ -126,7 +126,7 @@ class Board {
         bool SquareAttacked(const square_t sq, const int color);
         bool inCheck(const int color);
         pvtable_t PVtable;
-        std::vector<Move> pv; // stores the principal variation extracted from PVtable
+        std::vector<move_t> pv; // stores the principal variation extracted from PVtable
         int historyH[24][64]; // Tables for the history heuristic
         int killersH[2][64]; // Tables for the killer heuristic (beta cutoffs)
 };

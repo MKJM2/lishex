@@ -233,7 +233,7 @@ void Board::readPosition(std::string pos) {
         std::string moveString;
 
         while (iss >> moveString) {
-            Move move(moveString);
+            move_t move = fromString(moveString);
             // TODO: Handle invalid moves
             makeMove(move);
             this->ply = 0;
@@ -327,12 +327,12 @@ std::string Board::toFEN() const {
 }
 
 // Returns True if move was legal, False otherwise
-bool Board::makeMove(Move move) {
+bool Board::makeMove(move_t move) {
 
   // Extract move data
-  ushort to = move.getTo();
-  ushort from = move.getFrom();
-  int flags = move.getFlags();
+  ushort to = getTo(move);
+  ushort from = getFrom(move);
+  int flags = getFlags(move);
 
   // Store the pre-move state
   undo_t undo;
@@ -390,7 +390,7 @@ bool Board::makeMove(Move move) {
   board[from] = Piece::None;
 
   // Handle promotions
-  if (move.isPromotion()) {
+  if (isPromotion(move)) {
     // clear the capture bit
     switch (flags & ~Capture) {
       case KnightPromo:
@@ -428,10 +428,10 @@ bool Board::makeMove(Move move) {
   return true;
 }
 
-void Board::undoMove(Move move) {
-  ushort to = move.getTo();
-  ushort from = move.getFrom();
-  int flags = move.getFlags();
+void Board::undoMove(move_t move) {
+  ushort to = getTo(move);
+  ushort from = getFrom(move);
+  int flags = getFlags(move);
 
 
   if (boardHistory.size() < 1) return;
@@ -485,7 +485,7 @@ void Board::undoMove(Move move) {
   }
 
   // Undo promotions
-  if (move.isPromotion()) {
+  if (isPromotion(move)) {
     board[from] = Piece::Pawn | turn;
   }
 

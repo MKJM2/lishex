@@ -73,10 +73,10 @@ int main() {
             iss >> moveString;
 
             // Validate the move (ugly way to handle flags but works for now)
-            std::vector<Move> moves = generateMoves(gameboard);
+            std::vector<move_t> moves = generateMoves(gameboard);
             std::vector<std::string> movesStr;
-            for (Move& m : moves) {
-                movesStr.push_back(m.toString());
+            for (move_t& m : moves) {
+                movesStr.push_back(toString(m));
             }
             for (size_t i = 0; i < movesStr.size(); i++) {
                 if (movesStr[i] == moveString) {
@@ -106,9 +106,9 @@ int main() {
             std::cout << std::endl;
             std::cout << node_no << std::endl;
         } else if (command == "moves") {
-            std::vector<Move> moves = generateMoves(gameboard);
-            for (Move& m : moves) {
-                std::cout << m.toString() << " ";
+            std::vector<move_t> moves = generateMoves(gameboard);
+            for (move_t& m : moves) {
+                std::cout << toString(m) << " ";
             }
             std::cout << "\n";
         } else if (command == "undo") {
@@ -120,7 +120,7 @@ int main() {
             if (moveString.empty()) {
                 gameboard.undoLast();
             } else {
-                gameboard.undoMove(Move(moveString));
+                gameboard.undoMove(fromString(moveString));
             }
             gameboard.print(true); // verbose = true
 

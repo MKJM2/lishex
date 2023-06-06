@@ -7,8 +7,8 @@
 #include "Move.h"
 #include "Piece.h"
 
-extern std::vector<Move> generateLegalMoves(Board& board);
-extern std::vector<Move> generateMoves(Board& board);
+extern std::vector<move_t> generateLegalMoves(Board& board);
+extern std::vector<move_t> generateMoves(Board& board);
 extern unsigned long long perft(Board& b, int depth, bool verbose = false);
 
 #endif // MOVEGENERATOR_H_

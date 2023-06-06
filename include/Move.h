@@ -2,10 +2,18 @@
 #define MOVE_H_
 
 #include <string>
+#include "Square.h"
 
 /* Inspired by
 ** https://www.chessprogramming.org/Encoding_Moves
 
+ 0b  0000  000000  000000
+     flag  from    to
+*/
+/* Each move is represented as 16 bits:
+ * 4 bits for flags
+ * 6 bits for the source square
+ * 6 bits for the destination square
  0b  0000  000000  000000
      flag  from    to
 */
@@ -24,37 +32,30 @@ enum {
     QueenPromo     = 0b1011
 };
 
-class Move {
-public:
-    Move (); // null move constructor
-    Move (int from, int to);
-    Move (int from, int to, int flags);
-    Move (const std::string& s);
-    Move(const Move& other); // Copy constructor
-    Move& operator=(const Move& other); // Assignment operator
+typedef unsigned short move_t;
 
-    unsigned short getTo() const;
-    unsigned short getFrom() const;
-    unsigned short getFlags() const;
-    bool isCapture() const;
-    bool isPromotion() const;
+// Scored move
+typedef struct {
+    move_t m;
+    unsigned short score;
+} move_scored;
 
-    void setTo(unsigned int to);
-    void setFrom(unsigned int from);
-    void setFlags(unsigned int flags);
+// Constructor
+#define Move(from, to, flags) ((((flags) & 0xf) << 12) | (((from) & 0x3f) << 6) | ((to) & 0x3f))
 
-    std::string toString();
+#define NULLMV ((move_t) 0)
 
-    void operator=(Move& other);
-    bool operator==(Move a) const;
-    bool operator!=(Move a) const;
+#define getTo(move) ((move) & 0x3f)
 
-    unsigned short asShort() const;
-protected:
-    unsigned short move;
-};
+#define getFrom(move) (((move) >> 6) & 0x3f)
 
-#define NULLMV Move(0, 0)
+#define getFlags(move) (((move) >> 12) & 0xf)
 
+#define isCapture(move) (((move) >> 12) == (unsigned short) Capture || ((move) >> 12) == (unsigned short) EpCapture)
+
+#define isPromotion(move) (((move) >> 12) & 0b1000)
+
+std::string toString(move_t m);
+move_t fromString(std::string s);
 
 #endif // MOVE_H_
