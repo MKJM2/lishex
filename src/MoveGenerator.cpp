@@ -77,10 +77,10 @@ inline static void addEnPassant(const square_t from, const square_t to, std::vec
 
 inline static void addPawnPush(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
     if (SquareRank(to, b.turn) == 7) {
-        addQuiet(Move(from, to, KnightPromo, 0), moves, b);
-        addQuiet(Move(from, to, BishopPromo, 0), moves, b);
         addQuiet(Move(from, to, QueenPromo, 0),  moves, b);
         addQuiet(Move(from, to, RookPromo, 0),   moves, b);
+        addQuiet(Move(from, to, BishopPromo, 0), moves, b);
+        addQuiet(Move(from, to, KnightPromo, 0), moves, b);
     } else {
         addQuiet(Move(from, to, Quiet, 0), moves, b);
     }
@@ -89,10 +89,10 @@ inline static void addPawnPush(const square_t from, const square_t to, std::vect
 inline static void addPawnCapture(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
     int score = MVVLVA[b.board[to]][b.board[from]];
     if (SquareRank(to, b.turn) == 7) {
-        moves.emplace_back(Move(from, to, KnightPromo | Capture, score + 50000));
-        moves.emplace_back(Move(from, to, BishopPromo | Capture, score + 50000));
         moves.emplace_back(Move(from, to, QueenPromo  | Capture, score + 50000));
         moves.emplace_back(Move(from, to, RookPromo   | Capture, score + 50000));
+        moves.emplace_back(Move(from, to, BishopPromo | Capture, score + 50000));
+        moves.emplace_back(Move(from, to, KnightPromo | Capture, score + 50000));
     } else {
         moves.emplace_back(Move(from, to, Capture, score + 50000));
     }
@@ -378,10 +378,10 @@ std::vector<move_t> generateCaptures(Board& b) {
                         square_t to = from + dir;
                         if (IsOK(to) && distance(to, from) < 2) {
                             if (board[to] != None) {
-                                    if (IsColour(board[to], opp)) {
-                                        addCapture(Move(from, to, 0, 0), moves, b);
-                                    }
-                                    continue;
+                                if (IsColour(board[to], opp)) {
+                                    addCapture(Move(from, to, 0, 0), moves, b);
+                                }
+                                continue;
                             }
                         }
                     }

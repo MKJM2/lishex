@@ -39,17 +39,33 @@ std::string toString(move_t m) {
 }
 
 move_t fromString(std::string s) {
-    if (s.length() == 4) {
+    if (s.length() >= 4) {
         int fromRank = s[1] - '1';
         int fromFile = s[0] - 'a';
         int toRank = s[3] - '1';
         int toFile = s[2] - 'a';
 
+        int flag = 0;
+        // Handle promotions
+        if (s.length() >= 5) {
+            switch (s[4]) {
+                case 'n':
+                    std::cout << "Knight promo\n";
+                    flag = KnightPromo; break;
+                case 'b':
+                    flag = BishopPromo; break;
+                case 'r':
+                    flag = RookPromo; break;
+                default:
+                    flag = QueenPromo; break;
+            }
+        }
+
         if (fromRank >= 0 && fromRank <= 7 && fromFile >= 0 && fromFile <= 7 &&
             toRank >= 0 && toRank <= 7 && toFile >= 0 && toFile <= 7) {
             square_t from = fromRank * 8 + fromFile;
             square_t to = toRank * 8 + toFile;
-            return Move(from, to, 0, 0);
+            return Move(from, to, flag, 0);
         } else {
             // Invalid square coordinates, set move to zero
             std::cerr << "Invalid move specified!\n";

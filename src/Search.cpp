@@ -408,7 +408,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
     // Check if position is a draw
     // TODO: Handle the fifyMoveCounter here: || b.fiftyMoveCounter >= 100
-    if (isRepetition(b)) {
+    if (isRepetition(b) && b.ply) {
         return 0;
     }
 
