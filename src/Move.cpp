@@ -50,7 +50,6 @@ move_t fromString(std::string s) {
         if (s.length() >= 5) {
             switch (s[4]) {
                 case 'n':
-                    std::cout << "Knight promo\n";
                     flag = KnightPromo; break;
                 case 'b':
                     flag = BishopPromo; break;
