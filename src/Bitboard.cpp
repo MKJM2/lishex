@@ -59,8 +59,40 @@ void initEvalMasks() {
             bPassedMask[sq] |= (1ULL << to);
             to -= 8;
         }
-    }
 
+        if (SquareFile(sq) > 0) {
+            isolatedMask[sq] |= fileBBMask[SquareFile(sq)];
+
+            to = sq + 7;
+            while (to < 64) {
+                wPassedMask[sq] |= (1ULL << to);
+                to += 8;
+            }
+
+            to = sq - 9;
+            while (to >= 0) {
+                bPassedMask[sq] |= (1ULL << to);
+                to -= 8;
+            }
+        }
+
+        if (SquareFile(sq) < 7) {
+            isolatedMask[sq] |= fileBBMask[SquareFile(sq)];
+
+            to = sq + 9;
+            while (to < 64) {
+                wPassedMask[sq] |= (1ULL << to);
+                to += 8;
+            }
+
+            to = sq - 7;
+            while (to >= 0) {
+                bPassedMask[sq] |= (1ULL << to);
+                to -= 8;
+            }
+
+        }
+    }
 
     /* Debug:
     // print the 16 bitboards

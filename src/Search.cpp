@@ -171,6 +171,8 @@ int getPV(Board& b, const int depth) {
 
 /* Evaluation */
 
+// TODO: Move to a separate file
+
 // Piece-square tables
 
 const int PawnTable[64] = {
@@ -228,6 +230,13 @@ const int Mirror64[64] = {
     15, 14, 13, 12, 11, 10, 9,  8,
     7,  6,  5,  4,  3,  2,  1,  0
 };
+
+// Pass and isolated pawn
+const int pawnIsolated = -10;
+// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+const int pawnPassed[8] = {0, 5, 10, 20, 35, 60, 100, 200};
+// Bonus for putting the rook on an open file
+const int rookOpenFile = 5;
 
 /* Pick the highest scoring move according to heuristics */
 static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
