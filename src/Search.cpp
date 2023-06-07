@@ -55,8 +55,8 @@ int inputWaiting()
 void readInput(searchinfo_t *info) {
   int             bytes;
   char            input[256] = "", *endc;
-
     if (inputWaiting()) {
+        fflush(stdout);
         info->stopped = true;
         do {
             bytes=read(fileno(stdin),input,256);
@@ -80,7 +80,7 @@ static void checkUp(searchinfo_t *info) {
     }
 
     // Check if interrupted by GUI
-
+    readInput(info);
 }
 
 void init_PVtable(pvtable_t *table) {
