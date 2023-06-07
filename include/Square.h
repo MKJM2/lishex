@@ -23,6 +23,10 @@ inline int SquareRank(square_t s, int p = Piece::White) {
     return (s >> 3) ^ (p == Piece::White ? 0 : 0b111); // div by 8
 }
 
+inline int SquareFile(square_t s) {
+  return s & 7;
+}
+
 // TODO: Improve this
 inline int distance(square_t a, square_t b) {
     int xa = a >> 3;

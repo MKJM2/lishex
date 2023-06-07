@@ -12,6 +12,7 @@ Board::Board() {
   this->posKey = generatePosKey();
   init_PVtable(&PVtable);
   initMVVLVA();
+  initEvalMasks();
 }
 
 Board::~Board() {
@@ -678,21 +679,21 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   piece p = White | Pawn;
   if (color == White) {
     from = sq - 7;
-    if (distance(sq, from) == 2 && board[from] == p) {
+    if (distance(sq, from) <= 2 && board[from] == p) {
       return true;
     }
     from = sq - 9;
-    if (distance(sq, from) == 2 && board[from] == p) {
+    if (distance(sq, from) <= 2 && board[from] == p) {
       return true;
     }
   } else { // color == Black
     p ^= White; p |= Black;
     from = sq + 7;
-    if (distance(sq, from) == 2 && board[from] == p) {
+    if (distance(sq, from) <= 2 && board[from] == p) {
       return true;
     }
     from = sq + 9;
-    if (distance(sq, from) == 2 && board[from] == p) {
+    if (distance(sq, from) <= 2 && board[from] == p) {
       return true;
     }
   }

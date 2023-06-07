@@ -86,7 +86,7 @@ int main() {
             iss >> depthStr;
 
             int depthSet = depthStr.empty() ? 5 : stoi(depthStr);
-            unsigned long long node_no;
+            uint64_t node_no;
             for (int depth = 0; depth < depthSet; ++depth) {
                 int NPS = 0; // # Nodes per (mili)second
                 //auto start = high_resolution_clock::now();
@@ -99,11 +99,21 @@ int main() {
                     //duration_cast<milliseconds>(end - start).count();
                 NPS = static_cast<double>(node_no) / elapsed;
                 NPS *= 1000; // nodes per ms -> nodes per s
-                printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %7.0d\n",
+                printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
                                 depth,     node_no,     elapsed,  NPS);
             }
             //std::cout << std::endl;
             //std::cout << node_no << std::endl;
+        } else if (command == "divide") {
+            // Get user argument
+            std::string depthStr;
+            iss >> depthStr;
+            int depth = depthStr.empty() ? 1 : stoi(depthStr);
+
+            uint64_t node_no = 0;
+            node_no = perft(gameboard, depth, true);
+            std::cout << std::endl;
+            std::cout << node_no << std::endl;
         } else if (command == "moves") {
             std::vector<move_t> moves = generateMoves(gameboard);
             for (move_t& m : moves) {

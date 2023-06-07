@@ -15,6 +15,7 @@
 #include "Piece.h"
 #include "Move.h"
 #include "Square.h"
+#include "Bitboard.h"
 
 #define ROWS 8
 #define COLS 8

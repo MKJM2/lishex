@@ -472,7 +472,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
             // History heuristic
             if (!isCapture(bestMv)) {
-                b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth;
+                b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth * depth;
             }
         }
     }
