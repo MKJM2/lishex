@@ -672,22 +672,34 @@ void Board::updateMaterial() {
 bool Board::SquareAttacked(const square_t sq, const int color) {
   using namespace Piece;
 
+  square_t from;
+
   // Check if sq attacked by a pawn
   piece p = White | Pawn;
   if (color == White) {
-    if (board[sq - 7] == p || board[sq - 9] == p) {
+    from = sq - 7;
+    if (distance(sq, from) == 2 && board[from] == p) {
+      return true;
+    }
+    from = sq - 9;
+    if (distance(sq, from) == 2 && board[from] == p) {
       return true;
     }
   } else { // color == Black
     p ^= White; p |= Black;
-    if (board[sq + 7] == p || board[sq + 9] == p) {
+    from = sq + 7;
+    if (distance(sq, from) == 2 && board[from] == p) {
+      return true;
+    }
+    from = sq + 9;
+    if (distance(sq, from) == 2 && board[from] == p) {
       return true;
     }
   }
 
   // Check if sq attacked by a knight
   for (const square_t& dir : knightDest) {
-    square_t from = sq + dir;
+    from = sq + dir;
     if (!IsOK(from) || !(distance(sq, from) == 2)) continue;
     p = board[from];
     if (PieceType(p) == Knight && IsColour(p, color)) {
@@ -697,7 +709,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
 
   // Check if square attacked by a rook/queen (N, E, S, W)
   for (const square_t& dir : rookDest) {
-    for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+    for (from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
       p = board[from];
       if (p != Piece::None) {
         if (IsRookOrQueen(p) && IsColour(p, color)) {
@@ -710,7 +722,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
 
   // Check if square attacked by a bishop/queen (NE, SE, SW, NW)
   for (const square_t& dir : bishopDest) {
-    for (square_t from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+    for (from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
       p = board[from];
       if (p != Piece::None) {
         if (IsBishopOrQueen(p) && IsColour(p, color)) {
@@ -723,7 +735,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
 
   // Check if square attacked by a King
   for (const square_t& dir : kingDest) {
-      square_t from = sq + dir;
+      from = sq + dir;
       if (!IsOK(from) || !(distance(sq, from) <= 2)) continue;
       p = board[from];
       if (PieceType(p) == King && IsColour(p, color)) {

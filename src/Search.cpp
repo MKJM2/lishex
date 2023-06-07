@@ -412,6 +412,11 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         return 0;
     }
 
+    // Check search extension
+    bool inCheck = b.inCheck(b.turn);
+    if (inCheck) {
+        ++depth;
+    }
     // Generate pseudolegal moves
     std::vector<move_t> moves = generateMoves(b);
     size_t moveIdx = 0;
@@ -474,13 +479,12 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
     // Detect mate / stalemate
     if (!legal) {
-        if (b.SquareAttacked(b.kingSquare[b.turn == Piece::White], OPPONENT(b.turn))) {
+        if (inCheck) {
             return b.ply - MATE;
         } else {
             return 0; // stalemate
         }
     }
-
     if (alpha != oldAlpha) {
         storePvMove(b, bestMv);
     }
