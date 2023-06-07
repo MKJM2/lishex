@@ -1,4 +1,5 @@
 #include "Board.h"
+#include "MoveGenerator.h"
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -235,8 +236,15 @@ void Board::readPosition(std::string pos) {
 
         while (iss >> moveString) {
             move_t move = fromString(moveString);
-            // TODO: Handle invalid moves
-            makeMove(move);
+            // Handle invalid moves
+            std::vector<move_t> moves = generateMoves(*this);
+            for (move_t& m : moves) {
+                if (movecmp(m << 4, move << 4)) {
+                    // make the move *with correct flags* as per movegen
+                    makeMove(m);
+                    break;
+                }
+            }
             this->ply = 0;
         }
     }
