@@ -18,9 +18,11 @@
 using namespace std::chrono;
 int main() {
     Board gameboard;
+    searchinfo_t info[1];
 
     // UCI
     while (true) {
+        fflush(stdout);
         std::string input;
         std::getline(std::cin, input);
 
@@ -48,24 +50,18 @@ int main() {
             std::string positionStr;
             std::getline(iss, positionStr);
             gameboard.readPosition(positionStr);
-
+        } else if (command == "ucinewgame") {
+            gameboard.readFEN(startFEN);
         } else if (command == "go") {
             // Parse and handle the go command
-            // Example: go wtime 300000 btime 300000
-            // Extract and handle the search parameters (time, depth, etc.)
-
-            // search
-            searchinfo_t info[1];
-            //std::string testFEN3 = "2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - - 0 1";
-            //gameboard.readFEN(testFEN3);
-            info->depth = 6;
-            search(gameboard, info);
-
-
+            std::string goStr;
+            std::getline(iss, goStr);
+            gameboard.readGo(goStr, info);
         } else if (command == "stop") {
             // Ignore the stop command if the engine is not calculating
             continue;
         } else if (command == "quit") {
+            info->quit = true;
             break;
         } else if (command == "move") { // testing
             // Get user input
@@ -93,14 +89,17 @@ int main() {
             unsigned long long node_no;
             for (int depth = 0; depth < depthSet; ++depth) {
                 int NPS = 0; // # Nodes per (mili)second
-                auto start = high_resolution_clock::now();
+                //auto start = high_resolution_clock::now();
+                auto start = getTime();
                 node_no = perft(gameboard, depth);
-                auto end = high_resolution_clock::now();
-                auto elapsed =
-                    duration_cast<milliseconds>(end - start).count();
+                //auto end = high_resolution_clock::now();
+                auto end = getTime();
+                auto elapsed = end - start;
+                //auto elapsed =
+                    //duration_cast<milliseconds>(end - start).count();
                 NPS = static_cast<double>(node_no) / elapsed;
                 NPS *= 1000; // nodes per ms -> nodes per s
-                printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %5.0d\n",
+                printf("Depth: %2d Nodes: %10llu Time: %5ld NPS: %7.0d\n",
                                 depth,     node_no,     elapsed,  NPS);
             }
             //std::cout << std::endl;
@@ -134,6 +133,7 @@ int main() {
             gameboard.readFEN(testFEN2);
             gameboard.printAttacked();
         }
+        if (info->quit) break;
     }
     return 0;
 }

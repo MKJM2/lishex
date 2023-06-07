@@ -243,6 +243,85 @@ void Board::readPosition(std::string pos) {
     this->updateMaterial();
 }
 
+void Board::readGo(std::string goStr, searchinfo_t *info) {
+    int depth = -1, movestogo = 30, movetime = -1;
+    int time = -1, inc = -1;
+    // Initially, no time to move is set
+    info->timeSet = false;
+
+    std::istringstream iss(goStr);
+    std::string command;
+
+    while (iss >> command) {
+        if (command == "searchmoves") {
+            printf("Not supported\n");
+        } else if (command == "ponder") {
+            printf("Not supported\n");
+        } else if (command == "wtime") {
+            int wtime;
+            iss >> wtime; // consume the token
+            if (turn == Piece::White) {
+              time = wtime;
+            }
+        } else if (command == "btime") {
+            int btime;
+            iss >> btime;
+            if (turn == Piece::Black) {
+              time = btime;
+            }
+        } else if (command == "winc") {
+            int winc;
+            iss >> winc;
+            if (turn == Piece::White) {
+              inc = winc;
+            }
+        } else if (command == "binc") {
+            int binc;
+            iss >> binc;
+            if (turn == Piece::Black) {
+              inc = binc;
+            }
+        } else if (command == "movestogo") {
+            iss >> movestogo;
+        } else if (command == "depth") {
+            iss >> depth;
+        } else if (command == "nodes") {
+            printf("Not supported\n");
+        } else if (command == "mate") {
+            printf("Not supported\n");
+        } else if (command == "movetime") {
+            iss >> movetime;
+        } else if (command == "infinite") {
+          // search until 'stop' sent from gui
+        }
+    }
+
+    if (movetime != -1) {
+        time = movetime;
+        movestogo = 1;
+    }
+
+    info->startTime = getTime();
+    info->depth = depth;
+
+    // Time management
+    if (time != -1) {
+        info->timeSet = true;
+        time /= movestogo;
+        // to be safe we don't run out of time
+        time -= 50;
+        info->endTime = info->startTime + time + inc;
+    }
+
+    if (depth == -1) {
+        info->depth = MAX_DEPTH;
+    }
+
+    printf("time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
+            time,info->startTime,info->endTime,info->depth,info->timeSet);
+    search(*this, info);
+}
+
 std::string Board::toFEN() const {
   std::string fen;
 

@@ -6,9 +6,81 @@
 // 10 MiB PV table size
 static const int PV_SIZE = 0xA00000;
 
-static void checkUp() {
-    // TODO: Check if time is up
-    // or interrupted by GUI
+#ifdef WIN32
+#include "windows.h"
+#else
+#include "sys/time.h"
+#include "sys/select.h"
+#include "unistd.h"
+#include "string.h"
+#endif
+
+// http://home.arcor.de/dreamlike/chess/
+// + VICE by Bluefever Software
+int inputWaiting()
+{
+#ifndef WIN32
+  fd_set readfds;
+  struct timeval tv;
+  FD_ZERO (&readfds);
+  FD_SET (fileno(stdin), &readfds);
+  tv.tv_sec=0; tv.tv_usec=0;
+  select(16, &readfds, 0, 0, &tv);
+
+  return (FD_ISSET(fileno(stdin), &readfds));
+#else
+   static int init = 0, pipe;
+   static HANDLE inh;
+   DWORD dw;
+
+   if (!init) {
+     init = 1;
+     inh = GetStdHandle(STD_INPUT_HANDLE);
+     pipe = !GetConsoleMode(inh, &dw);
+     if (!pipe) {
+        SetConsoleMode(inh, dw & ~(ENABLE_MOUSE_INPUT|ENABLE_WINDOW_INPUT));
+        FlushConsoleInputBuffer(inh);
+      }
+    }
+    if (pipe) {
+      if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL)) return 1;
+      return dw;
+    } else {
+      GetNumberOfConsoleInputEvents(inh, &dw);
+      return dw <= 1 ? 0 : dw;
+	}
+#endif
+}
+
+void readInput(searchinfo_t *info) {
+  int             bytes;
+  char            input[256] = "", *endc;
+
+    if (inputWaiting()) {
+        info->stopped = true;
+        do {
+            bytes=read(fileno(stdin),input,256);
+        } while (bytes<0);
+        endc = strchr(input,'\n');
+        if (endc) *endc=0;
+
+        if (strlen(input) > 0) {
+            if (!strncmp(input, "quit", 4))    {
+                info->quit = true;
+            }
+        }
+        return;
+    }
+}
+
+static void checkUp(searchinfo_t *info) {
+    // Check if time is up
+    if (info->timeSet && getTime() > info->endTime) {
+        info->stopped = true;
+    }
+
+    // Check if interrupted by GUI
+
 }
 
 void init_PVtable(pvtable_t *table) {
@@ -266,6 +338,11 @@ void clearForSearch(Board& b, searchinfo_t *info) {
 }
 
 static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
+
+    if ((info->nodes & 4095) == 0) {
+        checkUp(info);
+    }
+
     info->nodes++;
 
     // || b.fiftyMove >= 100
@@ -297,6 +374,11 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
         score = -quiescenceSearch(b, info, -beta, -alpha);
         b.undoMove(captures[moveIdx]);
 
+        if (info->stopped) {
+            // stop the search
+            return 0;
+        }
+
 		if (score > alpha) {
 			if (score >= beta) {
 				if (legal == 1) {
@@ -313,11 +395,16 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
 
-    info->nodes++;
 
     if (depth <= 0) {
         return quiescenceSearch(b,info, alpha, beta);
     }
+
+    if ((info->nodes & 2047) == 0) {
+        checkUp(info);
+    }
+
+    info->nodes++;
 
     // Check if position is a draw
     // TODO: Handle the fifyMoveCounter here: || b.fiftyMoveCounter >= 100
@@ -354,6 +441,11 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         legal++;
         score = -alphaBeta(b, info, -beta, -alpha, depth - 1, true);
         b.undoMove(moves[moveIdx]);
+
+        if (info->stopped) {
+            // stop the search
+            return 0;
+        }
 
         if (score > alpha) {
             if (score >= beta) {
@@ -408,19 +500,30 @@ void search(Board& b, searchinfo_t *info) {
     // Iterative Deepening
     for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
         bestScore = alphaBeta(b, info, -INT32_MAX, INT32_MAX, currDepth, true);
+
+        if (info->stopped) {
+            break;
+        }
         pvMoves = getPV(b, currDepth);
         bestMv = b.pv[0];
-        printf("Depth:%d score:%d move:%s nodes:%lld ",
-                currDepth, bestScore, toString(bestMv).c_str(), info->nodes);
+        printf("info score cp %d  depth %d nodes %lld time %lu ",
+                bestScore, currDepth, info->nodes, getTime() - info->startTime);
 
         // TODO:
         //pvMoves = getPV(b, currDepth);
-        printf("pv (%d moves)", pvMoves);
+        printf("pv");
         for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
             printf(" %s", toString(b.pv[pvNum]).c_str());
         }
         printf("\n");
-        printf("Ordering:%.2f\n", (info->fhf/info->fh));
+        //printf("Ordering:%.2f\n", (info->fhf/info->fh));
+        fflush(stdout);
     }
+
+    // info score cp 13  depth 1 nodes 13 time 15 pv f1b5
+
+    // best move seen so far (even if search stopped)
+    printf("bestmove %s\n", toString(bestMv).c_str());
+
 
 }

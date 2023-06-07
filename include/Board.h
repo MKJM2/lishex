@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cstring>
 #include <unordered_map>
+#include <chrono>
 #include <stack>
 #include <random>
 #include <bitset>
@@ -17,6 +18,15 @@
 
 #define ROWS 8
 #define COLS 8
+
+using namespace std::chrono;
+#define getTime() ( \
+        (uint64_t) duration_cast<milliseconds>(system_clock::now() \
+            .time_since_epoch())    \
+            .count() \
+        )
+
+#define MAX_DEPTH (32)
 
 typedef int piece;
 typedef unsigned int uint;
@@ -62,14 +72,14 @@ typedef struct {
 } pvtable_t;
 
 typedef struct {
-    int startTime;
-    int endTime;
+    uint64_t startTime;
+    uint64_t endTime;
     int depth;
     int depthSet;
-    int timeSet;
     int movesToGo;
     long long nodes;
 
+    bool timeSet;
     bool infinite;
     bool quit;
     bool stopped;
@@ -105,6 +115,7 @@ class Board {
         void print(bool verbose = false);
         void readFEN(std::string fen);
         void readPosition(std::string fen);
+        void readGo(std::string goStr, searchinfo_t *info);
         std::string toFEN() const;
         bool makeMove(move_t move);
         void undoMove(move_t move);
