@@ -250,7 +250,7 @@ static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
 }
 
 // Evaluates the position from the side's POV
-static int evaluate(Board& b) {
+static int evaluate2(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
@@ -312,10 +312,11 @@ static int evaluate(Board& b) {
     return (b.turn == Piece::White) ? score : -score;
 }
 // */
-static int evaluate2(Board& b) {
+static int evaluate(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
+    printf("%d: White: %d Black %d\n", score, b.material[1], b.material[0]);
     square_t sq;
     int i;
 
@@ -323,6 +324,8 @@ static int evaluate2(Board& b) {
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += PawnTable[sq];
+        printf("+%d: white pawn on %s\n", PawnTable[sq], toString(sq).c_str());
+        /*
         if ((b.pawns[1] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score += pawnIsolated;
@@ -332,12 +335,15 @@ static int evaluate2(Board& b) {
             // Add in pass pawn bonus
             score += pawnPassed[SquareRank(sq)];
         }
+        */
     }
 
     p = Black | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= PawnTable[Mirror64[sq]];
+        printf("-%d: black pawn on %s\n", PawnTable[Mirror64[sq]], toString(sq).c_str());
+        /*
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score -= pawnIsolated;
@@ -347,54 +353,65 @@ static int evaluate2(Board& b) {
             // Add in pass pawn bonus
             score -= pawnPassed[SquareRank(sq, Black)];
         }
+        */
     }
 
     p = White | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += KnightTable[sq];
+        printf("+%d: white knight on %s\n", KnightTable[sq], toString(sq).c_str());
     }
 
     p = Black | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
-        sq = Mirror64[b.pieceList[p][i]];
-        score -= KnightTable[sq];
+        sq = b.pieceList[p][i];
+        score -= KnightTable[Mirror64[sq]];
+        printf("-%d: black knight on %s\n", KnightTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += BishopTable[sq];
+        printf("+%d: white bishop on %s\n", BishopTable[sq], toString(sq).c_str());
     }
 
     p = Black | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
-        sq = Mirror64[b.pieceList[p][i]];
-        score -= BishopTable[sq];
+        sq = b.pieceList[p][i];
+        score -= BishopTable[Mirror64[sq]];
+        printf("-%d: black bishop on %s\n", BishopTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += RookTable[sq];
+        printf("+%d: white rook on %s\n", RookTable[sq], toString(sq).c_str());
     }
 
     p = Black | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
-        sq = Mirror64[b.pieceList[p][i]];
-        score -= RookTable[sq];
+        sq = b.pieceList[p][i];
+        score -= RookTable[Mirror64[sq]];
+        printf("-%d: black rook on %s\n", RookTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score += (BishopTable[sq] + RookTable[sq]) >> 1;
+        int delta= (BishopTable[sq] + RookTable[sq]) >> 1;
+        score += delta;
+        printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
     }
 
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = Mirror64[b.pieceList[p][i]];
-        score -= (BishopTable[sq] + RookTable[sq]) >> 1;
+        int delta = (BishopTable[sq] + RookTable[sq]) >> 1;
+        score -= delta;
+        printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
     }
 
     return (b.turn == White) ? score : -score;
@@ -621,19 +638,16 @@ void search(Board& b, searchinfo_t *info) {
 
 // Debug: Testing Mirror 64 and whether the eval is symmetric
 void mirrorEvalTest(Board& b) {
+    //b.reset();
+    //b.readFEN("8/p6k/6p1/5p2/P4K2/8/5pB1/8 b - - 2 62");
+    //b.print();
     int ev1 = evaluate(b);
+    printf("Eval: %d\n", ev1);
     b.mirror();
+    b.print();
     int ev2 = evaluate(b);
-
+    printf("Eval: %d\n", ev2);
     if (ev1 != ev2) {
-        printf("\n\n\n");
-        b.print();
-        printf("Eval: %d\n", ev2);
-        b.mirror();
-        b.print();
-        printf("Eval: %d\n", ev1);
-    } else {
-        printf("OK!\n");
-        b.mirror();
+        printf("Test failed!\n");
     }
 }

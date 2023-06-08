@@ -69,6 +69,7 @@ void Board::initPieceList() {
   piece p;
   square_t sq;
   bool colour;
+  material[0] = material[1] = 0;
   for (sq = A1; sq <= H8; ++sq) {
     p = this->board[sq];
     if (p != None) {
