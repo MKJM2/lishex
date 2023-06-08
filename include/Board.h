@@ -110,6 +110,7 @@ class Board {
     public:
         Board ();
         ~Board ();
+        void reset();
         piece board[ROWS * COLS] = {};
         void printFEN();
         void printAttacked();

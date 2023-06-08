@@ -21,6 +21,28 @@ Board::~Board() {
   }
 }
 
+void Board::reset() {
+  this->readFEN(startFEN);
+  // Clear history
+  boardHistory.clear();
+  // Clear all heuristic tables
+  init_PVtable(&PVtable);
+  pv.clear();
+
+  int i, j;
+  // Clear history heuristic table
+  for (i = 0; i < 24; ++i) {
+      for (j = 0; j < 64; ++j) {
+          historyH[i][j] = 0;
+      }
+  }
+
+  // Clear killer heuristic table
+  for (i = 0; i < 64; ++i) {
+      killersH[0][i] = killersH[1][i] = 0;
+  }
+}
+
 std::unordered_map<piece, char> pieceToChar = {
     {Piece::None,  '0'},
     {Piece::Rook,  'r'},
@@ -207,6 +229,9 @@ void Board::readFEN(std::string fen) {
 
   // set the fullmove clock
   fullMove = stoi(fenParts[5]);
+
+  // Update material values
+  this->updateMaterial();
 }
 
 void Board::readPosition(std::string pos) {

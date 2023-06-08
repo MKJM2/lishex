@@ -43,6 +43,7 @@ int main() {
             std::cout << "uciok" << std::endl;
         } else if (command == "isready") {
             // initialization
+            gameboard.reset();
             std::cout << "readyok" << std::endl;
         } else if (command == "position") {
             // Parse the position command and update the board accordingly
@@ -51,7 +52,7 @@ int main() {
             std::getline(iss, positionStr);
             gameboard.readPosition(positionStr);
         } else if (command == "ucinewgame") {
-            gameboard.readFEN(startFEN);
+            gameboard.reset();
         } else if (command == "go") {
             // Parse and handle the go command
             std::string goStr;
