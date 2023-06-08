@@ -122,6 +122,9 @@ int main() {
                 std::cout << toString(m) << " ";
             }
             std::cout << "\n";
+        } else if (command == "mirror") {
+            gameboard.mirror();
+            gameboard.print(true);
         } else if (command == "undo") {
             // Get user input
             std::string moveString;
@@ -140,10 +143,7 @@ int main() {
         } else if (command == "fen") {
             std::cout << gameboard.toFEN() << std::endl;
         } else if (command == "test") {
-            std::string testFEN1 = "8/6q1/8/8/8/2Q5/8/8 w - - 0 1";
-            std::string testFEN2 = "3k4/3q4/2Q5/8/8/8/8/3K4 b - - 0 1";
-            gameboard.readFEN(testFEN2);
-            gameboard.printAttacked();
+            mirrorEvalTest(gameboard);
         }
         if (info->quit) break;
     }

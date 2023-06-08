@@ -1006,3 +1006,52 @@ bool Board::inCheck(const int color) {
   // for (square_t s; ...)
   return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
 }
+
+// For debugging: Mirrors the board
+void Board::mirror() {
+
+  piece tmpBoard[ROWS * COLS];
+  int tmpSide = OPPONENT(turn);
+  uint tmpCastlePerm = 0;
+  square_t tmpEnPas = NO_SQ;
+
+  square_t sq;
+
+  if (castlePerm & WKCastle) tmpCastlePerm |= BKCastle;
+  if (castlePerm & WQCastle) tmpCastlePerm |= BQCastle;
+
+  if (castlePerm & BKCastle) tmpCastlePerm |= WKCastle;
+  if (castlePerm & BQCastle) tmpCastlePerm |= WQCastle;
+
+  if (epSquare != NO_SQ) {
+    tmpEnPas = Mirror64[epSquare];
+  }
+
+  for (sq = A1; sq <= H8; ++sq) {
+    tmpBoard[sq] = board[Mirror64[sq]];
+  }
+
+  this->reset();
+
+  for (sq = A1; sq <= H8; ++sq) {
+    // flip color
+    board[sq] = tmpBoard[sq];
+    if (Piece::PieceType(board[sq]) != Piece::None) {
+      board[sq] ^= Piece::colorMask;
+    }
+    /*
+    if (Piece::IsColour(tmpBoard[sq], Piece::White)) {
+      board[sq] = Piece::Black | Piece::PieceType(tmpBoard[sq]);
+    } else {
+      board[sq] = Piece::White | Piece::PieceType(tmpBoard[sq]);
+    }
+    */
+  }
+
+  turn = tmpSide;
+  castlePerm = tmpCastlePerm;
+  epSquare = tmpEnPas;
+  posKey = this->generatePosKey();
+
+  this->initPieceList();
+}

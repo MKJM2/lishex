@@ -220,17 +220,6 @@ const int RookTable[64] = {
      0,   0,   5,  10,  10,   5,   0,   0
 };
 
-// Table for mirroring the piece square table
-const int Mirror64[64] = {
-    63, 62, 61, 60, 59, 58, 57, 56,
-    55, 54, 53, 52, 51, 50, 49, 48,
-    47, 46, 45, 44, 43, 42, 41, 40,
-    39, 38, 37, 36, 35, 34, 33, 32,
-    31, 30, 29, 28, 27, 26, 25, 24,
-    23, 22, 21, 20, 19, 18, 17, 16,
-    15, 14, 13, 12, 11, 10, 9,  8,
-    7,  6,  5,  4,  3,  2,  1,  0
-};
 
 // Pass and isolated pawn
 const int pawnIsolated = -10;
@@ -261,7 +250,7 @@ static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
 }
 
 // Evaluates the position from the side's POV
-int evaluate2(Board& b) {
+static int evaluate(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
@@ -323,7 +312,7 @@ int evaluate2(Board& b) {
     return (b.turn == Piece::White) ? score : -score;
 }
 // */
-int evaluate(Board& b) {
+static int evaluate2(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
@@ -334,8 +323,7 @@ int evaluate(Board& b) {
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += PawnTable[sq];
-
-        if (b.pawns[1] & isolatedMask[sq]) {
+        if ((b.pawns[1] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score += pawnIsolated;
         }
@@ -350,7 +338,6 @@ int evaluate(Board& b) {
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= PawnTable[Mirror64[sq]];
-
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score -= pawnIsolated;
@@ -358,7 +345,7 @@ int evaluate(Board& b) {
 
         if ((bPassedMask[sq] & b.pawns[1]) == 0) {
             // Add in pass pawn bonus
-            score -= pawnPassed[7 - SquareRank(sq)];
+            score -= pawnPassed[SquareRank(sq, Black)];
         }
     }
 
@@ -630,4 +617,23 @@ void search(Board& b, searchinfo_t *info) {
     printf("bestmove %s\n", toString(bestMv).c_str());
 
 
+}
+
+// Debug: Testing Mirror 64 and whether the eval is symmetric
+void mirrorEvalTest(Board& b) {
+    int ev1 = evaluate(b);
+    b.mirror();
+    int ev2 = evaluate(b);
+
+    if (ev1 != ev2) {
+        printf("\n\n\n");
+        b.print();
+        printf("Eval: %d\n", ev2);
+        b.mirror();
+        b.print();
+        printf("Eval: %d\n", ev1);
+    } else {
+        printf("OK!\n");
+        b.mirror();
+    }
 }
