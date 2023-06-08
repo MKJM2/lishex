@@ -50,6 +50,7 @@ int main() {
             // Example: position startpos moves e2e4 e7e5
             std::string positionStr;
             std::getline(iss, positionStr);
+            gameboard.reset();
             gameboard.readPosition(positionStr);
         } else if (command == "ucinewgame") {
             gameboard.reset();

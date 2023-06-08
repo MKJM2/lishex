@@ -18,7 +18,7 @@ Board::Board() {
   this->readFEN(startFEN);
   this->posKey = generatePosKey();
   init_PVtable(&PVtable);
-  initPieceList();
+  // initPieceList(); // Called by readFEN()
   initMVVLVA();
   initEvalMasks();
 }
@@ -209,6 +209,29 @@ void Board::print(bool verbose) {
     std::cout << "King squares: White at " \
               << toString(kingSquare[1]) << ", Black at " \
               << toString(kingSquare[0]) << std::endl;
+    /*
+    std::cout << "Piece counts: " << std::endl;
+    std::cout << "White pawns: ";
+    std::cout << pceCount[Piece::White | Piece::Pawn] << std::endl;
+    std::cout << "Black pawns: ";
+    std::cout << pceCount[Piece::Black | Piece::Pawn] << std::endl;
+    std::cout << "White Knights: ";
+    std::cout << pceCount[Piece::White | Piece::Knight] << std::endl;
+    std::cout << "Black Knights: ";
+    std::cout << pceCount[Piece::Black | Piece::Knight] << std::endl;
+    std::cout << "White Bishops: ";
+    std::cout << pceCount[Piece::White | Piece::Bishop] << std::endl;
+    std::cout << "Black Bishops: ";
+    std::cout << pceCount[Piece::Black | Piece::Bishop] << std::endl;
+    std::cout << "White Rooks: ";
+    std::cout << pceCount[Piece::White | Piece::Rook] << std::endl;
+    std::cout << "Black Rooks: ";
+    std::cout << pceCount[Piece::Black | Piece::Rook] << std::endl;
+    std::cout << "White Queens: ";
+    std::cout << pceCount[Piece::White | Piece::Queen] << std::endl;
+    std::cout << "Black Queens: ";
+    std::cout << pceCount[Piece::Black | Piece::Queen] << std::endl;
+    */
 }
 
 
@@ -615,7 +638,6 @@ bool Board::makeMove(move_t move) {
   undo.captured = board[to];
   undo.posKey = this->posKey;
   undo.castlePerm = castlePerm;
-  undo.ply = ply;
 
   /* Update state */
 
@@ -807,16 +829,7 @@ void Board::undoMove(move_t move) {
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
   // TODO: Debug
-  /*
-  if (last.ply != ply - 1) {
-    printf("Assert failed while performing move %s\n", toString(move).c_str());
-    std::cout << this->toFEN() << std::endl;
-    printf("Desired ply: %llu\n", last.ply);
-    printf("Current ply - 1: %llu\n", ply - 1);
-    fflush(stdout);
-    assert(last.ply == ply - 1);
-  }
-  */
+  ply--;
   if (last.posKey != posKey) {
     printf("Assert failed while performing move %s\n", toString(move).c_str());
     std::cout << this->toFEN() << std::endl;
@@ -825,7 +838,6 @@ void Board::undoMove(move_t move) {
     fflush(stdout);
     assert(last.posKey == posKey);
   }
-  ply = last.ply;
   //this->posKey = generatePosKey();
 
   // This should be more incremental but works for now

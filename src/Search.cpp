@@ -1,3 +1,4 @@
+#include "Bitboard.h"
 #include "Board.h"
 #include "MoveGenerator.h"
 
@@ -260,7 +261,7 @@ static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
 }
 
 // Evaluates the position from the side's POV
-int evaluate(Board& b) {
+int evaluate2(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
@@ -320,6 +321,96 @@ int evaluate(Board& b) {
         }
     }
     return (b.turn == Piece::White) ? score : -score;
+}
+// */
+int evaluate(Board& b) {
+    using namespace Piece;
+    //          White           Black
+    int score = b.material[1] - b.material[0];
+    square_t sq;
+    int i;
+
+    piece p = White | Pawn;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score += PawnTable[sq];
+
+        if (b.pawns[1] & isolatedMask[sq]) {
+            // Add in isolated pawn penalty
+            score += pawnIsolated;
+        }
+
+        if ((wPassedMask[sq] & b.pawns[0]) == 0) {
+            // Add in pass pawn bonus
+            score += pawnPassed[SquareRank(sq)];
+        }
+    }
+
+    p = Black | Pawn;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score -= PawnTable[Mirror64[sq]];
+
+        if ((b.pawns[0] & isolatedMask[sq]) == 0) {
+            // Add in isolated pawn penalty
+            score -= pawnIsolated;
+        }
+
+        if ((bPassedMask[sq] & b.pawns[1]) == 0) {
+            // Add in pass pawn bonus
+            score -= pawnPassed[7 - SquareRank(sq)];
+        }
+    }
+
+    p = White | Knight;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score += KnightTable[sq];
+    }
+
+    p = Black | Knight;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = Mirror64[b.pieceList[p][i]];
+        score -= KnightTable[sq];
+    }
+
+    p = White | Bishop;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score += BishopTable[sq];
+    }
+
+    p = Black | Bishop;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = Mirror64[b.pieceList[p][i]];
+        score -= BishopTable[sq];
+    }
+
+    p = White | Rook;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score += RookTable[sq];
+    }
+
+    p = Black | Rook;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = Mirror64[b.pieceList[p][i]];
+        score -= RookTable[sq];
+    }
+
+    p = White | Queen;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = b.pieceList[p][i];
+        score += (BishopTable[sq] + RookTable[sq]) >> 1;
+    }
+
+    p = Black | Queen;
+    for (i = 0; i < b.pceCount[p]; ++i) {
+        sq = Mirror64[b.pieceList[p][i]];
+        score -= (BishopTable[sq] + RookTable[sq]) >> 1;
+    }
+
+    return (b.turn == White) ? score : -score;
 }
 
 

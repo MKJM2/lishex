@@ -55,8 +55,6 @@ typedef struct {
         piece captured;
         // Fifty move counter
         uint fiftyMoveCounter;
-        // halfmove clock
-        uint ply;
 } undo_t;
 
 

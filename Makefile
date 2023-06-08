@@ -11,6 +11,12 @@ ifeq ($(optimize),yes)
 	CXXFLAGS += -O3
 endif
 
+### Debugging (gdb)
+debug ?= no
+ifeq ($(debug),yes)
+	CXXFLAGS += -g -w
+endif
+
 # List of source files
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 
