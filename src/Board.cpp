@@ -562,7 +562,7 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
   }
 
   // Update material for colour
-  b.material[colour] += Piece::value[p];
+  b.material[colour] += Piece::value[Piece::PieceType(p)];
 
   // Finally, update the piece list
   b.pieceList[p][b.pceCount[p]++] = sq;
@@ -787,8 +787,7 @@ void Board::undoMove(move_t move) {
 
   // restore castling permissions
   hashCastle(); // hash out post-move permissions
-  castlePerm = last.castlePerm;
-  hashCastle(); // hash in pre-move permissions
+  castlePerm = last.castlePerm; // restore pre-move permissions
 
   // restore 50 move counter
   fiftyMoveCounter = last.fiftyMoveCounter;
@@ -801,18 +800,29 @@ void Board::undoMove(move_t move) {
   // Undo promotions
   if (isPromotion(move)) {
     //board[from] = Piece::Pawn | turn;
+    clearPiece(from, *this);
     addPiece(from, Piece::Pawn | turn, *this);
   }
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
-  assert(last.ply == ply - 1);
   // TODO: Debug
+  /*
+  if (last.ply != ply - 1) {
+    printf("Assert failed while performing move %s\n", toString(move).c_str());
+    std::cout << this->toFEN() << std::endl;
+    printf("Desired ply: %llu\n", last.ply);
+    printf("Current ply - 1: %llu\n", ply - 1);
+    fflush(stdout);
+    assert(last.ply == ply - 1);
+  }
+  */
   if (last.posKey != posKey) {
     printf("Assert failed while performing move %s\n", toString(move).c_str());
     std::cout << this->toFEN() << std::endl;
     printf("Desired   hash: %llu\n", last.posKey);
     printf("Generated hash: %llu\n", posKey);
+    fflush(stdout);
     assert(last.posKey == posKey);
   }
   ply = last.ply;
