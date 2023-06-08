@@ -5,6 +5,11 @@
 #include <iostream>
 #include "Square.h"
 
+#define SETBIT(bb, sq) ((bb) |=  (1UL << (sq)))
+#define CLRBIT(bb, sq) ((bb) &= ~(1UL << (sq)))
+#define CLRLSB(bb) ((bb) &= (bb - 1))
+#define CNT(bb) (__builtin_popcount(bb))
+
 // bitboard type
 typedef uint64_t bb_t;
 

@@ -1,5 +1,11 @@
 #include "Board.h"
 #include "MoveGenerator.h"
+#include "Piece.h"
+
+#define hashPiece(p, sq) (b.posKey ^= b.pieceKeys[(p)][(sq)])
+#define hashEnPassant(epSquare) (posKey ^= pieceKeys[Piece::None][epSquare])
+#define hashCastle() (posKey ^= castleKeys[this->castlePerm])
+#define hashTurn() (posKey ^= turnKey)
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -7,10 +13,12 @@ static std::mt19937_64 rng;
 
 // Constructor
 Board::Board() {
+  this->reset();
   this->initKeys();
   this->readFEN(startFEN);
   this->posKey = generatePosKey();
   init_PVtable(&PVtable);
+  initPieceList();
   initMVVLVA();
   initEvalMasks();
 }
@@ -22,9 +30,9 @@ Board::~Board() {
 }
 
 void Board::reset() {
-  this->readFEN(startFEN);
   // Clear history
   boardHistory.clear();
+
   // Clear all heuristic tables
   init_PVtable(&PVtable);
   pv.clear();
@@ -40,6 +48,53 @@ void Board::reset() {
   // Clear killer heuristic table
   for (i = 0; i < 64; ++i) {
       killersH[0][i] = killersH[1][i] = 0;
+  }
+
+  // Clear piece lists
+  bigPce[0] = bigPce[1] = 0;
+  majPce[0] = majPce[1] = 0;
+  minPce[0] = minPce[1] = 0;
+
+  // Reset pawn bitboards
+  pawns[0] = pawns[1] = pawns[BOTH] = 0ULL;
+
+  // Reset all piece counts
+  for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
+    pceCount[p] = 0;
+  }
+
+  // Finally, read the starting fen position
+  this->readFEN(startFEN);
+}
+
+void Board::initPieceList() {
+  using namespace Piece;
+  piece p;
+  square_t sq;
+  bool colour;
+  for (sq = A1; sq <= H8; ++sq) {
+    p = this->board[sq];
+    if (p != None) {
+      colour = IsColour(p, Piece::White);
+      // Update tables for eval
+      if (IsBig(p))            bigPce[colour]++;
+      if (IsKnightOrBishop(p)) minPce[colour]++;
+      if (IsRookOrQueen(p))    majPce[colour]++;
+
+      // Update material
+      material[colour] += value[PieceType(p)];
+
+      // Update pieceList and piece count to the curr square
+      pieceList[p][pceCount[p]++] = sq;
+
+      if (p == (White | King)) kingSquare[colour] = sq;
+      if (p == (Black | King)) kingSquare[colour^1] = sq;
+
+      if (PieceType(p) == Pawn) {
+        SETBIT(pawns[BOTH], sq);
+        SETBIT(pawns[colour], sq);
+      }
+    }
   }
 }
 
@@ -232,6 +287,9 @@ void Board::readFEN(std::string fen) {
 
   // Update material values
   this->updateMaterial();
+
+  // Initialize piece lists
+  this->initPieceList();
 }
 
 void Board::readPosition(std::string pos) {
@@ -275,6 +333,7 @@ void Board::readPosition(std::string pos) {
         }
     }
     this->updateMaterial();
+    this->initPieceList();
 }
 
 void Board::readGo(std::string goStr, searchinfo_t *info) {
@@ -440,6 +499,105 @@ std::string Board::toFEN() const {
   return fen;
 }
 
+/* Helpers for makeMove */
+inline static void clearPiece(const square_t sq, Board& b) {
+  piece p = b.board[sq];
+  bool colour = Piece::IsColour(p, Piece::White);
+
+  int pIdx; // Index of piece in the piece list
+
+  // Clear piece off the board
+  b.board[sq] = Piece::None;
+
+  // Update material for the corresponding side
+  b.material[colour] -= Piece::value[Piece::PieceType(p)];
+
+  // Update the Zobrist hash
+  hashPiece(p, sq);
+
+  // Update counts
+  if (Piece::IsBig(p)) {
+    b.bigPce[colour]--;
+    if (Piece::IsRookOrQueen(p)) {
+      b.majPce[colour]--;
+    } else {
+      b.minPce[colour]--;
+    }
+  } else { // is a pawn
+    CLRBIT(b.pawns[colour], sq);
+    CLRBIT(b.pawns[2], sq); // 2 is BOTH
+  }
+
+  // Finally, clear the piece off the piece list
+  for (int i = 0; i < b.pceCount[p]; ++i) {
+    if (b.pieceList[p][i] == sq) {
+      pIdx = i;
+    }
+  }
+
+  // Instead of clearning, we swap it with last element
+  // and decrement the piece count
+  b.pieceList[p][pIdx] = b.pieceList[p][--b.pceCount[p]];
+}
+
+inline static void addPiece(const square_t sq, const piece p, Board& b) {
+  bool colour = Piece::IsColour(p, Piece::White);
+
+  // Hash the piece into the Zobrist key
+  hashPiece(p, sq);
+
+  // Add piece to the board
+  b.board[sq] = p;
+
+  // Update counts
+  if (Piece::IsBig(p)) {
+    b.bigPce[colour]++;
+    if (Piece::IsRookOrQueen(p)) {
+      b.majPce[colour]++;
+    } else {
+      b.minPce[colour]++;
+    }
+  } else {
+    SETBIT(b.pawns[colour], sq);
+    SETBIT(b.pawns[BOTH], sq);
+  }
+
+  // Update material for colour
+  b.material[colour] += Piece::value[p];
+
+  // Finally, update the piece list
+  b.pieceList[p][b.pceCount[p]++] = sq;
+}
+
+inline static void movePiece(const square_t from, const square_t to, Board& b) {
+  piece p = b.board[from];
+  bool colour = Piece::IsColour(p, Piece::White);
+
+  // hash in the piece into the new position and out of the old
+  hashPiece(p, from);
+  b.board[from] = Piece::None;
+
+  hashPiece(p, to);
+  b.board[to] = p;
+
+  // Update the pawn bitboard if necessary
+  if (!Piece::IsBig(p)) {
+    CLRBIT(b.pawns[colour], from);
+    CLRBIT(b.pawns[BOTH], from);
+    SETBIT(b.pawns[colour], to);
+    SETBIT(b.pawns[BOTH], to);
+  }
+
+  // Move the piece in the piece list
+  for (int i = 0; i < b.pceCount[p]; ++i) {
+    if (b.pieceList[p][i] == from) {
+      b.pieceList[p][i] = to;
+      break;
+    }
+  }
+}
+
+
 // Returns True if move was legal, False otherwise
 bool Board::makeMove(move_t move) {
 
@@ -447,6 +605,9 @@ bool Board::makeMove(move_t move) {
   ushort to = getTo(move);
   ushort from = getFrom(move);
   int flags = getFlags(move);
+
+  // Extract side
+  bool colour = Piece::IsColour(turn, Piece::White);
 
   // Store the pre-move state
   undo_t undo;
@@ -463,7 +624,7 @@ bool Board::makeMove(move_t move) {
   // If en passant performed, remove captured pawn
   if (flags == EpCapture) {
     //std::cout << "Holy hell!\n";
-    square_t targetSquare = epSquare + pawnDest[turn == Piece::Black];
+    square_t targetSquare = epSquare + pawnDest[colour^1];
     piece capturedPawn = board[targetSquare];
     board[targetSquare] = Piece::None;
     undo.captured = capturedPawn;

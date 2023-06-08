@@ -32,6 +32,17 @@ namespace Piece {
         return piece & typeMask;
     }
 
+    // Not a pawn
+    inline static bool IsBig (int piece) {
+        return (piece & 0b101);
+    }
+
+    // Minor pieces (TODO: find a cleaner way)
+    inline static bool IsKnightOrBishop (int piece) {
+        return PieceType(piece) == Knight || PieceType(piece) == Bishop;
+    }
+
+    // Major pieces
     inline static bool IsRookOrQueen (int piece) {
         return (piece & 0b110) == 0b110;
     }

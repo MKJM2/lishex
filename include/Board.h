@@ -20,6 +20,8 @@
 #define ROWS 8
 #define COLS 8
 
+#define BOTH 2
+
 using namespace std::chrono;
 #define getTime() ( \
         (uint64_t) duration_cast<milliseconds>(system_clock::now() \
@@ -126,6 +128,12 @@ class Board {
         enum { WKCastle = 1, WQCastle = 2, BKCastle = 4, BQCastle = 8};
         int turn = Piece::White;
         int material[2] = {0, 0};
+        int pceCount[24];
+        int bigPce[2]; // non-pawns
+        int majPce[2]; // Queens | Rooks
+        int minPce[2]; // Bishops | Knights
+        piece pieceList[24][10];
+        bb_t pawns[3]; // Black, White, Both pawns
         uint ply = 0;
         uint fullMove = 1;
         uint castlePerm = WKCastle | WQCastle | BKCastle | BQCastle;
@@ -138,6 +146,7 @@ class Board {
         u64 posKey = 0;
         uint fiftyMoveCounter = 0;
         void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
+        void initPieceList();
         u64 generatePosKey();
         std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);

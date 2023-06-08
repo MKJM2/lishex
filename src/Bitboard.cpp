@@ -42,9 +42,9 @@ void initEvalMasks() {
 
     // Passing pawn masks initialization
     for (sq = 0; sq < 64; ++sq) {
-        wPassedMask[sq] = 0;
-        bPassedMask[sq] = 0;
-        isolatedMask[sq] = 0;
+        wPassedMask[sq] = 0ULL;
+        bPassedMask[sq] = 0ULL;
+        isolatedMask[sq] = 0ULL;
     }
 
     for (sq = 0; sq < 64; ++sq) {
