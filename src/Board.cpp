@@ -69,7 +69,14 @@ void Board::initPieceList() {
   piece p;
   square_t sq;
   bool colour;
+  // Reset material counts
   material[0] = material[1] = 0;
+
+  // Reset piece counts
+  for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
+    pceCount[p] = 0;
+  }
+
   for (sq = A1; sq <= H8; ++sq) {
     p = this->board[sq];
     if (p != None) {
@@ -307,10 +314,7 @@ void Board::readFEN(std::string fen) {
   // set the fullmove clock
   fullMove = stoi(fenParts[5]);
 
-  // Update material values
-  this->updateMaterial();
-
-  // Initialize piece lists
+  // Initialize piece lists and update material values in one go
   this->initPieceList();
 }
 
@@ -354,7 +358,7 @@ void Board::readPosition(std::string pos) {
             this->ply = 0;
         }
     }
-    this->updateMaterial();
+    //this->updateMaterial();
     this->initPieceList();
 }
 

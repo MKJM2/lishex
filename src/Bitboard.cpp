@@ -61,7 +61,7 @@ void initEvalMasks() {
         }
 
         if (SquareFile(sq) > 0) {
-            isolatedMask[sq] |= fileBBMask[SquareFile(sq)];
+            isolatedMask[sq] |= fileBBMask[SquareFile(sq) - 1];
 
             to = sq + 7;
             while (to < 64) {
@@ -77,7 +77,7 @@ void initEvalMasks() {
         }
 
         if (SquareFile(sq) < 7) {
-            isolatedMask[sq] |= fileBBMask[SquareFile(sq)];
+            isolatedMask[sq] |= fileBBMask[SquareFile(sq) + 1];
 
             to = sq + 9;
             while (to < 64) {

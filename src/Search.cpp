@@ -225,8 +225,14 @@ const int RookTable[64] = {
 const int pawnIsolated = -10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 const int pawnPassed[8] = {0, 5, 10, 20, 35, 60, 100, 200};
-// Bonus for putting the rook on an open file
-const int rookOpenFile = 5;
+// Bonus for having two bishops on board
+const int bishopPair = 30;
+// Bonuses for rooks/queens on open/semi-open files
+const int rookOpenFile = 10;
+const int rookSemiOpenFile = 5;
+const int queenOpenFile = 5;
+const int queenSemiOpenFile = 3;
+
 
 /* Pick the highest scoring move according to heuristics */
 static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
@@ -316,7 +322,7 @@ static int evaluate(Board& b) {
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
-    printf("%d: White: %d Black %d\n", score, b.material[1], b.material[0]);
+    //printf("%d: White: %d Black %d\n", score, b.material[1], b.material[0]);
     square_t sq;
     int i;
 
@@ -324,95 +330,118 @@ static int evaluate(Board& b) {
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += PawnTable[sq];
-        printf("+%d: white pawn on %s\n", PawnTable[sq], toString(sq).c_str());
-        /*
+        //printf("+%d: white pawn on %s\n", PawnTable[sq], toString(sq).c_str());
         if ((b.pawns[1] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score += pawnIsolated;
         }
-
         if ((wPassedMask[sq] & b.pawns[0]) == 0) {
             // Add in pass pawn bonus
             score += pawnPassed[SquareRank(sq)];
         }
-        */
     }
 
     p = Black | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= PawnTable[Mirror64[sq]];
-        printf("-%d: black pawn on %s\n", PawnTable[Mirror64[sq]], toString(sq).c_str());
-        /*
+        //printf("-%d: black pawn on %s\n", PawnTable[Mirror64[sq]], toString(sq).c_str());
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score -= pawnIsolated;
         }
-
         if ((bPassedMask[sq] & b.pawns[1]) == 0) {
             // Add in pass pawn bonus
             score -= pawnPassed[SquareRank(sq, Black)];
         }
-        */
     }
 
     p = White | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += KnightTable[sq];
-        printf("+%d: white knight on %s\n", KnightTable[sq], toString(sq).c_str());
+        //printf("+%d: white knight on %s\n", KnightTable[sq], toString(sq).c_str());
     }
 
     p = Black | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= KnightTable[Mirror64[sq]];
-        printf("-%d: black knight on %s\n", KnightTable[Mirror64[sq]], toString(sq).c_str());
+        //printf("-%d: black knight on %s\n", KnightTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += BishopTable[sq];
-        printf("+%d: white bishop on %s\n", BishopTable[sq], toString(sq).c_str());
+        //printf("+%d: white bishop on %s\n", BishopTable[sq], toString(sq).c_str());
     }
 
     p = Black | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= BishopTable[Mirror64[sq]];
-        printf("-%d: black bishop on %s\n", BishopTable[Mirror64[sq]], toString(sq).c_str());
+        //printf("-%d: black bishop on %s\n", BishopTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score += RookTable[sq];
-        printf("+%d: white rook on %s\n", RookTable[sq], toString(sq).c_str());
+        //printf("+%d: white rook on %s\n", RookTable[sq], toString(sq).c_str());
+        if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
+            score += rookOpenFile;
+        } else if (!(b.pawns[1] & fileBBMask[SquareFile(sq)])) {
+            score += rookSemiOpenFile;
+        }
     }
 
     p = Black | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
         score -= RookTable[Mirror64[sq]];
-        printf("-%d: black rook on %s\n", RookTable[Mirror64[sq]], toString(sq).c_str());
+        //printf("-%d: black rook on %s\n", RookTable[Mirror64[sq]], toString(sq).c_str());
+        if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
+            score -= rookOpenFile;
+        } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
+            score -= rookSemiOpenFile;
+        }
     }
 
     p = White | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        int delta= (BishopTable[sq] + RookTable[sq]) >> 1;
-        score += delta;
-        printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
+        //int delta= (BishopTable[sq] + RookTable[sq]) >> 1;
+        //score += delta;
+        //printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
+        if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
+            score += queenOpenFile;
+        } else if (!(b.pawns[1] & fileBBMask[SquareFile(sq)])) {
+            score += queenSemiOpenFile;
+        }
     }
 
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = Mirror64[b.pieceList[p][i]];
-        int delta = (BishopTable[sq] + RookTable[sq]) >> 1;
-        score -= delta;
-        printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
+        //int delta = (BishopTable[sq] + RookTable[sq]) >> 1;
+        //score -= delta;
+        //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
+        if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
+            score -= queenOpenFile;
+        } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
+            score -= queenSemiOpenFile;
+        }
     }
+
+    // Bonus score for a bishop pair
+    if (b.pceCount[1] >= 2) {
+        score += bishopPair;
+    }
+    if (b.pceCount[0] >= 2) {
+        score -= bishopPair;
+    }
+
 
     return (b.turn == White) ? score : -score;
 }
@@ -640,7 +669,7 @@ void search(Board& b, searchinfo_t *info) {
 void mirrorEvalTest(Board& b) {
     //b.reset();
     //b.readFEN("8/p6k/6p1/5p2/P4K2/8/5pB1/8 b - - 2 62");
-    //b.print();
+    b.print();
     int ev1 = evaluate(b);
     printf("Eval: %d\n", ev1);
     b.mirror();
@@ -648,6 +677,6 @@ void mirrorEvalTest(Board& b) {
     int ev2 = evaluate(b);
     printf("Eval: %d\n", ev2);
     if (ev1 != ev2) {
-        printf("Test failed!\n");
+        printf("Test failed!!!\n");
     }
 }
