@@ -601,8 +601,8 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 bool Board::makeMove(move_t move) {
 
   // Extract move data
-  ushort to = getTo(move);
-  ushort from = getFrom(move);
+  square_t to = getTo(move);
+  square_t from = getFrom(move);
   int flags = getFlags(move);
 
   // Extract side
@@ -616,7 +616,6 @@ bool Board::makeMove(move_t move) {
   undo.posKey = this->posKey;
   undo.castlePerm = castlePerm;
   undo.ply = ply;
-
 
   /* Update state */
 
@@ -635,7 +634,6 @@ bool Board::makeMove(move_t move) {
       //board[F1] = board[H1];
       //board[H1] = Piece::None;
     } else {
-      assert(to == G8);
       //board[F8] = board[H8];
       //board[H8] = Piece::None;
       movePiece(H8, F8, *this);
@@ -646,7 +644,6 @@ bool Board::makeMove(move_t move) {
       //board[A1] = Piece::None;
       movePiece(A1, D1, *this);
     } else {
-      assert(to == C8);
       //board[D8] = board[A8];
       //board[A8] = Piece::None;
       movePiece(A8, D8, *this);
@@ -654,8 +651,12 @@ bool Board::makeMove(move_t move) {
   }
 
   // Handle en passant square
-  epSquare = (flags == DoublePawnPush) ? (to + from) / 2 : NO_SQ;
-  hashEnPassant(epSquare);
+  if (flags == DoublePawnPush) {
+    epSquare = (to + from) >> 1;
+    hashEnPassant(epSquare);
+  } else {
+    epSquare = NO_SQ;
+  }
 
   // Handle castle permissions
   castlePerm &= castlePermDelta[from];
@@ -664,11 +665,13 @@ bool Board::makeMove(move_t move) {
 
   boardHistory.push_back(undo);
 
-  // TODO: Handle fifty move rule
+  // Handle fifty move rule
+  fiftyMoveCounter++;
 
   // Perform the move
   if (board[to] != Piece::None) {
     clearPiece(to, *this);
+    fiftyMoveCounter = 0;
   }
 
   //board[to] = board[from];
@@ -722,53 +725,72 @@ bool Board::makeMove(move_t move) {
 }
 
 void Board::undoMove(move_t move) {
-  ushort to = getTo(move);
-  ushort from = getFrom(move);
+  square_t to = getTo(move);
+  square_t from = getFrom(move);
   int flags = getFlags(move);
 
-  if (boardHistory.size() < 1) return;
+  if (boardHistory.size() == 0) return;
   undo_t last = boardHistory.back();
   boardHistory.pop_back();
 
   int op = OPPONENT(turn);
   turn = op;
+  hashTurn();
 
   // undo the actual move
-  board[from] = board[to];
+  //board[from] = board[to];
+  movePiece(to, from, *this);
 
+  // Hash out the en passant square if currently set
+  if (epSquare != NO_SQ) hashEnPassant(epSquare);
+
+  // Restore the en passant square from pre-move state
   epSquare = last.enPas;
-  // If en passant performed, remove captured pawn
+
+  // If en passant performed, restore the captured pawn
   if (flags == EpCapture) {
-    //std::cout << "New response just dropped"
-    board[epSquare + pawnDest[turn == Piece::Black]] = last.captured;
-    board[to] = Piece::None;
+    //std::cout << "New response just dropped\n";
+    square_t targetSquare = epSquare + pawnDest[turn == Piece::Black];
+    addPiece(targetSquare, last.captured, *this);
+    //board[targetSquare] = last.captured;
+    //board[to] = Piece::None; <- handled by movePiece already
   } else if (flags == KingCastle) {
     // Move the rook back to its original place pre-castling
     if (to == G1) {
-      board[H1] = board[F1];
-      board[F1] = Piece::None;
+      movePiece(F1, H1, *this);
+      //board[H1] = board[F1];
+      //board[F1] = Piece::None;
     } else {
-      assert(to == G8);
-      board[H8] = board[F8];
-      board[F8] = Piece::None;
+      movePiece(F8, H8, *this);
+      //board[H8] = board[F8];
+      //board[F8] = Piece::None;
     }
-    board[to] = Piece::None;
+    //board[to] = Piece::None;
   } else if (flags == QueenCastle) {
     if (to == C1) {
-      board[A1] = board[D1];
-      board[D1] = Piece::None;
+      //board[A1] = board[D1];
+      //board[D1] = Piece::None;
+      movePiece(D1, A1, *this);
     } else {
-      assert(to == C8);
-      board[A8] = board[D8];
-      board[D8] = Piece::None;
+      //board[A8] = board[D8];
+      //board[D8] = Piece::None;
+      movePiece(D8, A8, *this);
     }
-    board[to] = Piece::None;
+    //board[to] = Piece::None;
   } else {
-    board[to] = last.captured;
+    //board[to] = last.captured;
+    //addPiece(board[to], last.captured, *this);
+    if (last.captured != Piece::None) {
+      addPiece(to, last.captured, *this);
+    }
   }
 
   // restore castling permissions
+  hashCastle(); // hash out post-move permissions
   castlePerm = last.castlePerm;
+  hashCastle(); // hash in pre-move permissions
+
+  // restore 50 move counter
   fiftyMoveCounter = last.fiftyMoveCounter;
 
   // restore king's square
@@ -778,18 +800,26 @@ void Board::undoMove(move_t move) {
 
   // Undo promotions
   if (isPromotion(move)) {
-    board[from] = Piece::Pawn | turn;
+    //board[from] = Piece::Pawn | turn;
+    addPiece(from, Piece::Pawn | turn, *this);
   }
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
   assert(last.ply == ply - 1);
+  // TODO: Debug
+  if (last.posKey != posKey) {
+    printf("Assert failed while performing move %s\n", toString(move).c_str());
+    std::cout << this->toFEN() << std::endl;
+    printf("Desired   hash: %llu\n", last.posKey);
+    printf("Generated hash: %llu\n", posKey);
+    assert(last.posKey == posKey);
+  }
   ply = last.ply;
-  fiftyMoveCounter--;
-  this->posKey = generatePosKey();
+  //this->posKey = generatePosKey();
 
   // This should be more incremental but works for now
-  this->updateMaterial();
+  //this->updateMaterial();
 }
 
 void Board::undoLast() {
