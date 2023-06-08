@@ -62,9 +62,6 @@ void Board::reset() {
   for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
     pceCount[p] = 0;
   }
-
-  // Finally, read the starting fen position
-  this->readFEN(startFEN);
 }
 
 void Board::initPieceList() {
@@ -87,8 +84,9 @@ void Board::initPieceList() {
       // Update pieceList and piece count to the curr square
       pieceList[p][pceCount[p]++] = sq;
 
-      if (p == (White | King)) kingSquare[colour] = sq;
-      if (p == (Black | King)) kingSquare[colour^1] = sq;
+      if (Piece::PieceType(p) == King) {
+        kingSquare[colour] = sq;
+      }
 
       if (PieceType(p) == Pawn) {
         SETBIT(pawns[BOTH], sq);
@@ -500,11 +498,12 @@ std::string Board::toFEN() const {
 }
 
 /* Helpers for makeMove */
+// Returns captured piece, if any
 inline static void clearPiece(const square_t sq, Board& b) {
   piece p = b.board[sq];
   bool colour = Piece::IsColour(p, Piece::White);
 
-  int pIdx; // Index of piece in the piece list
+  int pIdx = -1; // Index of piece in the piece list
 
   // Clear piece off the board
   b.board[sq] = Piece::None;
@@ -626,62 +625,80 @@ bool Board::makeMove(move_t move) {
     //std::cout << "Holy hell!\n";
     square_t targetSquare = epSquare + pawnDest[colour^1];
     piece capturedPawn = board[targetSquare];
-    board[targetSquare] = Piece::None;
+    //board[targetSquare] = Piece::None;
+    clearPiece(targetSquare, *this);
     undo.captured = capturedPawn;
   } else if (flags == KingCastle) {
     // Move the rook to its new square
     if (to == G1) {
-      board[F1] = board[H1];
-      board[H1] = Piece::None;
+      movePiece(H1, F1, *this);
+      //board[F1] = board[H1];
+      //board[H1] = Piece::None;
     } else {
       assert(to == G8);
-      board[F8] = board[H8];
-      board[H8] = Piece::None;
+      //board[F8] = board[H8];
+      //board[H8] = Piece::None;
+      movePiece(H8, F8, *this);
     }
   } else if (flags == QueenCastle) {
     if (to == C1) {
-      board[D1] = board[A1];
-      board[A1] = Piece::None;
+      //board[D1] = board[A1];
+      //board[A1] = Piece::None;
+      movePiece(A1, D1, *this);
     } else {
       assert(to == C8);
-      board[D8] = board[A8];
-      board[A8] = Piece::None;
+      //board[D8] = board[A8];
+      //board[A8] = Piece::None;
+      movePiece(A8, D8, *this);
     }
   }
 
   // Handle en passant square
   epSquare = (flags == DoublePawnPush) ? (to + from) / 2 : NO_SQ;
+  hashEnPassant(epSquare);
 
   // Handle castle permissions
   castlePerm &= castlePermDelta[from];
   castlePerm &= castlePermDelta[to];
+  hashCastle();
 
   boardHistory.push_back(undo);
 
   // TODO: Handle fifty move rule
 
   // Perform the move
-  board[to] = board[from];
-  board[from] = Piece::None;
+  if (board[to] != Piece::None) {
+    clearPiece(to, *this);
+  }
+
+  //board[to] = board[from];
+  //board[from] = Piece::None;
+  movePiece(from, to, *this);
 
   // Handle promotions
   if (isPromotion(move)) {
+    // Update the pawn to be the capture choice (QNBR)
+    clearPiece(to, *this);
     // clear the capture bit
     switch (flags & ~Capture) {
       case KnightPromo:
-        board[to] = Piece::Knight | turn; break;
+        addPiece(to, Piece::Knight | turn, *this); break;
+        //board[to] = Piece::Knight | turn; break;
       case BishopPromo:
-        board[to] = Piece::Bishop | turn; break;
+        addPiece(to, Piece::Bishop | turn, *this); break;
+        //board[to] = Piece::Bishop | turn; break;
       case RookPromo:
-        board[to] = Piece::Rook | turn; break;
+        addPiece(to, Piece::Rook | turn, *this); break;
+        //board[to] = Piece::Rook | turn; break;
       default: /* + Queen case */
-        board[to] = Piece::Queen | turn; break;
+        addPiece(to, Piece::Queen | turn, *this); break;
+        //board[to] = Piece::Queen | turn; break;
     }
   }
 
   // Update the king square iff the king was moved
   if (Piece::PieceType(board[to]) == Piece::King) {
-    kingSquare[turn == Piece::White] = to;
+    kingSquare[colour] = to;
   }
 
   // Bookkeeping
@@ -690,10 +707,11 @@ bool Board::makeMove(move_t move) {
   turn = op;
   ply++;
   fiftyMoveCounter++;
-  this->posKey = generatePosKey();
+  //this->posKey = generatePosKey();
+  hashTurn();
 
   // This should be more incremental (to be fast) but works for now
-  this->updateMaterial();
+  //this->updateMaterial();
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
   if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
@@ -707,7 +725,6 @@ void Board::undoMove(move_t move) {
   ushort to = getTo(move);
   ushort from = getFrom(move);
   int flags = getFlags(move);
-
 
   if (boardHistory.size() < 1) return;
   undo_t last = boardHistory.back();
@@ -847,10 +864,10 @@ void Board::updateMaterial() {
   for (square_t s = A1; s <= H8; s++) {
     piece p = board[s];
     if (p != None) {
-      material[Colour(p) == White] += value[PieceType(p)];
+      material[IsColour(p, White)] += value[PieceType(p)];
     }
     if (PieceType(p) == King) {
-      kingSquare[Colour(p) == White] = s;
+      kingSquare[IsColour(p, White)] = s;
     }
   }
 }
