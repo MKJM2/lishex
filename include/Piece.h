@@ -2,6 +2,20 @@
 #define PIECE_H_
 
 #define OPPONENT(color) (color ^ 0b11000)
+
+// Piece shorthands
+#define wP (Piece::White | Piece::Pawn)
+#define wN (Piece::White | Piece::Knight)
+#define wB (Piece::White | Piece::Bishop)
+#define wR (Piece::White | Piece::Rook)
+#define wQ (Piece::White | Piece::Queen)
+
+#define bP (Piece::Black | Piece::Pawn)
+#define bN (Piece::Black | Piece::Knight)
+#define bB (Piece::Black | Piece::Bishop)
+#define bR (Piece::Black | Piece::Rook)
+#define bQ (Piece::Black | Piece::Queen)
+
 namespace Piece {
     // inspired by Sebastian Lague's design
     static const int None = 0;   // 0b00000

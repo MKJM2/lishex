@@ -176,7 +176,7 @@ int getPV(Board& b, const int depth) {
 
 // Piece-square tables
 
-const int PawnTable[64] = {
+const int pawnTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0,
     10,  10,   0, -10, -10,   0,  10,  10,
      5,   0,   0,   5,   5,   0,   0,   5,
@@ -187,7 +187,7 @@ const int PawnTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
-const int KnightTable[64] = {
+const int knightTable[64] = {
      0, -10,   0,   0,   0,   0, -10,   0,
      0,   0,   0,   5,   5,   0,   0,   0,
      0,   0,  10,  10,  10,  10,   0,   0,
@@ -198,7 +198,7 @@ const int KnightTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
-const int BishopTable[64] = {
+const int bishopTable[64] = {
      0,   0, -10,   0,   0, -10,   0,   0,
      0,   0,   0,  10,  10,   0,   0,   0,
      0,   0,  10,  15,  15,  10,   0,   0,
@@ -209,7 +209,7 @@ const int BishopTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
-const int RookTable[64] = {
+const int rookTable[64] = {
      0,   0,   5,  10,  10,   5,   0,   0,
      0,   0,   5,  10,  10,   5,   0,   0,
      0,   0,   5,  10,  10,   5,   0,   0,
@@ -219,6 +219,35 @@ const int RookTable[64] = {
     25,  25,  25,  25,  25,  25,  25,  25,
      0,   0,   5,  10,  10,   5,   0,   0
 };
+
+
+
+const int kingEndgame[64] = {
+   -50, -10,   0,   0,   0,   0, -10, -50,
+   -10,   0,  10,  10,  10,  10,   0, -10,
+     0,  10,  20,  20,  20,  20,  10,   0,
+     0,  10,  20,  40,  40,  20,  10,   0,
+     0,  10,  20,  40,  40,  20,  10,   0,
+     0,  10,  20,  20,  20,  20,  10,   0,
+   -10,   0,  10,  10,  10,  10,   0, -10,
+   -50, -10,   0,   0,   0,   0, -10, -50
+};
+
+const int kingOpening[64] = {
+     0,   5,   5, -10, -10,   0,  10,   5,
+   -30, -30, -30, -30, -30, -30, -30, -30,
+   -50, -50, -50, -50, -50, -50, -50, -50,
+   -70, -70, -70, -70, -70, -70, -70, -70,
+   -70, -70, -70, -70, -70, -70, -70, -70,
+   -70, -70, -70, -70, -70, -70, -70, -70,
+   -70, -70, -70, -70, -70, -70, -70, -70,
+   -70, -70, -70, -70, -70, -70, -70, -70
+};
+
+#define isEndgame(material) (material <= (1 * Piece::value[Piece::Rook] + \
+                                          2 * Piece::value[Piece::Knight] + \
+                                          2 * Piece::value[Piece::Pawn] + \
+                                          1 * Piece::value[Piece::King]))
 
 
 // Pass and isolated pawn
@@ -256,6 +285,7 @@ static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
 }
 
 // Evaluates the position from the side's POV
+/*
 static int evaluate2(Board& b) {
     using namespace Piece;
     //          White           Black
@@ -269,42 +299,41 @@ static int evaluate2(Board& b) {
             switch (PieceType(p)) {
                 case Pawn: {
                     if (IsColour(p, White)) {
-                        delta = PawnTable[s];
+                        delta = pawnTable[s];
                     } else {
-                        delta = -PawnTable[Mirror64[s]];
+                        delta = -pawnTable[Mirror64[s]];
                     }
                     break;
                 }
                 case Knight: {
                     if (IsColour(p, White)) {
-                        delta = KnightTable[s];
+                        delta = knightTable[s];
                     } else {
-                        delta = -KnightTable[Mirror64[s]];
+                        delta = -knightTable[Mirror64[s]];
                     }
                     break;
                 }
                 case Rook: {
                     if (IsColour(p, White)) {
-                        delta = RookTable[s];
+                        delta = rookTable[s];
                     } else {
-                        delta = -RookTable[Mirror64[s]];
+                        delta = -rookTable[Mirror64[s]];
                     }
                     break;
                 }
                 case Bishop: {
                     if (IsColour(p, White)) {
-                        delta = BishopTable[s];
+                        delta = bishopTable[s];
                     } else {
-                        delta = -BishopTable[Mirror64[s]];
+                        delta = -bishopTable[Mirror64[s]];
                     }
                     break;
                 }
-                // TODO: Tune this
                 case Queen: {
                     if (IsColour(p, White)) {
-                        delta = (BishopTable[s] + RookTable[s]) / 2;
+                        delta = (bishopTable[s] + rookTable[s]) / 2;
                     } else {
-                        delta = -(BishopTable[Mirror64[s]] + RookTable[Mirror64[s]]) / 2;
+                        delta = -(bishopTable[Mirror64[s]] + rookTable[Mirror64[s]]) / 2;
                     }
                     break;
                 }
@@ -317,6 +346,33 @@ static int evaluate2(Board& b) {
     }
     return (b.turn == Piece::White) ? score : -score;
 }
+*/
+
+
+// sjeng 11.2 (adapted from Vice 1.1 by Bluefever Software)
+//8/6R1/2k5/6P1/8/8/4nP2/6K1 w - - 1 41
+bool MaterialDraw(const Board& b) {
+    using namespace Piece;
+    if (!b.pceCount[wR] && !b.pceCount[bR] && !b.pceCount[wQ] && !b.pceCount[bQ]) {
+	  if (!b.pceCount[bB] && !b.pceCount[wB]) {
+	      if (b.pceCount[wN] < 3 && b.pceCount[bN] < 3) {  return 1; }
+	  } else if (!b.pceCount[wN] && !b.pceCount[bN]) {
+	     if (abs(b.pceCount[wB] - b.pceCount[bB]) < 2) { return 1; }
+	  } else if ((b.pceCount[wN] < 3 && !b.pceCount[wB]) || (b.pceCount[wB] == 1 && !b.pceCount[wN])) {
+	    if ((b.pceCount[bN] < 3 && !b.pceCount[bB]) || (b.pceCount[bB] == 1 && !b.pceCount[bN]))  { return 1; }
+	  }
+	} else if (!b.pceCount[wQ] && !b.pceCount[bQ]) {
+        if (b.pceCount[wR] == 1 && b.pceCount[bR] == 1) {
+            if ((b.pceCount[wN] + b.pceCount[wB]) < 2 && (b.pceCount[bN] + b.pceCount[bB]) < 2)	{ return 1; }
+        } else if (b.pceCount[wR] == 1 && !b.pceCount[bR]) {
+            if ((b.pceCount[wN] + b.pceCount[wB] == 0) && (((b.pceCount[bN] + b.pceCount[bB]) == 1) || ((b.pceCount[bN] + b.pceCount[bB]) == 2))) { return 1; }
+        } else if (b.pceCount[bR] == 1 && !b.pceCount[wR]) {
+            if ((b.pceCount[bN] + b.pceCount[bB] == 0) && (((b.pceCount[wN] + b.pceCount[wB]) == 1) || ((b.pceCount[wN] + b.pceCount[wB]) == 2))) { return 1; }
+        }
+    }
+  return 0;
+}
+
 // */
 static int evaluate(Board& b) {
     using namespace Piece;
@@ -326,11 +382,16 @@ static int evaluate(Board& b) {
     square_t sq;
     int i;
 
+    // Check for material draw (assuming optimal play)
+	if(!b.pceCount[wP] && !b.pceCount[bP] && MaterialDraw(b)) {
+		return 0;
+	}
+
     piece p = White | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score += PawnTable[sq];
-        //printf("+%d: white pawn on %s\n", PawnTable[sq], toString(sq).c_str());
+        score += pawnTable[sq];
+        //printf("+%d: white pawn on %s\n", pawnTable[sq], toString(sq).c_str());
         if ((b.pawns[1] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score += pawnIsolated;
@@ -344,8 +405,8 @@ static int evaluate(Board& b) {
     p = Black | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= PawnTable[Mirror64[sq]];
-        //printf("-%d: black pawn on %s\n", PawnTable[Mirror64[sq]], toString(sq).c_str());
+        score -= pawnTable[Mirror64[sq]];
+        //printf("-%d: black pawn on %s\n", pawnTable[Mirror64[sq]], toString(sq).c_str());
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score -= pawnIsolated;
@@ -359,36 +420,36 @@ static int evaluate(Board& b) {
     p = White | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score += KnightTable[sq];
-        //printf("+%d: white knight on %s\n", KnightTable[sq], toString(sq).c_str());
+        score += knightTable[sq];
+        //printf("+%d: white knight on %s\n", knightTable[sq], toString(sq).c_str());
     }
 
     p = Black | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= KnightTable[Mirror64[sq]];
-        //printf("-%d: black knight on %s\n", KnightTable[Mirror64[sq]], toString(sq).c_str());
+        score -= knightTable[Mirror64[sq]];
+        //printf("-%d: black knight on %s\n", knightTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score += BishopTable[sq];
-        //printf("+%d: white bishop on %s\n", BishopTable[sq], toString(sq).c_str());
+        score += bishopTable[sq];
+        //printf("+%d: white bishop on %s\n", bishopTable[sq], toString(sq).c_str());
     }
 
     p = Black | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= BishopTable[Mirror64[sq]];
-        //printf("-%d: black bishop on %s\n", BishopTable[Mirror64[sq]], toString(sq).c_str());
+        score -= bishopTable[Mirror64[sq]];
+        //printf("-%d: black bishop on %s\n", bishopTable[Mirror64[sq]], toString(sq).c_str());
     }
 
     p = White | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score += RookTable[sq];
-        //printf("+%d: white rook on %s\n", RookTable[sq], toString(sq).c_str());
+        score += rookTable[sq];
+        //printf("+%d: white rook on %s\n", rookTable[sq], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
             score += rookOpenFile;
         } else if (!(b.pawns[1] & fileBBMask[SquareFile(sq)])) {
@@ -399,8 +460,8 @@ static int evaluate(Board& b) {
     p = Black | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= RookTable[Mirror64[sq]];
-        //printf("-%d: black rook on %s\n", RookTable[Mirror64[sq]], toString(sq).c_str());
+        score -= rookTable[Mirror64[sq]];
+        //printf("-%d: black rook on %s\n", rookTable[Mirror64[sq]], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
             score -= rookOpenFile;
         } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
@@ -411,7 +472,7 @@ static int evaluate(Board& b) {
     p = White | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        //int delta= (BishopTable[sq] + RookTable[sq]) >> 1;
+        //int delta= (bishopTable[sq] + rookTable[sq]) >> 1;
         //score += delta;
         //printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
@@ -424,7 +485,7 @@ static int evaluate(Board& b) {
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = Mirror64[b.pieceList[p][i]];
-        //int delta = (BishopTable[sq] + RookTable[sq]) >> 1;
+        //int delta = (bishopTable[sq] + rookTable[sq]) >> 1;
         //score -= delta;
         //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
@@ -432,6 +493,22 @@ static int evaluate(Board& b) {
         } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
             score -= queenSemiOpenFile;
         }
+    }
+
+    p = White | King;
+    sq = b.pieceList[p][0];
+    if (isEndgame(b.material[0])) {
+        score += kingEndgame[sq];
+    } else {
+        score += kingOpening[sq];
+    }
+
+    p = Black | King;
+    sq = Mirror64[b.pieceList[p][0]];
+    if (isEndgame(b.material[1])) {
+        score -= kingEndgame[sq];
+    } else {
+        score -= kingOpening[sq];
     }
 
     // Bonus score for a bishop pair
@@ -661,8 +738,6 @@ void search(Board& b, searchinfo_t *info) {
 
     // best move seen so far (even if search stopped)
     printf("bestmove %s\n", toString(bestMv).c_str());
-
-
 }
 
 // Debug: Testing Mirror 64 and whether the eval is symmetric
