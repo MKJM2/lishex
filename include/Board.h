@@ -29,7 +29,7 @@ using namespace std::chrono;
             .count() \
         )
 
-#define MAX_DEPTH (32)
+#define MAX_DEPTH (64)
 
 typedef int piece;
 typedef unsigned int uint;
@@ -54,6 +54,7 @@ const int Mirror64[64] = {
 };
 */
 
+/*
 const int Mirror64[64] = {
 56	,	57	,	58	,	59	,	60	,	61	,	62	,	63	,
 48	,	49	,	50	,	51	,	52	,	53	,	54	,	55	,
@@ -64,6 +65,9 @@ const int Mirror64[64] = {
 8	,	9	,	10	,	11	,	12	,	13	,	14	,	15	,
 0	,	1	,	2	,	3	,	4	,	5	,	6	,	7
 };
+*/
+// OR:
+#define MIRROR(sq) ((sq) ^ 56)
 
 class Board;
 
@@ -150,6 +154,8 @@ class Board {
         std::string toFEN() const;
         bool makeMove(move_t move);
         void undoMove(move_t move);
+        void makeNullMove();
+        void undoNullMove();
         void undoLast();
         void updateMaterial();
         enum { WKCastle = 1, WQCastle = 2, BKCastle = 4, BQCastle = 8};

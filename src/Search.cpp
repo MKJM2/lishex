@@ -225,10 +225,10 @@ const int rookTable[64] = {
 const int kingEndgame[64] = {
    -50, -10,   0,   0,   0,   0, -10, -50,
    -10,   0,  10,  10,  10,  10,   0, -10,
-     0,  10,  20,  20,  20,  20,  10,   0,
-     0,  10,  20,  40,  40,  20,  10,   0,
-     0,  10,  20,  40,  40,  20,  10,   0,
-     0,  10,  20,  20,  20,  20,  10,   0,
+     0,  10,  15,  15,  15,  15,  10,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,  10,  15,  15,  15,  15,  10,   0,
    -10,   0,  10,  10,  10,  10,   0, -10,
    -50, -10,   0,   0,   0,   0, -10, -50
 };
@@ -253,9 +253,9 @@ const int kingOpening[64] = {
 // Pass and isolated pawn
 const int pawnIsolated = -10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
-const int pawnPassed[8] = {0, 5, 10, 20, 35, 60, 100, 200};
+const int pawnPassed[8] = {0, 5, 10, 25, 40, 65, 110, 210};
 // Bonus for having two bishops on board
-const int bishopPair = 30;
+const int bishopPair = 25;
 // Bonuses for rooks/queens on open/semi-open files
 const int rookOpenFile = 10;
 const int rookSemiOpenFile = 5;
@@ -301,7 +301,7 @@ static int evaluate2(Board& b) {
                     if (IsColour(p, White)) {
                         delta = pawnTable[s];
                     } else {
-                        delta = -pawnTable[Mirror64[s]];
+                        delta = -pawnTable[MIRROR[s]];
                     }
                     break;
                 }
@@ -309,7 +309,7 @@ static int evaluate2(Board& b) {
                     if (IsColour(p, White)) {
                         delta = knightTable[s];
                     } else {
-                        delta = -knightTable[Mirror64[s]];
+                        delta = -knightTable[MIRROR[s]];
                     }
                     break;
                 }
@@ -317,7 +317,7 @@ static int evaluate2(Board& b) {
                     if (IsColour(p, White)) {
                         delta = rookTable[s];
                     } else {
-                        delta = -rookTable[Mirror64[s]];
+                        delta = -rookTable[MIRROR[s]];
                     }
                     break;
                 }
@@ -325,7 +325,7 @@ static int evaluate2(Board& b) {
                     if (IsColour(p, White)) {
                         delta = bishopTable[s];
                     } else {
-                        delta = -bishopTable[Mirror64[s]];
+                        delta = -bishopTable[MIRROR[s]];
                     }
                     break;
                 }
@@ -333,7 +333,7 @@ static int evaluate2(Board& b) {
                     if (IsColour(p, White)) {
                         delta = (bishopTable[s] + rookTable[s]) / 2;
                     } else {
-                        delta = -(bishopTable[Mirror64[s]] + rookTable[Mirror64[s]]) / 2;
+                        delta = -(bishopTable[MIRROR[s]] + rookTable[MIRROR[s]]) / 2;
                     }
                     break;
                 }
@@ -405,8 +405,8 @@ static int evaluate(Board& b) {
     p = Black | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= pawnTable[Mirror64[sq]];
-        //printf("-%d: black pawn on %s\n", pawnTable[Mirror64[sq]], toString(sq).c_str());
+        score -= pawnTable[MIRROR(sq)];
+        //printf("-%d: black pawn on %s\n", pawnTable[MIRROR[sq]], toString(sq).c_str());
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
             score -= pawnIsolated;
@@ -427,8 +427,8 @@ static int evaluate(Board& b) {
     p = Black | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= knightTable[Mirror64[sq]];
-        //printf("-%d: black knight on %s\n", knightTable[Mirror64[sq]], toString(sq).c_str());
+        score -= knightTable[MIRROR(sq)];
+        //printf("-%d: black knight on %s\n", knightTable[MIRROR[sq]], toString(sq).c_str());
     }
 
     p = White | Bishop;
@@ -441,8 +441,8 @@ static int evaluate(Board& b) {
     p = Black | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= bishopTable[Mirror64[sq]];
-        //printf("-%d: black bishop on %s\n", bishopTable[Mirror64[sq]], toString(sq).c_str());
+        score -= bishopTable[MIRROR(sq)];
+        //printf("-%d: black bishop on %s\n", bishopTable[MIRROR[sq]], toString(sq).c_str());
     }
 
     p = White | Rook;
@@ -460,8 +460,8 @@ static int evaluate(Board& b) {
     p = Black | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
-        score -= rookTable[Mirror64[sq]];
-        //printf("-%d: black rook on %s\n", rookTable[Mirror64[sq]], toString(sq).c_str());
+        score -= rookTable[MIRROR(sq)];
+        //printf("-%d: black rook on %s\n", rookTable[MIRROR[sq]], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
             score -= rookOpenFile;
         } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
@@ -484,7 +484,7 @@ static int evaluate(Board& b) {
 
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
-        sq = Mirror64[b.pieceList[p][i]];
+        sq = MIRROR(b.pieceList[p][i]);
         //int delta = (bishopTable[sq] + rookTable[sq]) >> 1;
         //score -= delta;
         //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
@@ -504,7 +504,7 @@ static int evaluate(Board& b) {
     }
 
     p = Black | King;
-    sq = Mirror64[b.pieceList[p][0]];
+    sq = MIRROR(b.pieceList[p][0]);
     if (isEndgame(b.material[1])) {
         score -= kingEndgame[sq];
     } else {
@@ -627,13 +627,36 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     if (inCheck) {
         ++depth;
     }
+
+    // Null moves
+
+    // Requirements:
+    // - can do null move (we only want to do one, and not do them repeatedly)
+    // - not in check
+    // - we are at least one search in (ply > 0)
+    // - we are not in a zugzwag (at least one big piece on board)
+    // depth - 1 - R (for R = 3) is allowed
+    int score = INT32_MIN;
+	if (canDoNull && !inCheck && b.ply && (b.bigPce[b.turn == Piece::White] > 0) && depth >= 4) {
+        b.makeNullMove();
+        score = -alphaBeta(b, info, -beta, -beta + 1, depth - 4, false);
+        b.undoNullMove();
+        if (info->stopped) {
+            return 0;
+        }
+        // TODO: Mates?
+        if (score >= beta) {
+            return beta;
+        }
+    }
+
     // Generate pseudolegal moves
     std::vector<move_t> moves = generateMoves(b);
     size_t moveIdx = 0;
     int legal = 0;
     int oldAlpha = alpha;
     move_t bestMv = NULLMV;
-    int score = INT32_MIN;
+    score = INT32_MIN;
 
     // Heuristic: start searching from pv moves
     move_t pvMv = checkPvTable(b);

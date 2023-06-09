@@ -10,6 +10,7 @@ A UCI chess-engine built in C++.
   - [Principal variation search](https://www.chessprogramming.org/Principal_Variation_Search)
   - [Killer move heuristic](https://www.chessprogramming.org/Killer_Heuristic)
   - [History heuristic](https://www.chessprogramming.org/History_Heuristic)
+  - [Null-move pruning](https://www.chessprogramming.org/Null_Move_Pruning)
   - Check extension
 - [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation
 - Universal Chess Interface (UCI) compatible.
@@ -36,7 +37,6 @@ or
 
 
 ### TODOs
-- [Null-move pruning](https://www.chessprogramming.org/Null_Move_Pruning)
 - [Futility pruning](https://www.chessprogramming.org/Futility_Pruning)
 - [Mobility scores](https://www.chessprogramming.org/Mobility)
 - [Late move reduction](https://www.chessprogramming.org/Late_Move_Reductions)

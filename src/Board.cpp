@@ -364,7 +364,7 @@ void Board::readPosition(std::string pos) {
 
 void Board::readGo(std::string goStr, searchinfo_t *info) {
     int depth = -1, movestogo = 30, movetime = -1;
-    int time = -1, inc = -1;
+    int time = -1, inc = 0;
     // Initially, no time to move is set
     info->timeSet = false;
 
@@ -836,7 +836,7 @@ void Board::undoMove(move_t move) {
   // TODO: Debug
   ply--;
   if (last.posKey != posKey) {
-    printf("Assert failed while performing move %s\n", toString(move).c_str());
+    printf("Assert failed while undoing move %s\n", toString(move).c_str());
     std::cout << this->toFEN() << std::endl;
     printf("Desired   hash: %llu\n", last.posKey);
     printf("Generated hash: %llu\n", posKey);
@@ -847,6 +847,61 @@ void Board::undoMove(move_t move) {
 
   // This should be more incremental but works for now
   //this->updateMaterial();
+}
+
+
+void Board::makeNullMove() {
+  ply++;
+
+  // Store the pre-move state
+  undo_t undo;
+  undo.move = NULLMV;
+  undo.enPas = epSquare;
+  undo.fiftyMoveCounter = fiftyMoveCounter;
+  undo.captured = Piece::None;
+  undo.posKey = posKey;
+  undo.castlePerm = castlePerm;
+
+  /* Update state */
+
+  if (epSquare != NO_SQ) {
+    hashEnPassant(epSquare);
+  }
+  epSquare = NO_SQ;
+
+  boardHistory.push_back(undo);
+
+  // Bookkeeping
+  if (turn == Piece::Black) fullMove++;
+  int op = OPPONENT(turn);
+  turn = op;
+  hashTurn();
+}
+
+void Board::undoNullMove() {
+  if (boardHistory.size() == 0) return;
+  ply--;
+  undo_t last = boardHistory.back();
+  boardHistory.pop_back();
+
+  int op = OPPONENT(turn);
+  turn = op;
+  hashTurn();
+
+  // Restore the en passant square from pre-move state
+  epSquare = last.enPas;
+
+  // Hash out the en passant square if currently set
+  if (epSquare != NO_SQ) hashEnPassant(epSquare);
+
+  // restore castling permissions
+  castlePerm = last.castlePerm; // restore pre-move permissions
+
+  // restore 50 move counter
+  fiftyMoveCounter = last.fiftyMoveCounter;
+
+  // Bookkeeping
+  if (turn == Piece::Black) fullMove--;
 }
 
 void Board::undoLast() {
@@ -1012,6 +1067,8 @@ bool Board::inCheck(const int color) {
   return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
 }
 
+#define MIRROR(sq) ((sq) ^ 56)
+
 // For debugging: Mirrors the board
 void Board::mirror() {
 
@@ -1029,11 +1086,11 @@ void Board::mirror() {
   if (castlePerm & BQCastle) tmpCastlePerm |= WQCastle;
 
   if (epSquare != NO_SQ) {
-    tmpEnPas = Mirror64[epSquare];
+    tmpEnPas = MIRROR(epSquare);
   }
 
   for (sq = A1; sq <= H8; ++sq) {
-    tmpBoard[sq] = board[Mirror64[sq]];
+    tmpBoard[sq] = board[MIRROR(sq)];
   }
 
   this->reset();
