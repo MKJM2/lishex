@@ -56,6 +56,7 @@ extern std::unordered_map<piece, std::string> pieceToUnicode;
 extern std::unordered_map<char, piece> charToPiece;
 
 // Table for mirroring the board table
+
 /*
 const int Mirror64[64] = {
     63, 62, 61, 60, 59, 58, 57, 56,
@@ -69,7 +70,8 @@ const int Mirror64[64] = {
 };
 */
 
-/*
+
+#ifdef DEBUG
 const int Mirror64[64] = {
 56	,	57	,	58	,	59	,	60	,	61	,	62	,	63	,
 48	,	49	,	50	,	51	,	52	,	53	,	54	,	55	,
@@ -80,13 +82,28 @@ const int Mirror64[64] = {
 8	,	9	,	10	,	11	,	12	,	13	,	14	,	15	,
 0	,	1	,	2	,	3	,	4	,	5	,	6	,	7
 };
-*/
+#endif
+
 // OR:
 #define MIRROR(sq) ((sq) ^ 56)
 
 class Board;
 
 void mirrorEvalTest(Board& b);
+
+#define MAX_MOVES (256)
+
+// Stockfish inspired
+struct movelist_t {
+    const move_t* begin() const { return moveList; };
+    const move_t* end() const { return last; };
+    size_t size() const { return last - moveList; };
+    void push_back(const move_t& m) {
+        assert(size() < MAX_MOVES);
+        *last++ = m;
+    };
+    move_t moveList[MAX_MOVES], *last = moveList;
+};
 
 typedef struct {
         // Last move
@@ -183,6 +200,7 @@ class Board {
         void readPosition(std::string fen);
         void readGo(std::string goStr, searchinfo_t *info);
         std::string toFEN() const;
+        movelist_t moves[MAX_MOVES];
         bool makeMove(move_t move);
         void undoMove(move_t move);
         void makeNullMove();
@@ -214,7 +232,9 @@ class Board {
         u64 generatePosKey() const;
         std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
-        bool inCheck(const int color);
+        inline bool inCheck(const int color) {
+            return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
+        }
         hashtable_t TT; // transposition table
         //pvtable_t PVtable; // hash table implementation (might switch to triangular)
         std::vector<move_t> pv; // stores the principal variation extracted from PVtable

@@ -20,6 +20,10 @@ using namespace std::chrono;
 int main() {
     Board gameboard;
     searchinfo_t info[1];
+    clearForSearch(gameboard, info);
+    info->quit = false;
+    info->depth = 0;
+    info->timeSet = -1;
 
     // UCI
     while (true) {
@@ -69,18 +73,19 @@ int main() {
             break;
         } else if (command == "move") { // testing
             // Get user input
-            std::string moveString;
+            std::string moveString = "";
             iss >> moveString;
 
-            // Validate the move (ugly way to handle flags but works for now)
-            std::vector<move_t> moves = generateMoves(gameboard);
+            // Validate the move (to handle flags)
+            movelist_t moves[1];
+            generateMoves(gameboard, moves);
             std::vector<std::string> movesStr;
-            for (move_t& m : moves) {
-                movesStr.push_back(toString(m));
+            for (size_t i = 0; i < moves->size(); ++i) {
+                movesStr.push_back(toString(moves->moveList[i]));
             }
             for (size_t i = 0; i < movesStr.size(); i++) {
                 if (movesStr[i] == moveString) {
-                    gameboard.makeMove(moves[i]);
+                    gameboard.makeMove(moves->moveList[i]);
                     gameboard.print(true);
                 }
             }
@@ -119,9 +124,10 @@ int main() {
             std::cout << std::endl;
             std::cout << node_no << std::endl;
         } else if (command == "moves") {
-            std::vector<move_t> moves = generateMoves(gameboard);
-            for (move_t& m : moves) {
-                std::cout << toString(m) << " ";
+            movelist_t moves[1];
+            generateMoves(gameboard, moves);
+            for (size_t i = 0; i < moves->size(); ++i) {
+                std::cout << toString(moves->moveList[i]) << " ";
             }
             std::cout << "\n";
         } else if (command == "mirror") {
@@ -146,18 +152,22 @@ int main() {
             std::cout << gameboard.toFEN() << std::endl;
         } else if (command == "test") {
             mirrorEvalTest(gameboard);
-        } else if (command == "sort") {
-            std::vector<move_t> moves = generateMoves(gameboard);
-            std::sort(moves.begin(),
-                 moves.end(),
+        }
+        /*
+          else if (command == "sort") {
+            movelist_t moves[1];
+            generateMoves(gameboard, moves);
+            std::sort(moves->begin(),
+                 moves->end(),
                  [](move_t a, move_t b) {return getScore(a) > getScore(b); }
             );
-            for (move_t& m : moves) {
+            for (const move_t& m : moves->moveList) {
                 std::cout << toString(m) << " " << getScore(m) << std::endl;
             }
             std::cout << "\n";
 
         }
+        */
         if (info->quit) break;
     }
     return 0;

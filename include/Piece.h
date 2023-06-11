@@ -71,6 +71,6 @@ namespace Piece {
         return (piece & 0b100) != 0;
     }
     /*                    -, K,     P,   N,   -, B,   R,   Q */
-    const int value[8] = {0, 50000, 100, 330, 0, 345, 575, 900};
+    const int value[8] = {0, 50000, 100, 325, 0, 325, 550, 1000};
 };
 #endif // PIECE_H_

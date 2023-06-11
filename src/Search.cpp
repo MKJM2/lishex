@@ -130,6 +130,11 @@ void storeHashEntry(Board &b, const move_t move, int score, const int flags,
   // we use the posKey as a hash into our TT table
   int key = b.posKey % b.TT.no_entries;
 
+  assert(0 <= key && key <= b.TT.no_entries - 1);
+  assert(depth >= 1);
+  assert(flags >= HFEXACT && flags <= HFBETA);
+  assert(b.ply >= 0);
+
   // Check if new write or overwrite (book keeping)
   if (b.TT.pvtable[key].posKey == 0) {
     b.TT.new_writes++;
@@ -140,7 +145,11 @@ void storeHashEntry(Board &b, const move_t move, int score, const int flags,
   // TODO: Mate score logic for returning how many plies to mate
 
   // Finally, store the entry
-  b.TT.pvtable[key] = {move, b.posKey, score, depth, flags};
+  b.TT.pvtable[key].move = move;
+  b.TT.pvtable[key].posKey = b.posKey;
+  b.TT.pvtable[key].score = score;
+  b.TT.pvtable[key].depth = depth;
+  b.TT.pvtable[key].flags = flags;
 }
 
 move_t getPvMove(const Board &b) {
@@ -157,14 +166,25 @@ move_t getPvMove(const Board &b) {
 bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
                   int depth) {
   // We use the posKey as a hash into our TT table
-  hashentry_t *entry = &b.TT.pvtable[b.posKey % b.TT.no_entries];
+  int key = b.posKey % b.TT.no_entries;
+  hashentry_t *entry = &b.TT.pvtable[key];
+
+  assert(0 <= key && key <= b.TT.no_entries - 1);
+  assert(depth >= 1);
+  assert(alpha < beta);
+  assert(b.ply >= 0);
 
   // If hit:
   if (entry->posKey == b.posKey) {
     move = entry->move;
-    // If the previous search actually is useful
+    // If the previous search was at least as deep as current
     if (entry->depth >= depth) {
       b.TT.hit++;
+
+      assert(b.TT.pvtable[key].depth >= 1);
+      assert(b.TT.pvtable[key].flags >= HFEXACT);
+      assert(b.TT.pvtable[key].flags <= HFBETA);
+
       score = entry->score;
       // TODO: Mate score logic ...
       switch (entry->flags) {
@@ -178,8 +198,7 @@ bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
         break;
       default:
         // should not happen
-        // assert(false);
-        return false;
+        assert(false);
         break;
       }
       return true;
@@ -190,8 +209,9 @@ bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
 }
 
 bool moveExists(Board &b, move_t m) {
-  std::vector<move_t> moves = generateMoves(b);
-  for (move_t &move : moves) {
+  movelist_t moves[1];
+  generateMoves(b, moves);
+  for (const move_t& move : *moves) {
     // Check if legal move
     if (!b.makeMove(move)) {
       continue;
@@ -203,6 +223,8 @@ bool moveExists(Board &b, move_t m) {
     differently than a move m that was e.g.
     chosen for the primary variation, hence
     a simple == comparison might fail
+
+    ^ The reason being that we store the score within the move itself
     */
     if (movecmp(move, m)) {
       return true;
@@ -292,10 +314,10 @@ const int rookTable[64] = {
 const int kingEndgame[64] = {
    -50, -10,   0,   0,   0,   0, -10, -50,
    -10,   0,  10,  10,  10,  10,   0, -10,
-     0,  10,  15,  15,  15,  15,  10,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,  10,  15,  15,  15,  15,  10,   0,
+     0,  10,  20,  20,  20,  20,  10,   0,
+     0,  10,  20,  40,  40,  20,  10,   0,
+     0,  10,  20,  40,  40,  20,  10,   0,
+     0,  10,  20,  20,  20,  20,  10,   0,
    -10,   0,  10,  10,  10,  10,   0, -10,
    -50, -10,   0,   0,   0,   0, -10, -50
 };
@@ -320,9 +342,9 @@ const int kingOpening[64] = {
 // Pass and isolated pawn
 const int pawnIsolated = -10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
-const int pawnPassed[8] = {0, 5, 10, 25, 40, 65, 110, 210};
+const int pawnPassed[8] = {0, 5, 10, 20, 35, 60, 100, 200};
 // Bonus for having two bishops on board
-const int bishopPair = 25;
+const int bishopPair = 30;
 // Bonuses for rooks/queens on open/semi-open files
 const int rookOpenFile = 10;
 const int rookSemiOpenFile = 5;
@@ -331,28 +353,28 @@ const int queenSemiOpenFile = 3;
 
 
 /* Pick the highest scoring move according to heuristics */
-static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
+static void pickNextMove(size_t moveIdx, movelist_t* moves) {
     // swaps the move at moveIdx with the best move in moves
     size_t idx = moveIdx;
     int bestScore = 0;
     int bestIdx = moveIdx;
 
-    for (; idx < moves.size(); ++idx) {
-        int score = getScore(moves[idx]);
+    for (; idx < moves->size(); ++idx) {
+        int score = getScore(moves->moveList[idx]);
         if (score > bestScore) {
             bestScore = score;
             bestIdx = idx;
         }
     }
-    assert(moveIdx >= 0 && moveIdx < moves.size());
-    assert(bestIdx >= 0 && bestIdx < moves.size());
+    assert(moveIdx >= 0 && moveIdx < moves->size());
+    assert(bestIdx >= 0 && bestIdx < moves->size());
     assert(bestIdx >= moveIdx);
 
     // Swap the two moves
     move_t tmp;
-    tmp = moves[moveIdx];
-    moves[moveIdx] = moves[bestIdx];
-    moves[bestIdx] = tmp;
+    tmp = moves->moveList[moveIdx];
+    moves->moveList[moveIdx] = moves->moveList[bestIdx];
+    moves->moveList[bestIdx] = tmp;
 }
 
 // Evaluates the position from the side's POV
@@ -482,7 +504,8 @@ static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
+        assert(IsOK(MIRROR(sq)));
+        assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= pawnTable[MIRROR(sq)];
         //printf("-%d: black pawn on %s\n", pawnTable[MIRROR[sq]], toString(sq).c_str());
@@ -501,8 +524,6 @@ static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
-        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score += knightTable[sq];
         //printf("+%d: white knight on %s\n", knightTable[sq], toString(sq).c_str());
     }
@@ -512,7 +533,8 @@ static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
+        assert(IsOK(MIRROR(sq)));
+        assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= knightTable[MIRROR(sq)];
         //printf("-%d: black knight on %s\n", knightTable[MIRROR[sq]], toString(sq).c_str());
@@ -523,8 +545,6 @@ static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
-        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score += bishopTable[sq];
         //printf("+%d: white bishop on %s\n", bishopTable[sq], toString(sq).c_str());
     }
@@ -535,6 +555,7 @@ static int evaluate(Board& b) {
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
         assert(IsOK(MIRROR(sq)))
+        assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= bishopTable[MIRROR(sq)];
         //printf("-%d: black bishop on %s\n", bishopTable[MIRROR[sq]], toString(sq).c_str());
@@ -577,10 +598,6 @@ static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
-        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        //int delta= (bishopTable[sq] + rookTable[sq]) >> 1;
-        //score += delta;
         //printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
             score += queenOpenFile;
@@ -591,13 +608,9 @@ static int evaluate(Board& b) {
 
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
-        sq = MIRROR(b.pieceList[p][i]);
+        sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        assert(IsOK(MIRROR(sq)))
-        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        //int delta = (bishopTable[sq] + rookTable[sq]) >> 1;
-        //score -= delta;
         //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
             score -= queenOpenFile;
@@ -621,32 +634,31 @@ static int evaluate(Board& b) {
 
     p = Black | King;
     assert(b.pieceList[p][0] == b.kingSquare[0])
-    sq = MIRROR(b.pieceList[p][0]);
+    sq = b.pieceList[p][0];
     assert(IsOK(sq));
     assert(A1 <= sq && sq <= H8);
     assert(IsOK(MIRROR(sq)))
     assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
     if (isEndgame(b.material[1])) {
-        score -= kingEndgame[sq];
+        score -= kingEndgame[MIRROR(sq)];
     } else {
-        score -= kingOpening[sq];
+        score -= kingOpening[MIRROR(sq)];
     }
 
     // Bonus score for a bishop pair
-    if (b.pceCount[1] >= 2) {
+    if (b.pceCount[wB] >= 2) {
         score += bishopPair;
     }
-    if (b.pceCount[0] >= 2) {
+    if (b.pceCount[bB] >= 2) {
         score -= bishopPair;
     }
-
 
     return (b.turn == White) ? score : -score;
 }
 
 void clearTT(hashtable_t* table) {
     hashentry_t* el;
-    for (el = table->pvtable; el < table->pvtable + table->no_entries; el++) {
+    for (el = table->pvtable; el < table->pvtable + table->no_entries; ++el) {
         el->posKey = 0ULL;
         el->move = NULLMV;
         el->depth = 0;
@@ -701,6 +713,10 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 
     int score = evaluate(b);
 
+    if (b.ply > MAX_DEPTH - 1) {
+        return score;
+    }
+
     assert(score > -2 * MATE && score < 2 * MATE);
 
 	if(score >= beta) {
@@ -711,20 +727,21 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 		alpha = score;
 	}
 
-    std::vector<move_t> captures = generateCaptures(b);
-    size_t moveIdx;
+    movelist_t captures[1];
+    generateCaptures(b, captures);
+    size_t moveIdx = 0;
     int legal = 0;
 	score = INT32_MIN;
 
-	for (moveIdx = 0; moveIdx < captures.size(); ++moveIdx) {
+	for (moveIdx = 0; moveIdx < captures->size(); ++moveIdx) {
 		pickNextMove(moveIdx, captures);
-        if (!b.makeMove(captures[moveIdx]))  {
+        if (!b.makeMove(captures->moveList[moveIdx]))  {
             continue;
         }
         legal++;
         // update score
         score = -quiescenceSearch(b, info, -beta, -alpha);
-        b.undoMove(captures[moveIdx]);
+        b.undoMove(captures->moveList[moveIdx]);
 
         if (info->stopped) {
             // stop the search
@@ -752,7 +769,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     assert(depth >= 0);
 
     if (depth <= 0) {
-        return quiescenceSearch(b,info, alpha, beta);
+        return quiescenceSearch(b, info, alpha, beta);
     }
 
     if ((info->nodes & 4095) == 0) {
@@ -765,6 +782,10 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // TODO: Handle the fifyMoveCounter here: || b.fiftyMoveCounter >= 100
     if (isRepetition(b) && b.ply) {
         return 0;
+    }
+
+    if (b.ply > MAX_DEPTH - 1) {
+        return evaluate(b);
     }
 
     // Check search extension
@@ -803,68 +824,69 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     }
 
     // Generate pseudolegal moves
-    std::vector<move_t> moves = generateMoves(b);
+    movelist_t moves[1];
+    generateMoves(b, moves);
     size_t moveIdx = 0;
     int legal = 0;
     int oldAlpha = alpha;
     move_t bestMv = NULLMV;
+    int best_score = INT32_MIN;
     score = INT32_MIN;
 
     // Heuristic: start searching from pv moves
     // move_t pvMv = getPvMove(b); // handled by TT
-
+    // Prioritizes the pv move first by setting a larger score for move ordering
     if (pvMv != NULLMV) {
-        for (; moveIdx < moves.size(); ++moveIdx) {
-            if (moves[moveIdx] == pvMv) {
-                // search this move first
-                moves[moveIdx] = setScore(moves[moveIdx], 60000);
+        for (; moveIdx < moves->size(); ++moveIdx) {
+            if (movecmp(moves->moveList[moveIdx], pvMv)) {
+                moves->moveList[moveIdx] = setScore(moves->moveList[moveIdx], 60000);
                 break;
             }
         }
     }
 
-    for (moveIdx = 0; moveIdx < moves.size(); ++moveIdx) {
+    for (moveIdx = 0; moveIdx < moves->size(); ++moveIdx) {
         // pick best scoring move (according to heuristics)
         pickNextMove(moveIdx, moves);
-        fflush(stdout);
 
-        if (!b.makeMove(moves[moveIdx])) continue;
+        if (!b.makeMove(moves->moveList[moveIdx])) continue;
         legal++;
         score = -alphaBeta(b, info, -beta, -alpha, depth - 1, true);
-#ifdef DEBUG
-        printf("AlphaBeta searched %s (%d) and got score: %d\n", toString(moves[moveIdx]).c_str(), getScore(moves[moveIdx]), score);
-#endif
-        b.undoMove(moves[moveIdx]);
+        b.undoMove(moves->moveList[moveIdx]);
 
         if (info->stopped) {
             // stop the search
             return 0;
         }
+        if (score > best_score) {
+            best_score = score;
+            bestMv = moves->moveList[moveIdx];
 
-        if (score > alpha) {
-            if (score >= beta) {
-                /* Beta cutoff */
-                if (legal == 1) {
-                    info->fhf++;
+            if (score > alpha) {
+                if (score >= beta) {
+                    /* Beta cutoff */
+                    if (legal == 1) {
+                        info->fhf++;
+                    }
+                    info->fh++;
+
+                    // Killer moves (cause a beta cutoff but aren't captures)
+                    if (!isCapture(moves->moveList[moveIdx])) {
+                        b.killersH[1][b.ply] = b.killersH[0][b.ply];
+                        b.killersH[0][b.ply] = moves->moveList[moveIdx];
+                    }
+
+                    storeHashEntry(b, bestMv, beta, HFBETA, depth);
+
+                    return beta;
                 }
-                info->fh++;
+                alpha = score;
+                //bestMv = moves[moveIdx];
 
-                // Killer moves (cause a beta cutoff but aren't capture)
-                if (!isCapture(moves[moveIdx])) {
-                    b.killersH[1][b.ply] = b.killersH[0][b.ply];
-                    b.killersH[0][b.ply] = moves[moveIdx];
+                // History heuristic
+                if (!isCapture(bestMv)) {
+                    b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth;
                 }
-
-                storeHashEntry(b, bestMv, beta, HFBETA, depth);
-
-                return beta;
-            }
-            alpha = score;
-            bestMv = moves[moveIdx];
-
-            // History heuristic
-            if (!isCapture(bestMv)) {
-                b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth * depth;
             }
         }
     }
@@ -877,14 +899,15 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
             return 0; // stalemate
         }
     }
+    assert(alpha >= oldAlpha);
+
     if (alpha != oldAlpha) {
         //storePvMove(b, bestMv);
-        storeHashEntry(b, bestMv, alpha, HFEXACT, depth);
+        storeHashEntry(b, bestMv, best_score, HFEXACT, depth);
     } else {
         storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
 
-    assert(alpha >= oldAlpha);
     return alpha;
 }
 
@@ -907,7 +930,7 @@ void search(Board &b, searchinfo_t *info) {
     }
     pvMoves = getPV(b, currDepth);
     bestMv = b.pv[0];
-    printf("info score cp %d  depth %d nodes %lld time %lu hashfull %d ",
+    printf("info score cp %d depth %d nodes %lld time %lu hashfull %d ",
            bestScore, currDepth, info->nodes, getTime() - info->startTime,
            (int)(((double)b.TT.new_writes / b.TT.no_entries) * 1000));
     // TODO:

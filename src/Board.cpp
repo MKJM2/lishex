@@ -362,11 +362,12 @@ void Board::readPosition(std::string pos) {
         while (iss >> moveString) {
             move_t move = fromString(moveString);
             // Handle invalid moves
-            std::vector<move_t> moves = generateMoves(*this);
-            for (move_t& m : moves) {
-                if (movecmp(m << 4, move << 4)) {
+            movelist_t moves;
+            generateMoves(*this, &moves);
+            for (const move_t* m = moves.begin(); m != moves.end(); ++m) {
+                if (movecmp(*m << 4, move << 4)) {
                     // make the move *with correct flags* as per movegen
-                    makeMove(m);
+                    makeMove(*m);
                     break;
                 }
             }
@@ -1257,11 +1258,13 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   return false;
 }
 
+/*
 // Returns true if side color is in check
-bool Board::inCheck(const int color) {
+inline bool Board::inCheck(const int color) {
   // for (square_t s; ...)
   return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
 }
+*/
 
 #define MIRROR(sq) ((sq) ^ 56)
 
