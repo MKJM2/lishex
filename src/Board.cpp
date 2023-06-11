@@ -75,9 +75,12 @@ void Board::initPieceList() {
   material[0] = material[1] = 0;
 
   // Reset piece counts
-  for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
+  for (piece p = 0; p <= bQ; ++p) {
     pceCount[p] = 0;
   }
+
+  // Reset pawn bitboards
+  pawns[0] = pawns[1] = pawns[BOTH] = 0ULL;
 
   for (sq = A1; sq <= H8; ++sq) {
     p = this->board[sq];
@@ -92,7 +95,8 @@ void Board::initPieceList() {
       material[colour] += value[PieceType(p)];
 
       // Update pieceList and piece count to the curr square
-      pieceList[p][pceCount[p]++] = sq;
+      pieceList[p][pceCount[p]] = sq;
+      pceCount[p]++;
 
       if (Piece::PieceType(p) == King) {
         kingSquare[colour] = sq;
@@ -466,9 +470,10 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
     if (depth == -1) {
         info->depth = MAX_DEPTH;
     }
-
+#ifdef DEBUG
     printf("[DEBUG] time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
             time,info->startTime,info->endTime,info->depth,info->timeSet);
+#endif
     search(*this, info);
 }
 
@@ -596,7 +601,8 @@ inline static void clearPiece(const square_t sq, Board& b) {
 
   // Instead of clearning, we swap it with last element
   // and decrement the piece count
-  b.pieceList[p][pIdx] = b.pieceList[p][--b.pceCount[p]];
+  b.pceCount[p]--;
+  b.pieceList[p][pIdx] = b.pieceList[p][b.pceCount[p]];
 }
 
 inline static void addPiece(const square_t sq, const piece p, Board& b) {
@@ -629,7 +635,7 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
 }
 
 inline static void movePiece(const square_t from, const square_t to, Board& b) {
-  assert(b.check())
+  // assert(b.check()) <- this assert should fail, since we haven't flipped sides yet
   piece p = b.board[from];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -874,6 +880,8 @@ void Board::undoMove(move_t move) {
 
 
 void Board::makeNullMove() {
+  assert(this->check());
+
   ply++;
 
   // Store the pre-move state
@@ -899,9 +907,13 @@ void Board::makeNullMove() {
   int op = OPPONENT(turn);
   turn = op;
   hashTurn();
+
+  assert(this->check());
 }
 
 void Board::undoNullMove() {
+  assert(this->check());
+
   if (boardHistory.size() == 0) return;
   ply--;
   undo_t last = boardHistory.back();
@@ -926,11 +938,8 @@ void Board::undoNullMove() {
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
 
-  // TODO: Debug
-  if (last.posKey != posKey) {
-    printf("Uhoh something went wrong!\n");
-    assert(last.posKey == posKey);
-  }
+  // Debug
+  assert(this->check());
 }
 
 void Board::undoLast() {
@@ -986,10 +995,28 @@ bool Board::check() {
 
   // Check other counts
   int pawnCount = CNT(tmp_pawns[1]);
+  if (pawnCount != this->pceCount[wP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[wP]);
+    printBB(tmp_pawns[1]);
+    printf("vs");
+    printBB(pawns[1]);
+  }
   assert(pawnCount == this->pceCount[wP]);
   pawnCount = CNT(tmp_pawns[0]);
+  if (pawnCount != this->pceCount[bP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[bP]);
+    printBB(tmp_pawns[0]);
+    printf("\nvs\n");
+    printBB(pawns[0]);
+  }
   assert(pawnCount == this->pceCount[bP]);
   pawnCount = CNT(tmp_pawns[BOTH]);
+  if (pawnCount != this->pceCount[wP] + this->pceCount[bP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[wP] + pceCount[bP]);
+    printBB(tmp_pawns[BOTH]);
+    printf("\nvs\n");
+    printBB(pawns[BOTH]);
+  }
   assert(pawnCount == this->pceCount[bP] + this->pceCount[wP]);
 
   // Check if bitboards match the board
@@ -1002,12 +1029,12 @@ bool Board::check() {
   while (tmp_pawns[0]) {
     square_t s = POP(this->pawns[0]);
     CLRLSB(tmp_pawns[0]);
-    assert(board[s] == wP);
+    assert(board[s] == bP);
   }
 
   while (tmp_pawns[BOTH]) {
     square_t s = POP(this->pawns[BOTH]);
-    CLRLSB(tmp_pawns[0]);
+    CLRLSB(tmp_pawns[BOTH]);
     assert(board[s] == wP || board[s] == bP);
   }
 
@@ -1024,11 +1051,14 @@ bool Board::check() {
 
   assert(turn == White || turn == Black);
 
-  // !! critical for TT functionality
+  // !! critical for correct TT functionality
   assert(this->generatePosKey() == this->posKey);
 
-  assert(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == White) ||
-         (SquareRank(epSquare) == 5 && turn == Black));
+  if(!(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == Black) ||
+     (SquareRank(epSquare) == 5 && turn == White))) {
+      printf("Square %s is on rank %d and it's %s's turn\n", toString(epSquare).c_str(), SquareRank(epSquare), (turn==White) ? "white" : "black");
+      assert(false);
+     }
 
   assert(board[this->kingSquare[1]] == wK);
   assert(board[this->kingSquare[0]] == bK);
@@ -1241,4 +1271,6 @@ void Board::mirror() {
   posKey = this->generatePosKey();
 
   this->initPieceList();
+
+  assert(this->check());
 }
