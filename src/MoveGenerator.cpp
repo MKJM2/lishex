@@ -56,6 +56,9 @@ void initMVVLVA() {
  */
 
 inline static void addQuiet(const move_t m, std::vector<move_t>& moves, const Board& b) {
+    assert(b.check());
+    assert(IsOK(getFrom(m)));
+    assert(IsOK(getTo(m)));
     if (movecmp(m, b.killersH[0][b.ply])) {
         moves.emplace_back(setScore(m, 45000));
     } else if (movecmp(m, b.killersH[1][b.ply])) {
@@ -66,16 +69,25 @@ inline static void addQuiet(const move_t m, std::vector<move_t>& moves, const Bo
 }
 
 inline static void addCapture(const move_t m, std::vector<move_t>& moves, const Board& b) {
+    assert(b.check());
+    assert(IsOK(getFrom(m)));
+    assert(IsOK(getTo(m)));
     moves.emplace_back(setScore(m, MVVLVA[b.board[getTo(m)]][b.board[getFrom(m)]] + 50000));
 }
 
 inline static void addEnPassant(const square_t from, const square_t to, std::vector<move_t>& moves) {
+    assert(IsOK(from));
+    assert(IsOK(to));
+    assert(SquareRank(to) == 2 || SquareRank(to) == 5);
     // Here, MVVLVA[Pawn][Pawn] = 105, and since that's always the case for en passant
     // we simply hardcode it (+50000 for Capture, see above)
     moves.emplace_back(Move(from, to, EpCapture, 105 + 50000));
 }
 
 inline static void addPawnPush(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
+    assert(b.check());
+    assert(IsOK(from));
+    assert(IsOK(to));
     if (SquareRank(to, b.turn) == 7) {
         addQuiet(Move(from, to, QueenPromo, 0),  moves, b);
         addQuiet(Move(from, to, RookPromo, 0),   moves, b);
@@ -87,6 +99,9 @@ inline static void addPawnPush(const square_t from, const square_t to, std::vect
 }
 
 inline static void addPawnCapture(const square_t from, const square_t to, std::vector<move_t>& moves, const Board& b) {
+    assert(b.check());
+    assert(IsOK(from));
+    assert(IsOK(to));
     int score = MVVLVA[b.board[to]][b.board[from]];
     if (SquareRank(to, b.turn) == 7) {
         moves.emplace_back(Move(from, to, QueenPromo  | Capture, score + 50000));
@@ -115,6 +130,7 @@ std::vector<move_t> generateLegalMoves(Board& board) {
 }
 
 std::vector<move_t> generateMoves(Board& b) {
+    assert(b.check());
 
     piece* board = b.board; // array of pieces
     int me = b.turn;
@@ -281,6 +297,7 @@ std::vector<move_t> generateMoves(Board& b) {
 
 /* For quiescence search */
 std::vector<move_t> generateCaptures(Board& b) {
+    assert(b.check());
 
     piece* board = b.board; // array of pieces
     int me = b.turn;

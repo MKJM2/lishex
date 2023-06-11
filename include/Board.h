@@ -207,11 +207,11 @@ class Board {
         u64 pieceKeys[24][64];
         u64 turnKey = 0; // we hash in a random number if it's White's move
         u64 castleKeys[16]; // TODO: 4bits depending on which side castle
-        u64 posKey = 0;
+        u64 posKey = this->generatePosKey();
         uint fiftyMoveCounter = 0;
         void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
         void initPieceList();
-        u64 generatePosKey();
+        u64 generatePosKey() const;
         std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
         bool inCheck(const int color);
@@ -225,7 +225,7 @@ class Board {
         // We store two killer moves, indexed by ply search depth
         move_t killersH[2][64] = {};
 #ifdef DEBUG
-        bool check();
+        bool check() const;
 #endif
 };
 

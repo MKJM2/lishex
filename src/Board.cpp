@@ -16,12 +16,12 @@ Board::Board() {
   this->reset();
   this->initKeys();
   this->readFEN(startFEN);
-  this->posKey = generatePosKey();
   //init_PVtable(&PVtable);
   initTT(&this->TT);
   // initPieceList(); // Called by readFEN()
   initMVVLVA();
   initEvalMasks();
+  this->posKey = generatePosKey();
 }
 
 Board::~Board() {
@@ -64,6 +64,9 @@ void Board::reset() {
   for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
     pceCount[p] = 0;
   }
+
+  // Clear position key
+  posKey = 0ULL;
 }
 
 void Board::initPieceList() {
@@ -78,6 +81,11 @@ void Board::initPieceList() {
   for (piece p = 0; p <= bQ; ++p) {
     pceCount[p] = 0;
   }
+
+  // Reset big, min, maj counts
+  bigPce[0] = bigPce[1] = 0;
+  minPce[0] = minPce[1] = 0;
+  majPce[0] = majPce[1] = 0;
 
   // Reset pawn bitboards
   pawns[0] = pawns[1] = pawns[BOTH] = 0ULL;
@@ -322,6 +330,7 @@ void Board::readFEN(std::string fen) {
 
   // Initialize piece lists and update material values in one go
   this->initPieceList();
+  this->posKey = this->generatePosKey();
 }
 
 void Board::readPosition(std::string pos) {
@@ -365,7 +374,7 @@ void Board::readPosition(std::string pos) {
         }
     }
     //this->updateMaterial();
-    this->initPieceList();
+    //this->initPieceList(); // already called by readFEN
 }
 
 /*
@@ -373,9 +382,9 @@ void Board::readPosition(std::string pos) {
 ** http://facta.junis.ni.ac.rs/acar/acar200901/acar2009-07.pdf
  */
 static inline int est_moves_left(const Board& board) {
-  // Assumes 1,3,3,5,9 for P,N,B,R,Q
+  // Assumes material values 1,3,3,5,9 for P,N,B,R,Q
 
-  // Count # of pawns on the board
+  // Count # of total material on the board
   int p = CNT(board.pawns[BOTH]);
   int n = board.pceCount[wN] + board.pceCount[bN];
   int b = board.pceCount[wB] + board.pceCount[bB];
@@ -451,7 +460,8 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
       time = movetime;
       movestogo = 1;
     } else {
-      movestogo = est_moves_left(*this);
+      //movestogo = est_moves_left(*this);
+      movestogo = 30;
     }
 
     info->startTime = getTime();
@@ -562,7 +572,6 @@ std::string Board::toFEN() const {
 }
 
 /* Helpers for makeMove */
-// Returns captured piece, if any
 inline static void clearPiece(const square_t sq, Board& b) {
   assert(b.check());
   piece p = b.board[sq];
@@ -716,17 +725,30 @@ bool Board::makeMove(move_t move) {
     }
   }
 
-  // Handle en passant square
+  /* Handle en passant */
+  // Hash out old en passant square (if was set)
+  if (epSquare != NO_SQ) {
+    hashEnPassant(epSquare);
+  }
+
+  // Handle new en passant square (if double pawn push)
   if (flags == DoublePawnPush) {
     epSquare = (to + from) >> 1;
+    assert(IsOK(epSquare));
     hashEnPassant(epSquare);
   } else {
     epSquare = NO_SQ;
   }
 
-  // Handle castle permissions
+  /* Handle castle permissions */
+  // Hash out old permissions
+  hashCastle();
+
+  // Set new permissions
   castlePerm &= castlePermDelta[from];
   castlePerm &= castlePermDelta[to];
+
+  // Hash in new permissions
   hashCastle();
 
   boardHistory.push_back(undo);
@@ -776,7 +798,6 @@ bool Board::makeMove(move_t move) {
   turn = op;
   ply++;
   fiftyMoveCounter++;
-  //this->posKey = generatePosKey();
   hashTurn();
 
   assert(this->check());
@@ -804,14 +825,16 @@ void Board::undoMove(move_t move) {
   hashTurn();
 
   // undo the actual move
-  //board[from] = board[to];
   movePiece(to, from, *this);
 
-  // Hash out the en passant square if currently set
+  // Hash out the en passant square if was currently set
   if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // Restore the en passant square from pre-move state
   epSquare = last.enPas;
+
+  // Hash in the old en passant square (if set)
+  if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // If en passant performed, restore the captured pawn
   if (flags == EpCapture) {
@@ -851,9 +874,16 @@ void Board::undoMove(move_t move) {
     }
   }
 
-  // restore castling permissions
-  hashCastle(); // hash out post-move permissions
-  castlePerm = last.castlePerm; // restore pre-move permissions
+  /* Handle castling permissions */
+
+  // Hash out current permissions
+  hashCastle();
+
+  // Revert to old castling permissions
+  castlePerm = last.castlePerm;
+
+  // Hash in old castling permissions
+  hashCastle();
 
   // restore 50 move counter
   fiftyMoveCounter = last.fiftyMoveCounter;
@@ -949,7 +979,7 @@ void Board::undoLast() {
 }
 
 #ifdef DEBUG
-bool Board::check() {
+bool Board::check() const {
   using namespace Piece;
   int tmp_pceCount[24] = {0};
   int tmp_bigPce[2] = {0};
@@ -989,7 +1019,7 @@ bool Board::check() {
     tmp_material[colour] += value[PieceType(tmp_piece)];
   }
 
-  for (tmp_piece = wP; tmp_piece <= bQ; ++tmp_piece) {
+  for (tmp_piece = wK; tmp_piece <= bQ; ++tmp_piece) {
     assert(tmp_pceCount[tmp_piece] == this->pceCount[tmp_piece]);
   }
 
@@ -1052,7 +1082,11 @@ bool Board::check() {
   assert(turn == White || turn == Black);
 
   // !! critical for correct TT functionality
-  assert(this->generatePosKey() == this->posKey);
+  u64 expected = this->generatePosKey();
+  if (expected != this->posKey) {
+    printf("Expected: %llu\nGot:      %llu\n", expected, this->posKey);
+    assert(false);
+  }
 
   if(!(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == Black) ||
      (SquareRank(epSquare) == 5 && turn == White))) {
@@ -1078,8 +1112,8 @@ inline u64 Board::rand64() {
 
 void Board::initKeys(unsigned rng_seed) {
   // Seed the RNG
-  //std::srand(seed);
   rng.seed(rng_seed);
+
   // For each piece type and square generate a random hashkey
   for (int p = 0; p < 24; p++) {
     for (square_t s = A1; s <= H8; s++) {
@@ -1096,7 +1130,7 @@ void Board::initKeys(unsigned rng_seed) {
   }
 }
 
-u64 Board::generatePosKey() {
+u64 Board::generatePosKey() const {
   using namespace Piece;
   u64 key = 0;
 
@@ -1104,21 +1138,28 @@ u64 Board::generatePosKey() {
   for (square_t s = A1; s <= H8; s++) {
     piece p = board[s];
     if (p != None) {
+      assert(p >= wK && p <= bQ);
       key ^= pieceKeys[p][s];
     }
   }
 
   // Hash in the side playing
-  key ^= (turn == White) ? turnKey : 0;
+  if (turn == White) {
+    key ^= turnKey;
+  }
 
   // Hash in castle permissions
-  key ^= castlePerm;
+  assert(0 <= castlePerm && castlePerm <= 15);
+  key ^= castleKeys[this->castlePerm];
 
   // Hash in the en passant square (if set)
-  key ^= pieceKeys[Piece::None][epSquare];
-
-  // Store the position key for the Board
-  this->posKey = key;
+  // key ^= pieceKeys[Piece::None][epSquare];
+  if (epSquare != NO_SQ) {
+    assert(epSquare >= A1 && epSquare <= H8);
+    assert(IsOK(epSquare));
+    assert(SquareRank(epSquare) == 5 || SquareRank(epSquare) == 2);
+    key ^= pieceKeys[Piece::None][epSquare];
+  }
 
   return key;
 }

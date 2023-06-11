@@ -11,6 +11,7 @@
 #include <iostream>
 #include <chrono>
 #include <stack>
+#include <algorithm>
 #include "Board.h"
 #include "Move.h"
 #include "MoveGenerator.h"
@@ -43,7 +44,7 @@ int main() {
             std::cout << "uciok" << std::endl;
         } else if (command == "isready") {
             // initialization
-            gameboard.reset();
+            // gameboard.reset();
             std::cout << "readyok" << std::endl;
         } else if (command == "position") {
             // Parse the position command and update the board accordingly
@@ -54,6 +55,7 @@ int main() {
             gameboard.readPosition(positionStr);
         } else if (command == "ucinewgame") {
             gameboard.reset();
+            gameboard.readFEN(startFEN);
         } else if (command == "go") {
             // Parse and handle the go command
             std::string goStr;
@@ -144,6 +146,17 @@ int main() {
             std::cout << gameboard.toFEN() << std::endl;
         } else if (command == "test") {
             mirrorEvalTest(gameboard);
+        } else if (command == "sort") {
+            std::vector<move_t> moves = generateMoves(gameboard);
+            std::sort(moves.begin(),
+                 moves.end(),
+                 [](move_t a, move_t b) {return getScore(a) > getScore(b); }
+            );
+            for (move_t& m : moves) {
+                std::cout << toString(m) << " " << getScore(m) << std::endl;
+            }
+            std::cout << "\n";
+
         }
         if (info->quit) break;
     }

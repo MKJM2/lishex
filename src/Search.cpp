@@ -423,6 +423,7 @@ static int evaluate2(Board& b) {
 // sjeng 11.2 (adapted from Vice 1.1 by Bluefever Software)
 //8/6R1/2k5/6P1/8/8/4nP2/6K1 w - - 1 41
 bool MaterialDraw(const Board& b) {
+    assert(b.check());
     using namespace Piece;
     if (!b.pceCount[wR] && !b.pceCount[bR] && !b.pceCount[wQ] && !b.pceCount[bQ]) {
 	  if (!b.pceCount[bB] && !b.pceCount[wB]) {
@@ -446,6 +447,7 @@ bool MaterialDraw(const Board& b) {
 
 // */
 static int evaluate(Board& b) {
+    assert(b.check());
     using namespace Piece;
     //          White           Black
     int score = b.material[1] - b.material[0];
@@ -461,6 +463,8 @@ static int evaluate(Board& b) {
     piece p = White | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
         score += pawnTable[sq];
         //printf("+%d: white pawn on %s\n", pawnTable[sq], toString(sq).c_str());
         if ((b.pawns[1] & isolatedMask[sq]) == 0) {
@@ -476,6 +480,10 @@ static int evaluate(Board& b) {
     p = Black | Pawn;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= pawnTable[MIRROR(sq)];
         //printf("-%d: black pawn on %s\n", pawnTable[MIRROR[sq]], toString(sq).c_str());
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
@@ -491,6 +499,10 @@ static int evaluate(Board& b) {
     p = White | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score += knightTable[sq];
         //printf("+%d: white knight on %s\n", knightTable[sq], toString(sq).c_str());
     }
@@ -498,6 +510,10 @@ static int evaluate(Board& b) {
     p = Black | Knight;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= knightTable[MIRROR(sq)];
         //printf("-%d: black knight on %s\n", knightTable[MIRROR[sq]], toString(sq).c_str());
     }
@@ -505,6 +521,10 @@ static int evaluate(Board& b) {
     p = White | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score += bishopTable[sq];
         //printf("+%d: white bishop on %s\n", bishopTable[sq], toString(sq).c_str());
     }
@@ -512,6 +532,10 @@ static int evaluate(Board& b) {
     p = Black | Bishop;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= bishopTable[MIRROR(sq)];
         //printf("-%d: black bishop on %s\n", bishopTable[MIRROR[sq]], toString(sq).c_str());
     }
@@ -519,6 +543,10 @@ static int evaluate(Board& b) {
     p = White | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score += rookTable[sq];
         //printf("+%d: white rook on %s\n", rookTable[sq], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
@@ -531,6 +559,10 @@ static int evaluate(Board& b) {
     p = Black | Rook;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         score -= rookTable[MIRROR(sq)];
         //printf("-%d: black rook on %s\n", rookTable[MIRROR[sq]], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
@@ -543,6 +575,10 @@ static int evaluate(Board& b) {
     p = White | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = b.pieceList[p][i];
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         //int delta= (bishopTable[sq] + rookTable[sq]) >> 1;
         //score += delta;
         //printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
@@ -556,6 +592,10 @@ static int evaluate(Board& b) {
     p = Black | Queen;
     for (i = 0; i < b.pceCount[p]; ++i) {
         sq = MIRROR(b.pieceList[p][i]);
+        assert(IsOK(sq));
+        assert(A1 <= sq && sq <= H8);
+        assert(IsOK(MIRROR(sq)))
+        assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
         //int delta = (bishopTable[sq] + rookTable[sq]) >> 1;
         //score -= delta;
         //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
@@ -568,6 +608,11 @@ static int evaluate(Board& b) {
 
     p = White | King;
     sq = b.pieceList[p][0];
+    assert(sq == b.kingSquare[1])
+    assert(IsOK(sq));
+    assert(A1 <= sq && sq <= H8);
+    assert(IsOK(MIRROR(sq)))
+    assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
     if (isEndgame(b.material[0])) {
         score += kingEndgame[sq];
     } else {
@@ -575,7 +620,12 @@ static int evaluate(Board& b) {
     }
 
     p = Black | King;
+    assert(b.pieceList[p][0] == b.kingSquare[0])
     sq = MIRROR(b.pieceList[p][0]);
+    assert(IsOK(sq));
+    assert(A1 <= sq && sq <= H8);
+    assert(IsOK(MIRROR(sq)))
+    assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
     if (isEndgame(b.material[1])) {
         score -= kingEndgame[sq];
     } else {
@@ -635,6 +685,7 @@ void clearForSearch(Board& b, searchinfo_t *info) {
 
 static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 
+    assert(b.check());
     assert(alpha < beta);
 
     if ((info->nodes & 4095) == 0) {
@@ -696,6 +747,7 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
 
+    assert(b.check());
     assert(alpha < beta);
     assert(depth >= 0);
 
@@ -774,10 +826,14 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     for (moveIdx = 0; moveIdx < moves.size(); ++moveIdx) {
         // pick best scoring move (according to heuristics)
         pickNextMove(moveIdx, moves);
+        fflush(stdout);
 
         if (!b.makeMove(moves[moveIdx])) continue;
         legal++;
         score = -alphaBeta(b, info, -beta, -alpha, depth - 1, true);
+#ifdef DEBUG
+        printf("AlphaBeta searched %s (%d) and got score: %d\n", toString(moves[moveIdx]).c_str(), getScore(moves[moveIdx]), score);
+#endif
         b.undoMove(moves[moveIdx]);
 
         if (info->stopped) {
@@ -834,6 +890,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 
 // Searches the position defined by Board b
 void search(Board &b, searchinfo_t *info) {
+  assert(b.check());
   move_t bestMv = NULLMV;
   int bestScore = -INT32_MAX; // - Infinity
   int currDepth = 0;
@@ -872,6 +929,8 @@ void search(Board &b, searchinfo_t *info) {
 
   // best move seen so far (even if search stopped)
   printf("bestmove %s\n", toString(bestMv).c_str());
+
+  assert(b.check());
 }
 
 // Debug: Testing Mirror 64 and whether the eval is symmetric
@@ -888,4 +947,6 @@ void mirrorEvalTest(Board& b) {
     if (ev1 != ev2) {
         printf("Test failed!!!\n");
     }
+
+    assert(b.check());
 }
