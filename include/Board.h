@@ -89,20 +89,37 @@ typedef struct {
         uint fiftyMoveCounter;
 } undo_t;
 
-
+// Hash flags for the transposition tables
+#define HFEXACT 0
+#define HFALPHA 1
+#define HFBETA  2
 typedef struct {
     // Move in the principal variation
     move_t move;
     // The zobrist hash key that led to the above move
     u64 posKey;
-} pventry_t;
+    // Score according to static eval
+    int score;
+    // Depth the position was searched to
+    int depth;
+    // Flags (Exact, Alpha, Beta)
+    int flags;
+} hashentry_t;
 
 typedef struct {
-    // Number of moves stored
+    // Number of entries stored
     int no_entries;
     // Pointer to an element
-    pventry_t *pvtable = nullptr;
-} pvtable_t;
+    hashentry_t *pvtable = nullptr;
+    // Book keeping
+    uint new_writes;
+    uint overwrites;
+    uint hit;
+    uint cut;
+} hashtable_t;
+
+extern void clearTT(hashtable_t* table);
+extern void initTT(hashtable_t* table);
 
 typedef struct {
     uint64_t startTime;
@@ -127,7 +144,7 @@ void clearForSearch(Board& b, searchinfo_t *info);
 void search(Board& b, searchinfo_t *info);
 
 // Initialize the pv table
-extern void init_PVtable(pvtable_t *table);
+//extern void init_PVtable(pvtable_t *table);
 
 // Initialize the values for the MVVLVA heuristic
 extern void initMVVLVA();
@@ -184,7 +201,8 @@ class Board {
         std::vector<undo_t> boardHistory;
         bool SquareAttacked(const square_t sq, const int color);
         bool inCheck(const int color);
-        pvtable_t PVtable; // hash table implementation (might switch to triangular)
+        hashtable_t TT; // transposition table
+        //pvtable_t PVtable; // hash table implementation (might switch to triangular)
         std::vector<move_t> pv; // stores the principal variation extracted from PVtable
         // Table for the history heuristic
         // Indexed by piece-type and ply depth

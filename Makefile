@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17
+CXXFLAGS = -march=native -fno-exceptions -Wcast-qual -Wall -Wextra -Wpedantic -std=c++17
 SRC_DIR = src
 INCLUDE_DIR = include
 BUILD_DIR = build

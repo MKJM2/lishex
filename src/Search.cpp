@@ -4,8 +4,8 @@
 
 #define MATE (69000);
 
-// 10 MiB PV table size
-static const int PV_SIZE = 0xA00000;
+// 100 MiB PV table size
+static const int PV_SIZE = 0x6400000;
 
 #ifdef WIN32
 #include "windows.h"
@@ -84,13 +84,23 @@ static void checkUp(searchinfo_t *info) {
     readInput(info);
 }
 
-void init_PVtable(pvtable_t *table) {
-    table->no_entries = PV_SIZE / sizeof(pventry_t);
+// Initialize the transposition table
+void initTT(hashtable_t *table) {
+    table->no_entries = PV_SIZE / sizeof(hashentry_t);
     if (table->pvtable != nullptr) {
         delete[] table->pvtable;
     }
     // allocate the space for the table
-    table->pvtable = new pventry_t[table->no_entries]();
+    table->pvtable = new hashentry_t[table->no_entries]();
+
+    // Check if allocated
+    if (table->pvtable == nullptr) {
+        printf("Transposition table allocation failed\n");
+        assert(false);
+    }
+
+    // Clear the TT
+    clearTT(table);
 }
 
 // Detect whether the current board state has been seen before on the board stack
@@ -108,46 +118,103 @@ static bool isRepetition(Board& b) {
     return false;
 }
 
-void storePvMove(Board& b, const move_t move) {
-    // we use the posKey as a hash into our table!
-    int key = b.posKey % b.PVtable.no_entries;
-    b.PVtable.pvtable[key].move = move;
-    b.PVtable.pvtable[key].posKey = b.posKey;
+
+// void storePvMove(Board& b, const move_t move) {
+//     // we use the posKey as a hash into our table!
+//     int key = b.posKey % b.PVtable.no_entries;
+//     b.PVtable.pvtable[key].move = move;
+//     b.PVtable.pvtable[key].posKey = b.posKey;
+// }
+void storeHashEntry(Board &b, const move_t move, int score, const int flags,
+                    const int depth) {
+  // we use the posKey as a hash into our TT table
+  int key = b.posKey % b.TT.no_entries;
+
+  // Check if new write or overwrite (book keeping)
+  if (b.TT.pvtable[key].posKey == 0) {
+    b.TT.new_writes++;
+  } else {
+    b.TT.overwrites++;
+  }
+
+  // TODO: Mate score logic for returning how many plies to mate
+
+  // Finally, store the entry
+  b.TT.pvtable[key] = {move, b.posKey, score, depth, flags};
 }
 
-move_t checkPvTable(const Board& b) {
-    int key = b.posKey % b.PVtable.no_entries;
-    if (b.PVtable.pvtable[key].posKey == b.posKey) {
-        return b.PVtable.pvtable[key].move;
-    }
-    return NULLMV;
+move_t getPvMove(const Board &b) {
+  int key = b.posKey % b.TT.no_entries;
+  if (b.TT.pvtable[key].posKey == b.posKey) {
+    return b.TT.pvtable[key].move;
+  }
+  return NULLMV;
 }
 
-bool moveExists(Board& b, move_t m) {
-    std::vector<move_t> moves = generateMoves(b);
-    for (move_t& move : moves) {
-        // Check if legal move
-        if (!b.makeMove(move)) {
-            continue;
-        }
-        b.undoMove(move);
-        // Check if move is the move m we're looking for
-        /*
-        Warning: moves from the generator might be scored
-        differently than a move m that was e.g.
-        chosen for the primary variation, hence
-        a simple == comparison might fail
-        */
-        if (movecmp(move, m)) {
-            return true;
-        }
+// Probe TT for an entry for the current position
+/* https://web.archive.org/web/20070809015843/www.seanet.com/%7Ebrucemo/topics/hashing.htm
+ */
+bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
+                  int depth) {
+  // We use the posKey as a hash into our TT table
+  hashentry_t *entry = &b.TT.pvtable[b.posKey % b.TT.no_entries];
+
+  // If hit:
+  if (entry->posKey == b.posKey) {
+    move = entry->move;
+    // If the previous search actually is useful
+    if (entry->depth >= depth) {
+      b.TT.hit++;
+      score = entry->score;
+      // TODO: Mate score logic ...
+      switch (entry->flags) {
+      case HFALPHA:
+        score = (score <= alpha) ? alpha : score;
+        break;
+      case HFBETA:
+        score = (score >= beta) ? beta : score;
+        break;
+      case HFEXACT:
+        break;
+      default:
+        // should not happen
+        // assert(false);
+        return false;
+        break;
+      }
+      return true;
     }
-    // m wasn't found, hence m isn't a valid move
-    return false;
+  }
+  // Otherwise, if TT not hit:
+  return false;
+}
+
+bool moveExists(Board &b, move_t m) {
+  std::vector<move_t> moves = generateMoves(b);
+  for (move_t &move : moves) {
+    // Check if legal move
+    if (!b.makeMove(move)) {
+      continue;
+    }
+    b.undoMove(move);
+    // Check if move is the move m we're looking for
+    /*
+    Warning: moves from the generator might be scored
+    differently than a move m that was e.g.
+    chosen for the primary variation, hence
+    a simple == comparison might fail
+    */
+    if (movecmp(move, m)) {
+      return true;
+    }
+  }
+  // m wasn't found, hence m isn't a valid move
+  return false;
 }
 
 int getPV(Board& b, const int depth) {
-    move_t move = checkPvTable(b);
+    //move_t move = checkPvTable(b);
+    move_t move = getPvMove(b);
     int currDepth = 0;
 
     b.pv.clear();
@@ -159,7 +226,7 @@ int getPV(Board& b, const int depth) {
         } else {
             break;
         }
-        move = checkPvTable(b);
+        move = getPvMove(b);
     }
 
     // Ply starts at 0 when the current position is searched
@@ -523,6 +590,17 @@ static int evaluate(Board& b) {
     return (b.turn == White) ? score : -score;
 }
 
+void clearTT(hashtable_t* table) {
+    hashentry_t* el;
+    for (el = table->pvtable; el < table->pvtable + table->no_entries; el++) {
+        el->posKey = 0ULL;
+        el->move = NULLMV;
+        el->depth = 0;
+        el->score = 0;
+        el->flags = 0;
+    }
+    table->new_writes = 0;
+}
 
 
 void clearForSearch(Board& b, searchinfo_t *info) {
@@ -545,6 +623,10 @@ void clearForSearch(Board& b, searchinfo_t *info) {
     info->fhf = 0;
 	info->stopped = 0;
 	info->nodes = 0;
+
+    b.TT.cut = 0;
+    b.TT.overwrites = 0;
+    b.TT.hit = 0;
 }
 
 static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
@@ -559,6 +641,7 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 	if(isRepetition(b)) {
 		return 0;
 	}
+
     int score = evaluate(b);
 
 	if(score >= beta) {
@@ -604,13 +687,11 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 }
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
-
-
     if (depth <= 0) {
         return quiescenceSearch(b,info, alpha, beta);
     }
 
-    if ((info->nodes & 2047) == 0) {
+    if ((info->nodes & 4095) == 0) {
         checkUp(info);
     }
 
@@ -628,6 +709,14 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         ++depth;
     }
 
+    // Transposition table lookup (reuse results from previous searches)
+    move_t pvMv = NULLMV;
+    int score = INT32_MIN;
+    if (getHashEntry(b, pvMv, score, alpha, beta, depth)) {
+        b.TT.cut++;
+        return score;
+    }
+
     // Null moves
 
     // Requirements:
@@ -636,7 +725,6 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // - we are at least one search in (ply > 0)
     // - we are not in a zugzwag (at least one big piece on board)
     // depth - 1 - R (for R = 3) is allowed
-    int score = INT32_MIN;
 	if (canDoNull && !inCheck && b.ply && (b.bigPce[b.turn == Piece::White] > 0) && depth >= 4) {
         b.makeNullMove();
         score = -alphaBeta(b, info, -beta, -beta + 1, depth - 4, false);
@@ -659,7 +747,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     score = INT32_MIN;
 
     // Heuristic: start searching from pv moves
-    move_t pvMv = checkPvTable(b);
+    // move_t pvMv = getPvMove(b); // handled by TT
 
     if (pvMv != NULLMV) {
         for (; moveIdx < moves.size(); ++moveIdx) {
@@ -698,6 +786,9 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                     b.killersH[1][b.ply] = b.killersH[0][b.ply];
                     b.killersH[0][b.ply] = moves[moveIdx];
                 }
+
+                storeHashEntry(b, bestMv, beta, HFBETA, depth);
+
                 return beta;
             }
             alpha = score;
@@ -719,48 +810,55 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         }
     }
     if (alpha != oldAlpha) {
-        storePvMove(b, bestMv);
+        //storePvMove(b, bestMv);
+        storeHashEntry(b, bestMv, alpha, HFEXACT, depth);
+    } else {
+        storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
 
     return alpha;
 }
 
 // Searches the position defined by Board b
-void search(Board& b, searchinfo_t *info) {
-    move_t bestMv = NULLMV;
-    int bestScore = -INT32_MAX; // - Infinity
-    int currDepth = 0;
-    int pvMoves = 0;
-    int pvNum = 0;
-    clearForSearch(b, info);
+void search(Board &b, searchinfo_t *info) {
+  move_t bestMv = NULLMV;
+  int bestScore = -INT32_MAX; // - Infinity
+  int currDepth = 0;
+  int pvMoves = 0;
+  int pvNum = 0;
+  clearForSearch(b, info);
 
-    // Iterative Deepening
-    for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
-        bestScore = alphaBeta(b, info, -INT32_MAX, INT32_MAX, currDepth, true);
+  // Iterative Deepening
+  for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
+    bestScore = alphaBeta(b, info, -INT32_MAX, INT32_MAX, currDepth, true);
 
-        if (info->stopped) {
-            break;
-        }
-        pvMoves = getPV(b, currDepth);
-        bestMv = b.pv[0];
-        printf("info score cp %d  depth %d nodes %lld time %lu ",
-                bestScore, currDepth, info->nodes, getTime() - info->startTime);
-
-        // TODO:
-        //pvMoves = getPV(b, currDepth);
-        printf("pv");
-        for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
-            printf(" %s", toString(b.pv[pvNum]).c_str());
-        }
-        printf("\n");
-        //printf("Ordering:%.2f\n", (info->fhf/info->fh));
-        fflush(stdout);
+    if (info->stopped) {
+      break;
     }
+    pvMoves = getPV(b, currDepth);
+    bestMv = b.pv[0];
+    printf("info score cp %d  depth %d nodes %lld time %lu hashfull %d ",
+           bestScore, currDepth, info->nodes, getTime() - info->startTime,
+           (int)(((double)b.TT.new_writes / b.TT.no_entries) * 1000));
+    // TODO:
+    pvMoves = getPV(b, currDepth);
+    printf("pv");
+    for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
+      printf(" %s", toString(b.pv[pvNum]).c_str());
+    }
+    printf("\n");
 
-    // info score cp 13  depth 1 nodes 13 time 15 pv f1b5
+    // printf("New writes: %d\nOverwrites: %d\nTotal space: %d\n",
+    // b.TT.new_writes, b.TT.overwrites, b.TT.no_entries);
 
-    // best move seen so far (even if search stopped)
-    printf("bestmove %s\n", toString(bestMv).c_str());
+    // printf("Ordering:%.2f\n", (info->fhf/info->fh));
+    fflush(stdout);
+  }
+
+  // info score cp 13  depth 1 nodes 13 time 15 pv f1b5
+
+  // best move seen so far (even if search stopped)
+  printf("bestmove %s\n", toString(bestMv).c_str());
 }
 
 // Debug: Testing Mirror 64 and whether the eval is symmetric

@@ -17,15 +17,16 @@ Board::Board() {
   this->initKeys();
   this->readFEN(startFEN);
   this->posKey = generatePosKey();
-  init_PVtable(&PVtable);
+  //init_PVtable(&PVtable);
+  initTT(&this->TT);
   // initPieceList(); // Called by readFEN()
   initMVVLVA();
   initEvalMasks();
 }
 
 Board::~Board() {
-  if (this->PVtable.pvtable != nullptr) {
-      delete[] PVtable.pvtable;
+  if (this->TT.pvtable != nullptr) {
+      delete[] TT.pvtable;
   }
 }
 
@@ -34,7 +35,8 @@ void Board::reset() {
   boardHistory.clear();
 
   // Clear all heuristic tables
-  init_PVtable(&PVtable);
+  //init_PVtable(&PVtable);
+  initTT(&TT);
   pv.clear();
 
   int i, j;
@@ -362,6 +364,30 @@ void Board::readPosition(std::string pos) {
     this->initPieceList();
 }
 
+/*
+** Implements time management algorithm based on
+** http://facta.junis.ni.ac.rs/acar/acar200901/acar2009-07.pdf
+ */
+static inline int est_moves_left(const Board& board) {
+  // Assumes 1,3,3,5,9 for P,N,B,R,Q
+
+  // Count # of pawns on the board
+  int p = CNT(board.pawns[BOTH]);
+  int n = board.pceCount[wN] + board.pceCount[bN];
+  int b = board.pceCount[wB] + board.pceCount[bB];
+  int r = board.pceCount[wR] + board.pceCount[bR];
+  int q = board.pceCount[wQ] + board.pceCount[bQ];
+
+  int x = p + 3*n + 3*b + 5*r + 9*q;
+  if (x < 20) {
+    return x + 10;
+  } else if (20 <= x && x <= 60) {
+    return 0.375 * x + 22;
+  } else { // x > 60
+    return 1.25 * x - 30;
+  }
+}
+
 void Board::readGo(std::string goStr, searchinfo_t *info) {
     int depth = -1, movestogo = 30, movetime = -1;
     int time = -1, inc = 0;
@@ -415,9 +441,13 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
         }
     }
 
+    // Simple time management based on
+    // E[# halfmoves until end of game | material on board]
     if (movetime != -1) {
-        time = movetime;
-        movestogo = 1;
+      time = movetime;
+      movestogo = 1;
+    } else {
+      movestogo = est_moves_left(*this);
     }
 
     info->startTime = getTime();
@@ -427,6 +457,7 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
     if (time != -1) {
         info->timeSet = true;
         time /= movestogo;
+
         // to be safe we don't run out of time
         time -= 50;
         info->endTime = info->startTime + time + inc;
@@ -436,7 +467,7 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
         info->depth = MAX_DEPTH;
     }
 
-    printf("time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
+    printf("[DEBUG] time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
             time,info->startTime,info->endTime,info->depth,info->timeSet);
     search(*this, info);
 }
@@ -843,10 +874,6 @@ void Board::undoMove(move_t move) {
     fflush(stdout);
     assert(last.posKey == posKey);
   }
-  //this->posKey = generatePosKey();
-
-  // This should be more incremental but works for now
-  //this->updateMaterial();
 }
 
 
@@ -902,6 +929,12 @@ void Board::undoNullMove() {
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
+
+  // TODO: Debug
+  if (last.posKey != posKey) {
+    printf("Uhoh something went wrong!\n");
+    assert(last.posKey == posKey);
+  }
 }
 
 void Board::undoLast() {
