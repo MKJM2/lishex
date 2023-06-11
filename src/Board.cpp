@@ -559,6 +559,7 @@ std::string Board::toFEN() const {
 /* Helpers for makeMove */
 // Returns captured piece, if any
 inline static void clearPiece(const square_t sq, Board& b) {
+  assert(b.check());
   piece p = b.board[sq];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -628,6 +629,7 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
 }
 
 inline static void movePiece(const square_t from, const square_t to, Board& b) {
+  assert(b.check())
   piece p = b.board[from];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -658,7 +660,7 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 
 // Returns True if move was legal, False otherwise
 bool Board::makeMove(move_t move) {
-
+  assert(this->check());
   // Extract move data
   square_t to = getTo(move);
   square_t from = getFrom(move);
@@ -771,8 +773,7 @@ bool Board::makeMove(move_t move) {
   //this->posKey = generatePosKey();
   hashTurn();
 
-  // This should be more incremental (to be fast) but works for now
-  //this->updateMaterial();
+  assert(this->check());
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
   if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
@@ -783,6 +784,7 @@ bool Board::makeMove(move_t move) {
 }
 
 void Board::undoMove(move_t move) {
+  assert(this->check());
   square_t to = getTo(move);
   square_t from = getFrom(move);
   int flags = getFlags(move);
@@ -864,16 +866,10 @@ void Board::undoMove(move_t move) {
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
-  // TODO: Debug
   ply--;
-  if (last.posKey != posKey) {
-    printf("Assert failed while undoing move %s\n", toString(move).c_str());
-    std::cout << this->toFEN() << std::endl;
-    printf("Desired   hash: %llu\n", last.posKey);
-    printf("Generated hash: %llu\n", posKey);
-    fflush(stdout);
-    assert(last.posKey == posKey);
-  }
+
+  // Debug checks
+  assert(this->check());
 }
 
 
@@ -943,15 +939,111 @@ void Board::undoLast() {
   this->undoMove(last.move);
 }
 
+#ifdef DEBUG
+bool Board::check() {
+  using namespace Piece;
+  int tmp_pceCount[24] = {0};
+  int tmp_bigPce[2] = {0};
+  int tmp_majPce[2] = {0};
+  int tmp_minPce[2] = {0};
+  int tmp_material[2] = {0};
+  piece tmp_piece;
+  bb_t tmp_pawns[3] = {0ULL, 0ULL, 0ULL};
+
+  tmp_pawns[0] = this->pawns[0];
+  tmp_pawns[1] = this->pawns[1];
+  tmp_pawns[2] = this->pawns[2];
+
+  // Check piece list
+  for (tmp_piece = None; tmp_piece <= bQ; ++tmp_piece) {
+    for (int i = 0; i < this->pceCount[tmp_piece]; ++i) {
+      // Check if piece list contains the actual piece on the board
+      square_t sq = pieceList[tmp_piece][i];
+      if (board[sq] != tmp_piece) {
+        printf("Expected piece %d but got %d\n", board[sq], tmp_piece);
+        fflush(stdout);
+        return false;
+      }
+    }
+  }
+
+  bool colour;
+  // Check piece count and other counters
+  for (square_t s = A1; s <= H8; ++s) {
+    tmp_piece = board[s];
+    tmp_pceCount[tmp_piece]++;
+    colour = IsColour(tmp_piece, White);
+    if (IsBig(tmp_piece)) tmp_bigPce[colour]++;
+    if (IsRookOrQueen(tmp_piece)) tmp_majPce[colour]++;
+    if (IsKnightOrBishop(tmp_piece)) tmp_minPce[colour]++;
+
+    tmp_material[colour] += value[PieceType(tmp_piece)];
+  }
+
+  for (tmp_piece = wP; tmp_piece <= bQ; ++tmp_piece) {
+    assert(tmp_pceCount[tmp_piece] == this->pceCount[tmp_piece]);
+  }
+
+  // Check other counts
+  int pawnCount = CNT(tmp_pawns[1]);
+  assert(pawnCount == this->pceCount[wP]);
+  pawnCount = CNT(tmp_pawns[0]);
+  assert(pawnCount == this->pceCount[bP]);
+  pawnCount = CNT(tmp_pawns[BOTH]);
+  assert(pawnCount == this->pceCount[bP] + this->pceCount[wP]);
+
+  // Check if bitboards match the board
+  while (tmp_pawns[1]) {
+    square_t s = POP(this->pawns[1]);
+    CLRLSB(tmp_pawns[1]);
+    assert(board[s] == wP);
+  }
+
+  while (tmp_pawns[0]) {
+    square_t s = POP(this->pawns[0]);
+    CLRLSB(tmp_pawns[0]);
+    assert(board[s] == wP);
+  }
+
+  while (tmp_pawns[BOTH]) {
+    square_t s = POP(this->pawns[BOTH]);
+    CLRLSB(tmp_pawns[0]);
+    assert(board[s] == wP || board[s] == bP);
+  }
+
+  // Check if material matches up
+  assert(tmp_material[1] == this->material[1] && tmp_material[0] == this->material[0]);
+
+  // Check if counts match up
+  assert(tmp_minPce[1] == minPce[1]);
+  assert(tmp_minPce[0] == minPce[0]);
+  assert(tmp_majPce[1] == majPce[1]);
+  assert(tmp_majPce[0] == majPce[0]);
+  assert(tmp_bigPce[1] == bigPce[1]);
+  assert(tmp_bigPce[0] == bigPce[0]);
+
+  assert(turn == White || turn == Black);
+
+  // !! critical for TT functionality
+  assert(this->generatePosKey() == this->posKey);
+
+  assert(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == White) ||
+         (SquareRank(epSquare) == 5 && turn == Black));
+
+  assert(board[this->kingSquare[1]] == wK);
+  assert(board[this->kingSquare[0]] == bK);
+
+  assert(castlePerm >= 0 && castlePerm <= 15);
+
+  return true;
+}
+#endif // DEBUG
+
+
+
+
 inline u64 Board::rand64() {
   return rng();
-  /*
-  return (u64)std::rand() + \
-         ((u64)std::rand() << 15) + \
-         ((u64)std::rand() << 30) + \
-         ((u64)std::rand() << 45) + \
-         (((u64)std::rand() & 0xf) << 60);
-  */
 }
 
 void Board::initKeys(unsigned rng_seed) {

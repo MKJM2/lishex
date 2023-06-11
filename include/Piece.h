@@ -9,12 +9,14 @@
 #define wB (Piece::White | Piece::Bishop)
 #define wR (Piece::White | Piece::Rook)
 #define wQ (Piece::White | Piece::Queen)
+#define wK (Piece::White | Piece::King)
 
 #define bP (Piece::Black | Piece::Pawn)
 #define bN (Piece::Black | Piece::Knight)
 #define bB (Piece::Black | Piece::Bishop)
 #define bR (Piece::Black | Piece::Rook)
 #define bQ (Piece::Black | Piece::Queen)
+#define bK (Piece::Black | Piece::King)
 
 namespace Piece {
     // inspired by Sebastian Lague's design

@@ -2,10 +2,10 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 
-#define MATE (69000);
+#define MATE (69000)
 
 // 100 MiB PV table size
-static const int PV_SIZE = 0x6400000;
+static const int HASH_SIZE = 0x6400000;
 
 #ifdef WIN32
 #include "windows.h"
@@ -86,7 +86,7 @@ static void checkUp(searchinfo_t *info) {
 
 // Initialize the transposition table
 void initTT(hashtable_t *table) {
-    table->no_entries = PV_SIZE / sizeof(hashentry_t);
+    table->no_entries = HASH_SIZE / sizeof(hashentry_t);
     if (table->pvtable != nullptr) {
         delete[] table->pvtable;
     }
@@ -344,6 +344,10 @@ static void pickNextMove(size_t moveIdx, std::vector<move_t>& moves) {
             bestIdx = idx;
         }
     }
+    assert(moveIdx >= 0 && moveIdx < moves.size());
+    assert(bestIdx >= 0 && bestIdx < moves.size());
+    assert(bestIdx >= moveIdx);
+
     // Swap the two moves
     move_t tmp;
     tmp = moves[moveIdx];
@@ -631,6 +635,8 @@ void clearForSearch(Board& b, searchinfo_t *info) {
 
 static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 
+    assert(alpha < beta);
+
     if ((info->nodes & 4095) == 0) {
         checkUp(info);
     }
@@ -643,6 +649,8 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
 	}
 
     int score = evaluate(b);
+
+    assert(score > -2 * MATE && score < 2 * MATE);
 
 	if(score >= beta) {
 		return beta;
@@ -672,21 +680,25 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
             return 0;
         }
 
-		if (score > alpha) {
-			if (score >= beta) {
-				if (legal == 1) {
-					info->fhf++;
-				}
-				info->fh++;
-				return beta;
-			}
-			alpha = score;
-		}
+        if (score > alpha) {
+            if (score >= beta) {
+                if (legal == 1) {
+                    info->fhf++;
+                }
+                info->fh++;
+                return beta;
+            }
+            alpha = score;
+        }
     }
-	return alpha;
+    return alpha;
 }
 
 static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int depth, bool canDoNull) {
+
+    assert(alpha < beta);
+    assert(depth >= 0);
+
     if (depth <= 0) {
         return quiescenceSearch(b,info, alpha, beta);
     }
@@ -816,6 +828,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
 
+    assert(alpha >= oldAlpha);
     return alpha;
 }
 

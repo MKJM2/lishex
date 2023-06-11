@@ -1,20 +1,22 @@
 CXX = g++
-CXXFLAGS = -march=native -fno-exceptions -Wcast-qual -Wall -Wextra -Wpedantic -std=c++17
+CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17
 SRC_DIR = src
 INCLUDE_DIR = include
 BUILD_DIR = build
 TARGET = lishex
 
-### Optimizations (on by default)
-optimize ?= yes
-ifeq ($(optimize),yes)
-	CXXFLAGS += -O3
-endif
-
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -g -w
+	CXXFLAGS += -ggdb -DDEBUG -w
+endif
+
+### Optimizations (on by default)
+optimize ?= yes
+ifeq ($(optimize),yes)
+	ifneq ($(debug),yes)
+		CXXFLAGS += -O3 -fno-exceptions
+	endif
 endif
 
 # List of source files
@@ -49,3 +51,5 @@ run: $(TARGET)
 help:
 	@echo "To compile LiSHeX, type: "
 	@echo "make"
+	@echo "To compile with debug options, type: "
+	@echo "make debug=yes"

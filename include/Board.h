@@ -10,7 +10,6 @@
 #include <stack>
 #include <random>
 #include <bitset>
-#include <cassert>
 #include <cstdint>
 #include "Piece.h"
 #include "Move.h"
@@ -20,7 +19,23 @@
 #define ROWS 8
 #define COLS 8
 
+// Both colors (for indexing into pawn bitboard)
 #define BOTH 2
+
+// #define DEBUG
+
+#ifndef DEBUG
+#define assert(n)
+#else
+#define assert(n) \
+if(!(n)) { \
+printf("%s - Failed ",#n); \
+printf("On %s ",__DATE__); \
+printf("At %s ",__TIME__); \
+printf("In File %s ",__FILE__); \
+printf("At Line %d\n",__LINE__); \
+exit(1);}
+#endif
 
 using namespace std::chrono;
 #define getTime() ( \
@@ -70,7 +85,6 @@ const int Mirror64[64] = {
 #define MIRROR(sq) ((sq) ^ 56)
 
 class Board;
-
 
 void mirrorEvalTest(Board& b);
 
@@ -210,6 +224,9 @@ class Board {
         // Table for the killer (beta cutoffs non-capturing) heuristic
         // We store two killer moves, indexed by ply search depth
         move_t killersH[2][64] = {};
+#ifdef DEBUG
+        bool check();
+#endif
 };
 
 #endif // BOARD_H_
