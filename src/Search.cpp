@@ -167,8 +167,8 @@ move_t getPvMove(const Board &b) {
 // Probe TT for an entry for the current position
 /* https://web.archive.org/web/20070809015843/www.seanet.com/%7Ebrucemo/topics/hashing.htm
  */
-bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
-                  int depth) {
+bool getHashEntry(Board &b, move_t &move, int &score, const int alpha, const int beta,
+                  const int depth) {
   // We use the posKey as a hash into our TT table
   int key = (int) (b.posKey % b.TT.no_entries);
   hashentry_t *entry = &b.TT.pvtable[key];
@@ -248,12 +248,13 @@ int getPV(Board& b, const int depth) {
     move_t move = getPvMove(b);
     int currDepth = 0;
 
-    b.pv.clear();
+    //b.pv.clear();
     while (move != NULLMV && currDepth < depth) {
         if (moveExists(b, move)) {
             b.makeMove(move);
-            b.pv.emplace_back(move);
-            currDepth++;
+            //b.pv.emplace_back(move);
+            b.pv[currDepth++] = move; // overwrite instead of emplacing
+            //currDepth++;
         } else {
             break;
         }
@@ -944,7 +945,7 @@ void search(Board &b, searchinfo_t *info) {
            bestScore, currDepth, info->nodes, getTime() - info->startTime,
            (int)(((double)b.TT.new_writes / b.TT.no_entries) * 1000));
     // TODO:
-    pvMoves = getPV(b, currDepth);
+    //pvMoves = getPV(b, currDepth);
     printf("pv");
     for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
       printf(" %s", toString(b.pv[pvNum]).c_str());

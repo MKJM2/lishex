@@ -18,6 +18,7 @@ Board::Board() {
   this->reset();
   this->initKeys();
   this->readFEN(startFEN);
+  pv.reserve(MAX_MOVES); // reserve space for the pv vector
   //init_PVtable(&PVtable);
   initDistArray(dist);
   initTT(&this->TT);
@@ -776,7 +777,7 @@ bool Board::makeMove(move_t move) {
   // Hash in new permissions
   hashCastle();
 
-  boardHistory.push_back(undo);
+  boardHistory.emplace_back(undo);
 
   // Perform the move (captures reset the 50 move counter)
   if (board[to] != Piece::None) {
@@ -957,7 +958,7 @@ void Board::makeNullMove() {
   }
   epSquare = NO_SQ;
 
-  boardHistory.push_back(undo);
+  boardHistory.emplace_back(undo);
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove++;
