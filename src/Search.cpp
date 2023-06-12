@@ -4,8 +4,8 @@
 
 #define MATE (69000)
 
-// 100 MiB PV table size
-static const int HASH_SIZE = 0x6400000;
+// 16 MiB TT table default size
+static const int HASH_SIZE = 0x1000000;
 
 #ifdef WIN32
 #include "windows.h"
@@ -97,6 +97,8 @@ void initTT(hashtable_t *table) {
     if (table->pvtable == nullptr) {
         printf("Transposition table allocation failed\n");
         assert(false);
+    } else {
+        printf("Allocated TT of size %d\n", HASH_SIZE);
     }
 
     // Clear the TT
@@ -104,13 +106,13 @@ void initTT(hashtable_t *table) {
 }
 
 // Detect whether the current board state has been seen before on the board stack
-
-// TODO: Can use the fiftyMoveRule counter to optimize this
-// since we don't need to search the *entire* history
+//     Can use the fiftyMoveRule counter to optimize this
+//     since we don't need to search the *entire* history
 static bool isRepetition(Board& b) {
     std::vector<undo_t>& hist = b.boardHistory;
-    int i = 0, n = hist.size();
-    for (; i < n - 1; i++) {
+    int n = hist.size();
+    int i = n - 1 - b.fiftyMoveCounter;
+    for (; i < n - 1; ++i) {
         if (hist[i].posKey == b.posKey) {
             return true;
         }
@@ -134,6 +136,7 @@ void storeHashEntry(Board &b, const move_t move, int score, const int flags,
   assert(depth >= 1);
   assert(flags >= HFEXACT && flags <= HFBETA);
   assert(b.ply >= 0);
+  assert(score >= -INFINITE && score <= INFINITE);
 
   // Check if new write or overwrite (book keeping)
   if (b.TT.pvtable[key].posKey == 0) {
@@ -153,7 +156,8 @@ void storeHashEntry(Board &b, const move_t move, int score, const int flags,
 }
 
 move_t getPvMove(const Board &b) {
-  int key = b.posKey % b.TT.no_entries;
+  int key = (int) (b.posKey % b.TT.no_entries);
+  assert(key >= 0 && key <= b.TT.no_entries);
   if (b.TT.pvtable[key].posKey == b.posKey) {
     return b.TT.pvtable[key].move;
   }
@@ -166,13 +170,16 @@ move_t getPvMove(const Board &b) {
 bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
                   int depth) {
   // We use the posKey as a hash into our TT table
-  int key = b.posKey % b.TT.no_entries;
+  int key = (int) (b.posKey % b.TT.no_entries);
   hashentry_t *entry = &b.TT.pvtable[key];
 
   assert(0 <= key && key <= b.TT.no_entries - 1);
   assert(depth >= 1);
   assert(alpha < beta);
   assert(b.ply >= 0);
+  assert(b.ply < MAX_DEPTH);
+  assert(alpha >= -INFINITE && alpha <= INFINITE);
+  assert(beta >= -INFINITE && beta <= INFINITE);
 
   // If hit:
   if (entry->posKey == b.posKey) {
@@ -188,11 +195,13 @@ bool getHashEntry(Board &b, move_t &move, int &score, int alpha, int beta,
       score = entry->score;
       // TODO: Mate score logic ...
       switch (entry->flags) {
+
+      assert(score >= -INFINITE && score <= INFINITE);
       case HFALPHA:
-        score = (score <= alpha) ? alpha : score;
+        score = (entry->score <= alpha) ? alpha : entry->score;
         break;
       case HFBETA:
-        score = (score >= beta) ? beta : score;
+        score = (entry->score >= beta) ? beta : entry->score;
         break;
       case HFEXACT:
         break;
@@ -707,7 +716,7 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
     info->nodes++;
 
     // || b.fiftyMove >= 100
-	if(isRepetition(b)) {
+	if(isRepetition(b) || b.fiftyMoveCounter >= 100) {
 		return 0;
 	}
 
@@ -717,7 +726,7 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
         return score;
     }
 
-    assert(score > -2 * MATE && score < 2 * MATE);
+    assert(score >= -INFINITE && score <= INFINITE);
 
 	if(score >= beta) {
 		return beta;
@@ -731,7 +740,7 @@ static int quiescenceSearch(Board& b, searchinfo_t *info, int alpha, int beta) {
     generateCaptures(b, captures);
     size_t moveIdx = 0;
     int legal = 0;
-	score = INT32_MIN;
+	score = -INFINITE;
 
 	for (moveIdx = 0; moveIdx < captures->size(); ++moveIdx) {
 		pickNextMove(moveIdx, captures);
@@ -779,8 +788,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     info->nodes++;
 
     // Check if position is a draw
-    // TODO: Handle the fifyMoveCounter here: || b.fiftyMoveCounter >= 100
-    if (isRepetition(b) && b.ply) {
+    if ((isRepetition(b) || b.fiftyMoveCounter >= 100) && b.ply) {
         return 0;
     }
 
@@ -795,12 +803,14 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     }
 
     // Transposition table lookup (reuse results from previous searches)
+    int score = -INFINITE;
     move_t pvMv = NULLMV;
-    int score = INT32_MIN;
+    /*
     if (getHashEntry(b, pvMv, score, alpha, beta, depth)) {
         b.TT.cut++;
         return score;
     }
+    */
 
     // Null moves
 
@@ -830,8 +840,8 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     int legal = 0;
     int oldAlpha = alpha;
     move_t bestMv = NULLMV;
-    int best_score = INT32_MIN;
-    score = INT32_MIN;
+    int best_score = -INFINITE;
+    score = -INFINITE;
 
     // Heuristic: start searching from pv moves
     // move_t pvMv = getPvMove(b); // handled by TT
@@ -892,9 +902,9 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     }
 
     // Detect mate / stalemate
-    if (!legal) {
+    if (legal == 0) {
         if (inCheck) {
-            return b.ply - MATE;
+            return -INFINITE + b.ply;
         } else {
             return 0; // stalemate
         }
@@ -915,7 +925,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
 void search(Board &b, searchinfo_t *info) {
   assert(b.check());
   move_t bestMv = NULLMV;
-  int bestScore = -INT32_MAX; // - Infinity
+  int bestScore = -INFINITE; // - Infinity
   int currDepth = 0;
   int pvMoves = 0;
   int pvNum = 0;
@@ -923,7 +933,7 @@ void search(Board &b, searchinfo_t *info) {
 
   // Iterative Deepening
   for (currDepth = 1; currDepth <= info->depth; ++currDepth) {
-    bestScore = alphaBeta(b, info, -INT32_MAX, INT32_MAX, currDepth, true);
+    bestScore = alphaBeta(b, info, -INFINITE, +INFINITE, currDepth, true);
 
     if (info->stopped) {
       break;

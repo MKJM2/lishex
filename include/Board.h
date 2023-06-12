@@ -22,6 +22,8 @@
 // Both colors (for indexing into pawn bitboard)
 #define BOTH 2
 
+#define INFINITE 150000
+
 // #define DEBUG
 
 #ifndef DEBUG
@@ -227,7 +229,11 @@ class Board {
         u64 castleKeys[16]; // TODO: 4bits depending on which side castle
         u64 posKey = this->generatePosKey();
         uint fiftyMoveCounter = 0;
-        void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
+#ifdef DEBUG // use a consistent rng seed for testing
+        void initKeys(unsigned rng_seed = 0U);
+#else
+        void initKeys(unsigned rng_seed = std::random_device{}());
+#endif
         void initPieceList();
         u64 generatePosKey() const;
         std::vector<undo_t> boardHistory;

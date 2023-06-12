@@ -21,6 +21,7 @@ Board::Board() {
   // initPieceList(); // Called by readFEN()
   initMVVLVA();
   initEvalMasks();
+  this->boardHistory.reserve(MAX_MOVES);
   this->posKey = generatePosKey();
 }
 
@@ -36,10 +37,11 @@ void Board::reset() {
 
   // Clear all heuristic tables
   //init_PVtable(&PVtable);
-  initTT(&TT);
+  // initTT(&TT);
   pv.clear();
 
-  int i, j;
+  //int i, j;
+  /* These should be cleared in clearForSearch
   // Clear history heuristic table
   for (i = 0; i < 24; ++i) {
       for (j = 0; j < 64; ++j) {
@@ -51,6 +53,7 @@ void Board::reset() {
   for (i = 0; i < 64; ++i) {
       killersH[0][i] = killersH[1][i] = 0;
   }
+  */
 
   // Clear piece lists
   bigPce[0] = bigPce[1] = 0;
@@ -67,6 +70,9 @@ void Board::reset() {
 
   // Clear position key
   posKey = 0ULL;
+
+  // Reset the 50 move counter
+  fiftyMoveCounter = 0;
 }
 
 void Board::initPieceList() {
@@ -692,6 +698,7 @@ bool Board::makeMove(move_t move) {
   undo.captured = board[to];
   undo.posKey = this->posKey;
   undo.castlePerm = castlePerm;
+  undo.fiftyMoveCounter = fiftyMoveCounter;
 
   /* Update state */
 
@@ -757,9 +764,13 @@ bool Board::makeMove(move_t move) {
   // Handle fifty move rule
   fiftyMoveCounter++;
 
-  // Perform the move
-  if (board[to] != Piece::None) {
+  // Perform the move (captures reset the 50 move counter)
+  if (undo.captured != Piece::None) {
     clearPiece(to, *this);
+    fiftyMoveCounter = 0;
+  }
+
+  if (Piece::PieceType(board[from]) == Piece::Pawn) {
     fiftyMoveCounter = 0;
   }
 
@@ -817,7 +828,8 @@ void Board::undoMove(move_t move) {
   square_t from = getFrom(move);
   int flags = getFlags(move);
 
-  if (boardHistory.size() == 0) return;
+  //if (boardHistory.size() == 0) return;
+  assert(boardHistory.size() >= 0); // should never be called otherwise
   undo_t last = boardHistory.back();
   boardHistory.pop_back();
 
@@ -954,10 +966,14 @@ void Board::undoNullMove() {
   turn = op;
   hashTurn();
 
+  // TODO: Debug this
+  // Hash out the en passant square (if set)
+  //if (epSquare != NO_SQ) hashEnPassant(epSquare);
+
   // Restore the en passant square from pre-move state
   epSquare = last.enPas;
 
-  // Hash out the en passant square if currently set
+  // Hash in the en passant square if previously
   if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // restore castling permissions
@@ -1086,7 +1102,8 @@ bool Board::check() const {
   u64 expected = this->generatePosKey();
   if (expected != this->posKey) {
     printf("Expected: %llu\nGot:      %llu\n", expected, this->posKey);
-    assert(false);
+    //assert(false);
+    return false;
   }
 
   if(!(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == Black) ||
