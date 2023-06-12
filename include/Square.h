@@ -37,6 +37,10 @@ inline int distance(square_t a, square_t b) {
     return std::max(std::abs(xa - xb), std::abs(ya - yb));
 }
 
+// Array returning distance from any given square to every other square
+// TODO: Populate at compile time with constexpr and template metaprogramming?
+extern square_t dist[64][64];
+
 inline bool IsOK(square_t s) {
      // check for presense of highset 6 bits
      return (s >= -1) && (s & ~0x3F) == 0;

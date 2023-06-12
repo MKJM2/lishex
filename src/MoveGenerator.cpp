@@ -1,5 +1,4 @@
 #include "MoveGenerator.h"
-#include "Square.h"
 
 using namespace Piece;
 
@@ -146,23 +145,23 @@ void generateMoves(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (distance(captureL, from) <= 2 && IsColour(board[captureL], Black)) {
+            if (dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir + 1;
-            if (distance(captureR, from) <= 2 && IsColour(board[captureR], Black)) {
+            if (dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
             // Check if can perform en passant
             // std::cout << "google en passant" << std::endl;
-            if (distance(captureL, from) <= 2 && captureL == b.epSquare) {
+            if (dist[captureL][from] <= 2 && captureL == b.epSquare) {
                 assert(IsOK(captureL));
                 addEnPassant(from, captureL, moves);
             }
-            if (distance(captureR, from) <= 2 && captureR == b.epSquare) {
+            if (dist[captureR][from] <= 2 && captureR == b.epSquare) {
                 assert(IsOK(captureR));
                 addEnPassant(from, captureR, moves);
             }
@@ -202,23 +201,23 @@ void generateMoves(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (distance(captureL, from) <= 2 && IsColour(board[captureL], White)) {
+            if (dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir + 1;
-            if (distance(captureR, from) <= 2 && IsColour(board[captureR], White)) {
+            if (dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
             // Check if can perform en passant
             // std::cout << "google en passant" << std::endl;
-            if (distance(captureL, from) <= 2 && captureL == b.epSquare) {
+            if (dist[captureL][from] <= 2 && captureL == b.epSquare) {
                 assert(IsOK(captureL));
                 addEnPassant(from, captureL, moves);
             }
-            if (distance(captureR, from) <= 2 && captureR == b.epSquare) {
+            if (dist[captureR][from] <= 2 && captureR == b.epSquare) {
                 assert(IsOK(captureR));
                 addEnPassant(from, captureR, moves);
             }
@@ -254,7 +253,7 @@ void generateMoves(Board& b, movelist_t* moves) {
             for (int j = 0; j < numDest[p]; ++j) {
                 int dir = pieceDest[p][j];
                 to = from + dir;
-                while (IsOK(to) && distance(to, to - dir) <= 2) {
+                while (IsOK(to) && dist[to][to - dir] <= 2) {
                     if (board[to] != None) {
                         if (IsColour(board[to], opp)) {
                             addCapture(Move(from, to, 0, 0), moves, b);
@@ -281,7 +280,7 @@ void generateMoves(Board& b, movelist_t* moves) {
             for (int j = 0; j < numDest[p]; ++j) {
                 int dir = pieceDest[p][j];
                 to = from + dir;
-                if (IsOK(to) && distance(from, to) <= 2) {
+                if (IsOK(to) && dist[from][to] <= 2) {
                     if (board[to] != None) {
                         if (IsColour(board[to], opp)) {
                             addCapture(Move(from, to, 0, 0), moves, b);
@@ -319,23 +318,24 @@ void generateCaptures(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (distance(captureL, from) <= 2 && IsColour(board[captureL], Black)) {
+            if (dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
-            // Check if pawn can capture diagonally to the east
-            square_t captureR = from + dir + 1;
-            if (distance(captureR, from) <= 2 && IsColour(board[captureR], Black)) {
-                assert(IsOK(captureR));
-                addPawnCapture(from, captureR, moves, b);
-            }
             // Check if can perform en passant
             // std::cout << "google en passant" << std::endl;
-            if (distance(captureL, from) <= 2 && captureL == b.epSquare) {
+            if (dist[captureL][from] <= 2 && captureL == b.epSquare) {
                 assert(IsOK(captureL));
                 addEnPassant(from, captureL, moves);
             }
-            if (distance(captureR, from) <= 2 && captureR == b.epSquare) {
+
+            // Check if pawn can capture diagonally to the east
+            square_t captureR = from + dir + 1;
+            if (dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
+                assert(IsOK(captureR));
+                addPawnCapture(from, captureR, moves, b);
+            }
+            if (dist[captureL][from] <= 2 && captureR == b.epSquare) {
                 assert(IsOK(captureR));
                 addEnPassant(from, captureR, moves);
             }
@@ -351,23 +351,24 @@ void generateCaptures(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (distance(captureL, from) <= 2 && IsColour(board[captureL], White)) {
+            if (dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
-            // Check if pawn can capture diagonally to the east
-            square_t captureR = from + dir + 1;
-            if (distance(captureR, from) <= 2 && IsColour(board[captureR], White)) {
-                assert(IsOK(captureR));
-                addPawnCapture(from, captureR, moves, b);
-            }
             // Check if can perform en passant
             // std::cout << "google en passant" << std::endl;
-            if (distance(captureL, from) <= 2 && captureL == b.epSquare) {
+            if (dist[captureL][from] <= 2 && captureL == b.epSquare) {
                 assert(IsOK(captureL));
                 addEnPassant(from, captureL, moves);
             }
-            if (distance(captureR, from) <= 2 && captureR == b.epSquare) {
+
+            // Check if pawn can capture diagonally to the east
+            square_t captureR = from + dir + 1;
+            if (dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
+                assert(IsOK(captureR));
+                addPawnCapture(from, captureR, moves, b);
+            }
+            if (dist[captureR][from] <= 2 && captureR == b.epSquare) {
                 assert(IsOK(captureR));
                 addEnPassant(from, captureR, moves);
             }
@@ -386,7 +387,7 @@ void generateCaptures(Board& b, movelist_t* moves) {
             for (int j = 0; j < numDest[p]; ++j) {
                 int dir = pieceDest[p][j];
                 to = from + dir;
-                while (IsOK(to) && distance(to, to - dir) <= 2) {
+                while (IsOK(to) && dist[to][to - dir] <= 2) {
                     if (board[to] != None) {
                         if (IsColour(board[to], opp)) {
                             addCapture(Move(from, to, 0, 0), moves, b);
@@ -411,7 +412,7 @@ void generateCaptures(Board& b, movelist_t* moves) {
             for (int j = 0; j < numDest[p]; ++j) {
                 int dir = pieceDest[p][j];
                 to = from + dir;
-                if (IsOK(to) && distance(from, to) <= 2) {
+                if (IsOK(to) && dist[from][to] <= 2) {
                     if (board[to] != None) {
                         if (IsColour(board[to], opp)) {
                             addCapture(Move(from, to, 0, 0), moves, b);

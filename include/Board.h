@@ -153,6 +153,7 @@ typedef struct {
 
 extern void clearTT(hashtable_t* table);
 extern void initTT(hashtable_t* table);
+extern void initDistArray(square_t arr[64][64]);
 
 typedef struct {
     uint64_t startTime;

@@ -5,6 +5,7 @@
 #include "Move.h"
 #include "Piece.h"
 #include "Board.h"
+#include "Square.h"
 
 //void generateLegalMoves(Board& board, movelist_t* moveList);
 extern void generateMoves(Board& board, movelist_t* moveList);
