@@ -205,7 +205,7 @@ class Board {
         void readPosition(std::string fen);
         void readGo(std::string goStr, searchinfo_t *info);
         std::string toFEN() const;
-        movelist_t moves[MAX_MOVES];
+        //movelist_t moves[MAX_MOVES];
         bool makeMove(move_t move);
         void undoMove(move_t move);
         void makeNullMove();

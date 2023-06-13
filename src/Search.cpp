@@ -989,9 +989,10 @@ void search(Board &b, searchinfo_t *info) {
 
     //printf("New writes: %d\nOverwrites: %d\nTotal space: %d\n",
           //b.TT.new_writes, b.TT.overwrites, b.TT.no_entries);
-
+#ifdef DEBUG
      printf("Hits:%d Overwrite:%d NewWrite:%d Cut:%d\nOrdering %.2f NullCut:%d\n",b.TT.hit,b.TT.overwrites,b.TT.new_writes,b.TT.cut,
      (info->fhf/info->fh)*100,info->nullCut);
+#endif
 
     // printf("Ordering:%.2f\n", (info->fhf/info->fh));
     fflush(stdout);

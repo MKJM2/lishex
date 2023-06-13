@@ -80,6 +80,12 @@ void Board::reset() {
     pceCount[p] = 0;
   }
 
+  turn = 0; // should be read in by readFEN!
+  epSquare = NO_SQ;
+  ply = 0;
+  fullMove = 0;
+  castlePerm = 0;
+
   // Clear position key
   posKey = 0ULL;
 
@@ -272,6 +278,7 @@ void Board::print(bool verbose) {
     std::cout << "Black Queens: ";
     std::cout << pceCount[Piece::Black | Piece::Queen] << std::endl;
     */
+    std::cout << "Fifty Move Counter: " << fiftyMoveCounter << "\n";
 }
 
 
@@ -380,12 +387,13 @@ void Board::readPosition(std::string pos) {
         while (iss >> moveString) {
             move_t move = fromString(moveString);
             // Handle invalid moves
-            movelist_t moves;
-            generateMoves(*this, &moves);
-            for (const move_t* m = moves.begin(); m != moves.end(); ++m) {
-                if (movecmp(*m << 4, move << 4)) {
+            movelist_t moves[1];
+            generateMoves(*this, moves);
+            //for (const move_t* m = moves.begin(); m != moves.end(); ++m) {
+            for (size_t moveIdx = 0; moveIdx < moves->size(); ++moveIdx) {
+                if (movecmp(moves->moveList[moveIdx] << 4, move << 4)) {
                     // make the move *with correct flags* as per movegen
-                    makeMove(*m);
+                    makeMove(moves->moveList[moveIdx]);
                     break;
                 }
             }
@@ -824,7 +832,6 @@ bool Board::makeMove(move_t move) {
   int op = OPPONENT(turn);
   turn = op;
   ply++;
-  fiftyMoveCounter++;
   hashTurn();
 
   assert(this->check());
