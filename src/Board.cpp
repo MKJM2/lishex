@@ -5,7 +5,7 @@
 #define hashPiece(p, sq) (b.posKey ^= b.pieceKeys[(p)][(sq)])
 #define hashEnPassant(epSquare) (posKey ^= pieceKeys[Piece::None][epSquare])
 #define hashCastle() (posKey ^= castleKeys[this->castlePerm])
-#define hashTurn() (posKey ^= turnKey)
+#define hashTurn() (posKey ^= (turnKey))
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -18,7 +18,7 @@ Board::Board() {
   this->reset();
   this->initKeys();
   this->readFEN(startFEN);
-  pv.reserve(MAX_MOVES); // reserve space for the pv vector
+  //pv.reserve(MAX_MOVES); // reserve space for the pv vector
   //init_PVtable(&PVtable);
   initDistArray(dist);
   initTT(&this->TT);
@@ -50,7 +50,8 @@ void Board::reset() {
   // Clear all heuristic tables
   //init_PVtable(&PVtable);
   // initTT(&TT);
-  pv.clear();
+  //pv.clear();
+  memset(pv, 0, MAX_DEPTH * sizeof(move_t));
 
   //int i, j;
   /* These should be cleared in clearForSearch
@@ -625,7 +626,7 @@ inline static void clearPiece(const square_t sq, Board& b) {
     }
   } else { // is a pawn
     CLRBIT(b.pawns[colour], sq);
-    CLRBIT(b.pawns[2], sq); // 2 is BOTH
+    CLRBIT(b.pawns[BOTH], sq); // 2 is BOTH
   }
 
   // Finally, clear the piece off the piece list
@@ -635,6 +636,8 @@ inline static void clearPiece(const square_t sq, Board& b) {
     }
   }
 
+  assert(pIdx != -1);
+  assert(pIdx >= 0 && pIdx <= 10);
   // Instead of clearning, we swap it with last element
   // and decrement the piece count
   b.pceCount[p]--;
@@ -644,11 +647,12 @@ inline static void clearPiece(const square_t sq, Board& b) {
 inline static void addPiece(const square_t sq, const piece p, Board& b) {
   bool colour = Piece::IsColour(p, Piece::White);
 
+  // Add piece to the board
+  b.board[sq] = p;
+
   // Hash the piece into the Zobrist key
   hashPiece(p, sq);
 
-  // Add piece to the board
-  b.board[sq] = p;
 
   // Update counts
   if (Piece::IsBig(p)) {
@@ -672,6 +676,8 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
 
 inline static void movePiece(const square_t from, const square_t to, Board& b) {
   // assert(b.check()) <- this assert should fail, since we haven't flipped sides yet
+  assert(IsOK(from));
+  assert(IsOK(to));
   piece p = b.board[from];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -721,7 +727,6 @@ bool Board::makeMove(move_t move) {
   undo.fiftyMoveCounter = fiftyMoveCounter;
 
   /* Update state */
-
 
   // Handle fifty move rule
   fiftyMoveCounter++;
@@ -1173,7 +1178,7 @@ void Board::initKeys(unsigned rng_seed) {
 
 u64 Board::generatePosKey() const {
   using namespace Piece;
-  u64 key = 0;
+  u64 key = 0ULL;
 
   // Hash in all the pieces on the board
   for (square_t s = A1; s <= H8; s++) {

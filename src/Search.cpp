@@ -10,8 +10,9 @@
 #define DO_NULL (false)
 #endif
 
-// 16 MiB TT table default size
-static const int HASH_SIZE = 0x1000000;
+// 64 MB TT table default size
+#define MB 16
+static constexpr int HASH_SIZE = 0x100000 * MB;
 
 #ifdef WIN32
 #include "windows.h"
@@ -93,6 +94,7 @@ inline static void checkUp(searchinfo_t *info) {
 // Initialize the transposition table
 void initTT(hashtable_t *table) {
     table->no_entries = HASH_SIZE / sizeof(hashentry_t);
+    table->no_entries -= 2; // for debugging
     if (table->pvtable != nullptr) {
         delete[] table->pvtable;
     }
@@ -104,11 +106,11 @@ void initTT(hashtable_t *table) {
         printf("Transposition table allocation failed\n");
         assert(false);
     } else {
-        printf("Allocated TT of size %d\n", HASH_SIZE);
+        // Clear the TT
+        clearTT(table);
+        printf("Allocated TT of size %d with %d entries\n", HASH_SIZE, table->no_entries);
     }
 
-    // Clear the TT
-    clearTT(table);
 }
 
 // Detect whether the current board state has been seen before on the board stack
@@ -139,10 +141,12 @@ inline void storeHashEntry(Board &b, const move_t move, int score, const int fla
   int key = b.posKey % b.TT.no_entries;
   hashentry_t* entry = &b.TT.pvtable[key];
 
-  assert(0 <= key && key <= b.TT.no_entries - 1);
+  assert(0 <= key && key < b.TT.no_entries);
   assert(depth >= 1);
+  assert(depth < MAX_DEPTH);
   assert(flags >= HFEXACT && flags <= HFBETA);
   assert(b.ply >= 0);
+  assert(b.ply < MAX_DEPTH);
   assert(score >= -INFINITE && score <= INFINITE);
 
   // Check if new write or overwrite (book keeping)
@@ -157,8 +161,8 @@ inline void storeHashEntry(Board &b, const move_t move, int score, const int fla
   else if (score < -MATE) score -= b.ply;
 
   // Finally, store the entry
-  entry->move = move;
   entry->posKey = b.posKey;
+  entry->move = move;
   entry->score = score;
   entry->depth = depth;
   entry->flags = flags;
@@ -177,8 +181,8 @@ inline move_t getPvMove(const Board &b) {
 /* https://web.archive.org/web/20070809015843/www.seanet.com/%7Ebrucemo/topics/hashing.htm
  * TODO: If size of TT is a power of 2, we can quickly find the index (no mod op) with &
  */
-inline bool getHashEntry(Board &b, move_t &move, int &score, const int alpha,
-                  const int beta, const int depth) {
+inline bool getHashEntry(Board &b, move_t *move, int *score, const int alpha,
+                         const int beta, const int depth) {
   // We use the posKey as a hash into our TT table
   int key = b.posKey % b.TT.no_entries;
   hashentry_t *entry = &b.TT.pvtable[key];
@@ -194,29 +198,38 @@ inline bool getHashEntry(Board &b, move_t &move, int &score, const int alpha,
 
   // If hit:
   if (entry->posKey == b.posKey) {
-    move = entry->move;
+    *move = entry->move;
     // If the previous search was at least as deep as current
     if (entry->depth >= depth) {
       b.TT.hit++;
 
       assert(b.TT.pvtable[key].depth >= 1);
+      assert(b.TT.pvtable[key].depth < MAX_DEPTH);
       assert(b.TT.pvtable[key].flags >= HFEXACT);
       assert(b.TT.pvtable[key].flags <= HFBETA);
 
-      score = entry->score;
-      if (score > MATE) score -= b.ply;
-      else if (score < -MATE) score += b.ply;
+      *score = entry->score;
+      if (*score > MATE)
+        *score -= b.ply;
+      else if (*score < -MATE)
+        *score += b.ply;
 
       switch (entry->flags) {
-
-        assert(score >= -INFINITE && score <= INFINITE);
+        assert(*score >= -INFINITE && *score <= INFINITE);
+      case HFEXACT:
+        return true;
+        break;
       case HFALPHA:
-        score = (score <= alpha) ? alpha : score;
+        if (*score <= alpha) {
+          *score = alpha;
+        }
+        return true;
         break;
       case HFBETA:
-        score = (score >= beta) ? beta : score;
-        break;
-      case HFEXACT:
+        if (*score >= beta) {
+          *score = beta;
+          return true;
+        }
         break;
       default:
         // should not happen
@@ -233,12 +246,13 @@ inline bool getHashEntry(Board &b, move_t &move, int &score, const int alpha,
 bool moveExists(Board &b, move_t m) {
   movelist_t moves[1];
   generateMoves(b, moves);
-  for (const move_t& move : *moves) {
+  //for (const move_t& move : *moves) {
+  for (size_t moveIdx = 0; moveIdx < moves->size(); ++moveIdx) {
     // Check if legal move
-    if (!b.makeMove(move)) {
+    if (!b.makeMove(moves->moveList[moveIdx])) {
       continue;
     }
-    b.undoMove(move);
+    b.undoMove(moves->moveList[moveIdx]);
     // Check if move is the move m we're looking for
     /*
     Warning: moves from the generator might be scored
@@ -248,7 +262,7 @@ bool moveExists(Board &b, move_t m) {
 
     ^ The reason being that we store the score within the move itself
     */
-    if (movecmp(move, m)) {
+    if (movecmp(moves->moveList[moveIdx], m)) {
       return true;
     }
   }
@@ -257,16 +271,18 @@ bool moveExists(Board &b, move_t m) {
 }
 
 inline int getPV(Board& b, const int depth) {
+    assert(depth < MAX_DEPTH && depth >= 1);
     //move_t move = checkPvTable(b);
     move_t move = getPvMove(b);
-    int currDepth = 0;
+    int count = 0;
 
     //b.pv.clear();
-    while (move != NULLMV && currDepth < depth) {
+    while (move != NULLMV && count < depth) {
+        assert(count < MAX_DEPTH);
         if (moveExists(b, move)) {
             b.makeMove(move);
             //b.pv.emplace_back(move);
-            b.pv[currDepth++] = move; // overwrite instead of emplacing
+            b.pv[count++] = move; // overwrite instead of emplacing
             //currDepth++;
         } else {
             break;
@@ -279,7 +295,7 @@ inline int getPV(Board& b, const int depth) {
         b.undoLast();
     }
 
-    return currDepth;
+    return count;
 }
 
 /* Evaluation */
@@ -381,9 +397,10 @@ inline static void pickNextMove(size_t moveIdx, movelist_t* moves) {
     size_t idx = moveIdx;
     int bestScore = 0;
     int bestIdx = moveIdx;
+    int score;
 
     for (; idx < moves->size(); ++idx) {
-        int score = getScore(moves->moveList[idx]);
+        score = getScore(moves->moveList[idx]);
         if (score > bestScore) {
             bestScore = score;
             bestIdx = idx;
@@ -693,6 +710,8 @@ void clearTT(hashtable_t* table) {
 
 
 void clearForSearch(Board& b, searchinfo_t *info) {
+    // TODO: Testing TT
+    //clearTT(&b.TT);
     int i, j;
     // Clear history heuristic table
     for (i = 0; i < 24; ++i) {
@@ -837,7 +856,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // bool isPvNode = beta - alpha > 1; ???
     // if current node is not the root node and not a pv_node
     // try b.ply & isPVNode as additional conditions
-    if (getHashEntry(b, pvMv, score, alpha, beta, depth)) {
+    if (getHashEntry(b, &pvMv, &score, alpha, beta, depth)) {
         b.TT.cut++;
         return score;
     }
@@ -853,9 +872,9 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // depth - 1 - R (for R = 3) is allowed
     //
     // Adaptive null move pruning: size of reduction depends on depth
-    int R = (depth > 6) ? 3 : 2;
-    //int R = 3;
-	if (canDoNull && !inCheck && b.ply && (b.bigPce[b.turn == Piece::White] > 0) && depth >= R + 1) {
+    //int R = (depth > 6) ? 3 : 2;
+    int R = 3;
+	if (canDoNull && !inCheck && b.ply && (b.bigPce[b.turn == Piece::White] > 1) && depth >= R + 1) {
         b.makeNullMove();
         // we set canDoNull to false, since we don't want to do two null moves in a row
         score = -alphaBeta(b, info, -beta, -beta + 1, depth - 1 - R, false);
@@ -908,8 +927,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
             bestMv = moves->moveList[moveIdx];
 
             if (score > alpha) {
-                alpha = score;
-                if (score >= beta) {
+                if (score >= beta) { // fail-high!
                     /* Beta cutoff */
                     if (legal == 1) {
                         info->fhf++;
@@ -925,6 +943,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                     storeHashEntry(b, bestMv, beta, HFBETA, depth);
                     return beta;
                 }
+                alpha = score; // we beat our lower-bound
 
                 // History heuristic
                 if (!isCapture(bestMv)) {
@@ -946,14 +965,12 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     assert(alpha >= oldAlpha);
 
     if (alpha > oldAlpha) {
-        //storePvMove(b, bestMv);
-        // pv-node
+        // pv-node (within [alpha, beta] range)
         storeHashEntry(b, bestMv, best_score, HFEXACT, depth);
     } else {
         // fail-low (we weren't able to beat alpha)
         storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
-
     return alpha;
 }
 
@@ -965,6 +982,7 @@ void search(Board &b, searchinfo_t *info) {
   int currDepth = 0;
   int pvMoves = 0;
   int pvNum = 0;
+
   clearForSearch(b, info);
 
   // Iterative Deepening
@@ -976,7 +994,8 @@ void search(Board &b, searchinfo_t *info) {
     }
     pvMoves = getPV(b, currDepth);
     bestMv = b.pv[0];
-    printf("info score cp %d depth %d nodes %lld time %lu hashfull %d ",
+    //printf("info score cp %d depth %d nodes %lld time %lu hashfull %d ",
+    printf("info score cp %d depth %d nodes %lld time %lu ",
            bestScore, currDepth, info->nodes, getTime() - info->startTime,
            (int)(((double)b.TT.new_writes / b.TT.no_entries) * 1000));
     // TODO:
@@ -997,8 +1016,6 @@ void search(Board &b, searchinfo_t *info) {
     // printf("Ordering:%.2f\n", (info->fhf/info->fh));
     fflush(stdout);
   }
-
-  // info score cp 13  depth 1 nodes 13 time 15 pv f1b5
 
   // best move seen so far (even if search stopped)
   printf("bestmove %s\n", toString(bestMv).c_str());

@@ -126,11 +126,12 @@ typedef struct {
 #define HFEXACT 0
 #define HFALPHA 1
 #define HFBETA  2
+// 64 + 32 * 4 bits for better cache performance
 typedef struct {
-    // Move in the principal variation
-    move_t move;
     // The zobrist hash key that led to the above move
     u64 posKey;
+    // Move in the principal variation
+    move_t move;
     // Score according to static eval
     int score;
     // Depth the position was searched to
@@ -240,19 +241,20 @@ class Board {
         void initPieceList();
         u64 generatePosKey() const;
         std::vector<undo_t> boardHistory;
+        // TODO: undo_t boardHistory[MAX_MOVES];
         bool SquareAttacked(const square_t sq, const int color);
         inline bool inCheck(const int color) {
             return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
         }
         hashtable_t TT; // transposition table
         //pvtable_t PVtable; // hash table implementation (might switch to triangular)
-        std::vector<move_t> pv; // stores the principal variation extracted from PVtable
+        move_t pv[MAX_DEPTH]; // stores the principal variation extracted from PVtable
         // Table for the history heuristic
-        // Indexed by piece-type and ply depth
-        move_t historyH[24][64] = {};
+        // Indexed by piece-type and square
+        int historyH[24][64] = {};
         // Table for the killer (beta cutoffs non-capturing) heuristic
         // We store two killer moves, indexed by ply search depth
-        move_t killersH[2][64] = {};
+        move_t killersH[2][MAX_DEPTH] = {};
 #ifdef DEBUG
         bool check() const;
 #endif
