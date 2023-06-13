@@ -134,21 +134,31 @@ inline const square_t pieceDest[24][8] = {
     {},                   // Rook
     {},                  // Queen
     {},
-    {N, NE, E, SE, S, SW, W, NW}, // White King
+    //{N, NE, E, SE, S, SW, W, NW}, // White King
+    {W, S, E, N, SE, SW, NW, NE}, // TODO: Reorder
     {S, N, 0, 0, 0, 0, 0, 0},    // White Pawn
-    {SW + W, SW + S, SE + S, SE + E, NE + E, NE + N, NW + N, NW + W}, // White Knight
+    //{SW + W, SW + S, SE + S, SE + E, NE + E, NE + N, NW + N, NW + W}, // White Knight
+    {SE + E, SE + S, SW + S, SW + W, NW + W, NW + N, NE + N, NE + E},
     {},                         // -
-    {NE, SE, SW, NW, 0, 0, 0, 0}, // White Bishop
-    {N, E, S, W, 0, 0, 0, 0},     // White Rook
-    {N, NE, E, SE, S, SW, W, NW}, // White Queen
+    //{NE, SE, SW, NW, 0, 0, 0, 0}, // White Bishop
+    {SE, SW, NE, NW, 0, 0, 0, 0},
+    //{N, E, S, W, 0, 0, 0, 0},     // White Rook
+    {W, S, E, N, 0, 0, 0, 0},
+    //{N, NE, E, SE, S, SW, W, NW}, // White Queen
+    {W, S, E, N, SE, SW, NW, NE}, // TODO: Reorder
     {},
-    {N, NE, E, SE, S, SW, W, NW}, // Black King
+    //{N, NE, E, SE, S, SW, W, NW}, // Black King
+    {W, S, E, N, SE, SW, NW, NE}, // TODO: Reorder
     {S, N, 0, 0, 0, 0, 0, 0},     // Black Pawn
-    {SW + W, SW + S, SE + S, SE + E, NE + E, NE + N, NW + N, NW + W}, // Black Knight
+    //{SW + W, SW + S, SE + S, SE + E, NE + E, NE + N, NW + N, NW + W}, // Black Knight
+    {SE + E, SE + S, SW + S, SW + W, NW + W, NW + N, NE + N, NE + E},
     {},                         // -
-    {NE, SE, SW, NW, 0, 0, 0, 0}, // Black Bishop
-    {N, E, S, W, 0, 0, 0, 0},     // Black Rook
-    {N, NE, E, SE, S, SW, W, NW}  // Black Queen
+    //{NE, SE, SW, NW, 0, 0, 0, 0}, // Black Bishop
+    {SE, SW, NE, NW, 0, 0, 0, 0},
+    //{N, E, S, W, 0, 0, 0, 0},     // Black Rook
+    {W, S, E, N, 0, 0, 0, 0},
+    //{N, NE, E, SE, S, SW, W, NW}  // Black Queen
+    {W, S, E, N, SE, SW, NW, NE}, // TODO: Reorder
 };
 // Castle permissions handling
 // CastlePerm[from] determines how to change castle permissions

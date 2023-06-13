@@ -45,6 +45,7 @@ or
 - [Tapered evaluation](https://www.chessprogramming.org/Tapered_Eval) for interpolating evaluation scores between different game stages
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads
+- Aspiration window
 - Smarter time control logic
 - Engine options
 

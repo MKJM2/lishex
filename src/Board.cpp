@@ -964,6 +964,7 @@ void Board::makeNullMove() {
   if (turn == Piece::Black) fullMove++;
   int op = OPPONENT(turn);
   turn = op;
+  // Hash in the turn (null move switches the side playing)
   hashTurn();
 
   assert(this->check());

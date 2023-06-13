@@ -22,7 +22,7 @@
 // Both colors (for indexing into pawn bitboard)
 #define BOTH 2
 
-#define INFINITE 150000
+#define INFINITE 30000
 
 // #define DEBUG
 
@@ -168,8 +168,10 @@ typedef struct {
     bool quit;
     bool stopped;
 
+    // For performance tuning
     float fh;  // Fail-high
     float fhf; // Fail-high first
+    int nullCut;
 } searchinfo_t;
 
 void clearForSearch(Board& b, searchinfo_t *info);
