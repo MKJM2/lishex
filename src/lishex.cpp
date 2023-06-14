@@ -151,7 +151,8 @@ int main() {
         } else if (command == "fen") {
             std::cout << gameboard.toFEN() << std::endl;
         } else if (command == "test") {
-            mirrorEvalTest(gameboard);
+            //mirrorEvalTest(gameboard);
+            debugTest(gameboard);
         }
         /*
           else if (command == "sort") {

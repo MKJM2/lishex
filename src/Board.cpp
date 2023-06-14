@@ -1,3 +1,4 @@
+#include <fstream>
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Piece.h"
@@ -144,7 +145,7 @@ void Board::initPieceList() {
 }
 
 std::unordered_map<piece, char> pieceToChar = {
-    {Piece::None,  '0'},
+    {Piece::None,  ' '},
     {Piece::Rook,  'r'},
     {Piece::Knight,'n'},
     {Piece::Bishop,'b'},
@@ -185,7 +186,7 @@ std::unordered_map<piece, std::string> pieceToUnicode = {
     {Piece::Black | Piece::King,   u8"\u2654"}   // ♔
 };
 
-void Board::printFEN() {
+void Board::printFEN() const {
   std::string row;
   for (int i = 0; i < ROWS; i++) {
     row.clear();
@@ -215,7 +216,7 @@ void Board::printAttacked() {
   }
 }
 
-void Board::print(bool verbose) {
+void Board::print(bool verbose) const {
     const std::string horizontalLine = "  +---+---+---+---+---+---+---+---+";
     const std::string emptyRow = "  |   |   |   |   |   |   |   |   |";
     const std::string rankSeparator = "  ---------------------------------";
@@ -226,7 +227,11 @@ void Board::print(bool verbose) {
         std::cout << rank + 1 << " ";
         for (int file = 0; file < COLS; ++file) {
             piece p = board[rank * ROWS + file];
-            std::string curr = pieceToUnicode[p];
+            //std::string curr = pieceToUnicode[p];
+            char curr = pieceToChar[Piece::PieceType(p)];
+            if (Piece::IsColour(p, Piece::White)) {
+              curr = std::toupper(curr);
+            }
             std::cout << "| " << curr << " ";
         }
         std::cout << "|" << std::endl;
@@ -708,6 +713,7 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 
 // Returns True if move was legal, False otherwise
 bool Board::makeMove(move_t move) {
+  printf("makemove start check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[getFrom(move)])], toString(move).c_str());
   assert(this->check());
   // Extract move data
   square_t to = getTo(move);
@@ -839,6 +845,7 @@ bool Board::makeMove(move_t move) {
   ply++;
   hashTurn();
 
+  printf("makemove end check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[to])], toString(move).c_str());
   assert(this->check());
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
@@ -850,6 +857,7 @@ bool Board::makeMove(move_t move) {
 }
 
 void Board::undoMove(move_t move) {
+  printf("undomove start check (%s)!\n", toString(move).c_str());
   assert(this->check());
   square_t to = getTo(move);
   square_t from = getFrom(move);
@@ -945,6 +953,7 @@ void Board::undoMove(move_t move) {
   ply--;
 
   // Debug checks
+  printf("undomove end check (%s)!\n", toString(move).c_str());
   assert(this->check());
 }
 
@@ -1025,6 +1034,7 @@ void Board::undoLast() {
 
 #ifdef DEBUG
 bool Board::check() const {
+  std::cout << this->toFEN() << std::endl;
   using namespace Piece;
   int tmp_pceCount[24] = {0};
   int tmp_bigPce[2] = {0};
@@ -1083,6 +1093,12 @@ bool Board::check() const {
     printBB(tmp_pawns[0]);
     printf("\nvs\n");
     printBB(pawns[0]);
+    this->print(true);
+    // print psq tables
+    for (int i = 0; i < pceCount[bP]; ++i) {
+      std::cout << toString(pieceList[bP][i]) << std::endl;
+    }
+    std::cout << this->toFEN() << std::endl;
   }
   assert(pawnCount == this->pceCount[bP]);
   pawnCount = CNT(tmp_pawns[BOTH]);
@@ -1364,4 +1380,32 @@ void Board::mirror() {
   this->initPieceList();
 
   assert(this->check());
+}
+
+void debugTest(Board& b) {
+  std::fstream epdfile;
+  epdfile.open("./tests/lct2.epd",std::ios::in);
+
+  searchinfo_t info[1];
+  clearForSearch(b, info);
+  info->depth = MAX_DEPTH;
+  info->timeSet = true;
+  int time = 100000;
+   if (epdfile.is_open()){
+      std::string fenLine;
+      while(getline(epdfile, fenLine)){
+         printf("Testing position %s\n", fenLine.c_str());
+         info->startTime = getTime();
+         info->endTime = info->startTime + time;
+         //clearTT(&b.TT);
+         b.readFEN(fenLine);
+         search(b, info);
+      }
+      epdfile.close();
+   } else {
+     std::cout << "File couldn't be opened" << std::endl;
+     exit(1);
+   }
+   std::cout << "Test finished!\n" << std::endl;
+   exit(0);
 }

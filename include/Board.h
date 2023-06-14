@@ -92,6 +92,7 @@ const int Mirror64[64] = {
 class Board;
 
 void mirrorEvalTest(Board& b);
+void debugTest(Board& b);
 
 #define MAX_MOVES (256)
 
@@ -199,9 +200,9 @@ class Board {
         void reset();
         void mirror();
         piece board[ROWS * COLS] = {};
-        void printFEN();
+        void printFEN() const;
         void printAttacked();
-        void print(bool verbose = false);
+        void print(bool verbose = false) const;
         void readFEN(std::string fen);
         void readPosition(std::string fen);
         void readGo(std::string goStr, searchinfo_t *info);
