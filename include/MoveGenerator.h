@@ -2,14 +2,15 @@
 #define MOVEGENERATOR_H_
 
 #include <vector>
-
-#include "Board.h"
 #include "Move.h"
 #include "Piece.h"
+#include "Board.h"
+#include "Square.h"
 
-extern std::vector<move_t> generateLegalMoves(Board& board);
-extern std::vector<move_t> generateMoves(Board& board);
-extern std::vector<move_t> generateCaptures(Board& board);
-extern u64 perft(Board& b, int depth, bool verbose = false);
+//void generateLegalMoves(Board& board, movelist_t* moveList);
+extern void generateMoves(Board& board, movelist_t* moveList);
+extern void generateCaptures(Board& board, movelist_t* moveList);
+extern unsigned long long perft(Board& b, int depth, bool verbose = false);
+
 
 #endif // MOVEGENERATOR_H_

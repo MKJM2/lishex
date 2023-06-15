@@ -10,7 +10,6 @@
 #include <stack>
 #include <random>
 #include <bitset>
-#include <cassert>
 #include <cstdint>
 #include "Piece.h"
 #include "Move.h"
@@ -20,7 +19,25 @@
 #define ROWS 8
 #define COLS 8
 
+// Both colors (for indexing into pawn bitboard)
 #define BOTH 2
+
+#define INFINITE 30000
+
+// #define DEBUG
+
+#ifndef DEBUG
+#define assert(n)
+#else
+#define assert(n) \
+if(!(n)) { \
+printf("%s - Failed ",#n); \
+printf("On %s ",__DATE__); \
+printf("At %s ",__TIME__); \
+printf("In File %s ",__FILE__); \
+printf("At Line %d\n",__LINE__); \
+exit(1);}
+#endif
 
 using namespace std::chrono;
 #define getTime() ( \
@@ -41,6 +58,7 @@ extern std::unordered_map<piece, std::string> pieceToUnicode;
 extern std::unordered_map<char, piece> charToPiece;
 
 // Table for mirroring the board table
+
 /*
 const int Mirror64[64] = {
     63, 62, 61, 60, 59, 58, 57, 56,
@@ -54,7 +72,8 @@ const int Mirror64[64] = {
 };
 */
 
-/*
+
+#ifdef DEBUG
 const int Mirror64[64] = {
 56	,	57	,	58	,	59	,	60	,	61	,	62	,	63	,
 48	,	49	,	50	,	51	,	52	,	53	,	54	,	55	,
@@ -65,14 +84,29 @@ const int Mirror64[64] = {
 8	,	9	,	10	,	11	,	12	,	13	,	14	,	15	,
 0	,	1	,	2	,	3	,	4	,	5	,	6	,	7
 };
-*/
+#endif
+
 // OR:
 #define MIRROR(sq) ((sq) ^ 56)
 
 class Board;
 
-
 void mirrorEvalTest(Board& b);
+void debugTest(Board& b);
+
+#define MAX_MOVES (256)
+
+// Stockfish inspired
+struct movelist_t {
+    const move_t* begin() const { return moveList; };
+    const move_t* end() const { return last; };
+    size_t size() const { return last - moveList; };
+    void push_back(const move_t& m) {
+        assert(size() < MAX_MOVES);
+        *last++ = m;
+    };
+    move_t moveList[MAX_MOVES], *last = moveList;
+};
 
 typedef struct {
         // Last move
@@ -89,20 +123,39 @@ typedef struct {
         uint fiftyMoveCounter;
 } undo_t;
 
-
+// Hash flags for the transposition tables
+#define HFEXACT 0
+#define HFALPHA 1
+#define HFBETA  2
+// 64 + 32 * 4 bits for better cache performance
 typedef struct {
-    // Move in the principal variation
-    move_t move;
     // The zobrist hash key that led to the above move
     u64 posKey;
-} pventry_t;
+    // Move in the principal variation
+    move_t move;
+    // Score according to static eval
+    int score;
+    // Depth the position was searched to
+    int depth;
+    // Flags (Exact, Alpha, Beta)
+    int flags;
+} hashentry_t;
 
 typedef struct {
-    // Number of moves stored
+    // Number of entries stored
     int no_entries;
     // Pointer to an element
-    pventry_t *pvtable = nullptr;
-} pvtable_t;
+    hashentry_t *pvtable = nullptr;
+    // Book keeping
+    uint new_writes;
+    uint overwrites;
+    uint hit;
+    uint cut;
+} hashtable_t;
+
+extern void clearTT(hashtable_t* table);
+extern void initTT(hashtable_t* table);
+extern void initDistArray(square_t arr[64][64]);
 
 typedef struct {
     uint64_t startTime;
@@ -117,8 +170,10 @@ typedef struct {
     bool quit;
     bool stopped;
 
+    // For performance tuning
     float fh;  // Fail-high
     float fhf; // Fail-high first
+    int nullCut;
 } searchinfo_t;
 
 void clearForSearch(Board& b, searchinfo_t *info);
@@ -127,7 +182,7 @@ void clearForSearch(Board& b, searchinfo_t *info);
 void search(Board& b, searchinfo_t *info);
 
 // Initialize the pv table
-extern void init_PVtable(pvtable_t *table);
+//extern void init_PVtable(pvtable_t *table);
 
 // Initialize the values for the MVVLVA heuristic
 extern void initMVVLVA();
@@ -145,13 +200,14 @@ class Board {
         void reset();
         void mirror();
         piece board[ROWS * COLS] = {};
-        void printFEN();
+        void printFEN() const;
         void printAttacked();
-        void print(bool verbose = false);
+        void print(bool verbose = false) const;
         void readFEN(std::string fen);
         void readPosition(std::string fen);
         void readGo(std::string goStr, searchinfo_t *info);
         std::string toFEN() const;
+        //movelist_t moves[MAX_MOVES];
         bool makeMove(move_t move);
         void undoMove(move_t move);
         void makeNullMove();
@@ -176,22 +232,33 @@ class Board {
         u64 pieceKeys[24][64];
         u64 turnKey = 0; // we hash in a random number if it's White's move
         u64 castleKeys[16]; // TODO: 4bits depending on which side castle
-        u64 posKey = 0;
+        u64 posKey = this->generatePosKey();
         uint fiftyMoveCounter = 0;
-        void initKeys(unsigned rng_seed = std::mt19937_64::default_seed);
+#ifdef DEBUG // use a consistent rng seed for testing
+        void initKeys(unsigned rng_seed = 0U);
+#else
+        void initKeys(unsigned rng_seed = std::random_device{}());
+#endif
         void initPieceList();
-        u64 generatePosKey();
+        u64 generatePosKey() const;
         std::vector<undo_t> boardHistory;
+        // TODO: undo_t boardHistory[MAX_MOVES];
         bool SquareAttacked(const square_t sq, const int color);
-        bool inCheck(const int color);
-        pvtable_t PVtable; // hash table implementation (might switch to triangular)
-        std::vector<move_t> pv; // stores the principal variation extracted from PVtable
+        inline bool inCheck(const int color) {
+            return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
+        }
+        hashtable_t TT; // transposition table
+        //pvtable_t PVtable; // hash table implementation (might switch to triangular)
+        move_t pv[MAX_DEPTH]; // stores the principal variation extracted from PVtable
         // Table for the history heuristic
-        // Indexed by piece-type and ply depth
-        move_t historyH[24][64] = {};
+        // Indexed by piece-type and square
+        int historyH[24][64] = {};
         // Table for the killer (beta cutoffs non-capturing) heuristic
         // We store two killer moves, indexed by ply search depth
-        move_t killersH[2][64] = {};
+        move_t killersH[2][MAX_DEPTH] = {};
+#ifdef DEBUG
+        bool check() const;
+#endif
 };
 
 #endif // BOARD_H_

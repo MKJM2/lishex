@@ -1,3 +1,4 @@
+#include <fstream>
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Piece.h"
@@ -5,27 +6,73 @@
 #define hashPiece(p, sq) (b.posKey ^= b.pieceKeys[(p)][(sq)])
 #define hashEnPassant(epSquare) (posKey ^= pieceKeys[Piece::None][epSquare])
 #define hashCastle() (posKey ^= castleKeys[this->castlePerm])
-#define hashTurn() (posKey ^= turnKey)
+#define hashTurn() (posKey ^= (turnKey))
 
 std::string startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 static std::mt19937_64 rng;
+
+square_t dist[64][64];
 
 // Constructor
 Board::Board() {
   this->reset();
   this->initKeys();
   this->readFEN(startFEN);
-  this->posKey = generatePosKey();
-  init_PVtable(&PVtable);
+  //pv.reserve(MAX_MOVES); // reserve space for the pv vector
+  //init_PVtable(&PVtable);
+  initDistArray(dist);
+  initTT(&this->TT);
   // initPieceList(); // Called by readFEN()
   initMVVLVA();
   initEvalMasks();
+  this->boardHistory.reserve(MAX_MOVES);
+  this->posKey = generatePosKey();
+
+//#ifdef DEBUG
+  for (square_t s = A1; s <= H8; ++s) {
+    piece p = board[s];
+    if (p != Piece::None) {
+      assert(p >= wK && p <= bQ);
+        char curr = pieceToChar[Piece::PieceType(p)];
+        if (Piece::IsColour(p, Piece::White)) {
+            curr = std::toupper(curr);
+        }
+      printf("%c key : %llu\n", curr, this->pieceKeys[p][s]);
+    }
+  }
+  if (turn == Piece::White) {
+    printf("Turn  : %llu\n", this->turnKey);
+  }
+  if (epSquare != NO_SQ) {
+    printf("Ep key: %llu\n", this->pieceKeys[Piece::None][epSquare]);
+  }
+
+    printf("Castle: %llu\n", this->castleKeys[castlePerm]);
+
+
+  printf("Poskey: %llu\n", this->posKey);
+  printf("Size of unsigned long long: %lu\n", sizeof(unsigned long long));
+  printf("Size of uint64_t: %lu\n", sizeof(uint64_t));
+  printf("Size of uint32_t: %lu\n", sizeof(uint32_t));
+  printf("Size of piece_t: %lu\n", sizeof(piece));
+  printf("Size of square_t: %lu\n", sizeof(square_t));
+  printf("Size of move_t: %lu\n", sizeof(move_t));
+  printf("Size of hashentry_t: %lu\n", sizeof(hashentry_t));
+//#endif
 }
 
 Board::~Board() {
-  if (this->PVtable.pvtable != nullptr) {
-      delete[] PVtable.pvtable;
+  if (this->TT.pvtable != nullptr) {
+      delete[] TT.pvtable;
+  }
+}
+
+void initDistArray(square_t dist[64][64]) {
+  for (square_t x = A1; x <= H8; ++x) {
+    for (square_t y = A1; y <= H8; ++y) {
+      dist[x][y] = distance(x, y);
+    }
   }
 }
 
@@ -34,10 +81,13 @@ void Board::reset() {
   boardHistory.clear();
 
   // Clear all heuristic tables
-  init_PVtable(&PVtable);
-  pv.clear();
+  //init_PVtable(&PVtable);
+  // initTT(&TT);
+  //pv.clear();
+  memset(pv, 0, MAX_DEPTH * sizeof(move_t));
 
-  int i, j;
+  //int i, j;
+  /* These should be cleared in clearForSearch
   // Clear history heuristic table
   for (i = 0; i < 24; ++i) {
       for (j = 0; j < 64; ++j) {
@@ -49,6 +99,7 @@ void Board::reset() {
   for (i = 0; i < 64; ++i) {
       killersH[0][i] = killersH[1][i] = 0;
   }
+  */
 
   // Clear piece lists
   bigPce[0] = bigPce[1] = 0;
@@ -62,6 +113,18 @@ void Board::reset() {
   for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
     pceCount[p] = 0;
   }
+
+  turn = 0; // should be read in by readFEN!
+  epSquare = NO_SQ;
+  ply = 0;
+  fullMove = 0;
+  castlePerm = 0;
+
+  // Clear position key
+  posKey = 0ULL;
+
+  // Reset the 50 move counter
+  fiftyMoveCounter = 0;
 }
 
 void Board::initPieceList() {
@@ -73,9 +136,17 @@ void Board::initPieceList() {
   material[0] = material[1] = 0;
 
   // Reset piece counts
-  for (piece p = 0; p <= (Piece::Black | Piece::Queen); p++) {
+  for (piece p = 0; p <= bQ; ++p) {
     pceCount[p] = 0;
   }
+
+  // Reset big, min, maj counts
+  bigPce[0] = bigPce[1] = 0;
+  minPce[0] = minPce[1] = 0;
+  majPce[0] = majPce[1] = 0;
+
+  // Reset pawn bitboards
+  pawns[0] = pawns[1] = pawns[BOTH] = 0ULL;
 
   for (sq = A1; sq <= H8; ++sq) {
     p = this->board[sq];
@@ -90,7 +161,8 @@ void Board::initPieceList() {
       material[colour] += value[PieceType(p)];
 
       // Update pieceList and piece count to the curr square
-      pieceList[p][pceCount[p]++] = sq;
+      pieceList[p][pceCount[p]] = sq;
+      pceCount[p]++;
 
       if (Piece::PieceType(p) == King) {
         kingSquare[colour] = sq;
@@ -105,7 +177,7 @@ void Board::initPieceList() {
 }
 
 std::unordered_map<piece, char> pieceToChar = {
-    {Piece::None,  '0'},
+    {Piece::None,  ' '},
     {Piece::Rook,  'r'},
     {Piece::Knight,'n'},
     {Piece::Bishop,'b'},
@@ -146,7 +218,7 @@ std::unordered_map<piece, std::string> pieceToUnicode = {
     {Piece::Black | Piece::King,   u8"\u2654"}   // ♔
 };
 
-void Board::printFEN() {
+void Board::printFEN() const {
   std::string row;
   for (int i = 0; i < ROWS; i++) {
     row.clear();
@@ -176,7 +248,7 @@ void Board::printAttacked() {
   }
 }
 
-void Board::print(bool verbose) {
+void Board::print(bool verbose) const {
     const std::string horizontalLine = "  +---+---+---+---+---+---+---+---+";
     const std::string emptyRow = "  |   |   |   |   |   |   |   |   |";
     const std::string rankSeparator = "  ---------------------------------";
@@ -187,7 +259,11 @@ void Board::print(bool verbose) {
         std::cout << rank + 1 << " ";
         for (int file = 0; file < COLS; ++file) {
             piece p = board[rank * ROWS + file];
-            std::string curr = pieceToUnicode[p];
+            //std::string curr = pieceToUnicode[p];
+            char curr = pieceToChar[Piece::PieceType(p)];
+            if (Piece::IsColour(p, Piece::White)) {
+              curr = std::toupper(curr);
+            }
             std::cout << "| " << curr << " ";
         }
         std::cout << "|" << std::endl;
@@ -240,6 +316,7 @@ void Board::print(bool verbose) {
     std::cout << "Black Queens: ";
     std::cout << pceCount[Piece::Black | Piece::Queen] << std::endl;
     */
+    std::cout << "Fifty Move Counter: " << fiftyMoveCounter << "\n";
 }
 
 
@@ -316,6 +393,7 @@ void Board::readFEN(std::string fen) {
 
   // Initialize piece lists and update material values in one go
   this->initPieceList();
+  this->posKey = this->generatePosKey();
 }
 
 void Board::readPosition(std::string pos) {
@@ -347,11 +425,13 @@ void Board::readPosition(std::string pos) {
         while (iss >> moveString) {
             move_t move = fromString(moveString);
             // Handle invalid moves
-            std::vector<move_t> moves = generateMoves(*this);
-            for (move_t& m : moves) {
-                if (movecmp(m << 4, move << 4)) {
+            movelist_t moves[1];
+            generateMoves(*this, moves);
+            //for (const move_t* m = moves.begin(); m != moves.end(); ++m) {
+            for (size_t moveIdx = 0; moveIdx < moves->size(); ++moveIdx) {
+                if (movecmp(moves->moveList[moveIdx] << 4, move << 4)) {
                     // make the move *with correct flags* as per movegen
-                    makeMove(m);
+                    makeMove(moves->moveList[moveIdx]);
                     break;
                 }
             }
@@ -359,7 +439,31 @@ void Board::readPosition(std::string pos) {
         }
     }
     //this->updateMaterial();
-    this->initPieceList();
+    //this->initPieceList(); // already called by readFEN
+}
+
+/*
+** Implements time management algorithm based on
+** http://facta.junis.ni.ac.rs/acar/acar200901/acar2009-07.pdf
+ */
+static inline int est_moves_left(const Board& board) {
+  // Assumes material values 1,3,3,5,9 for P,N,B,R,Q
+
+  // Count # of total material on the board
+  int p = CNT(board.pawns[BOTH]);
+  int n = board.pceCount[wN] + board.pceCount[bN];
+  int b = board.pceCount[wB] + board.pceCount[bB];
+  int r = board.pceCount[wR] + board.pceCount[bR];
+  int q = board.pceCount[wQ] + board.pceCount[bQ];
+
+  int x = p + 3*n + 3*b + 5*r + 9*q;
+  if (x < 20) {
+    return x + 10;
+  } else if (20 <= x && x <= 60) {
+    return 0.375 * x + 22;
+  } else { // x > 60
+    return 1.25 * x - 30;
+  }
 }
 
 void Board::readGo(std::string goStr, searchinfo_t *info) {
@@ -415,9 +519,14 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
         }
     }
 
+    // Simple time management based on
+    // E[# halfmoves until end of game | material on board]
     if (movetime != -1) {
-        time = movetime;
-        movestogo = 1;
+      time = movetime;
+      movestogo = 1;
+    } else {
+      //movestogo = est_moves_left(*this);
+      movestogo = 30;
     }
 
     info->startTime = getTime();
@@ -427,6 +536,7 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
     if (time != -1) {
         info->timeSet = true;
         time /= movestogo;
+
         // to be safe we don't run out of time
         time -= 50;
         info->endTime = info->startTime + time + inc;
@@ -435,9 +545,10 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
     if (depth == -1) {
         info->depth = MAX_DEPTH;
     }
-
-    printf("time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
+#ifdef DEBUG
+    printf("[DEBUG] time:%d start:%lu stop:%lu depth:%d timeset:%d\n",
             time,info->startTime,info->endTime,info->depth,info->timeSet);
+#endif
     search(*this, info);
 }
 
@@ -526,8 +637,9 @@ std::string Board::toFEN() const {
 }
 
 /* Helpers for makeMove */
-// Returns captured piece, if any
 inline static void clearPiece(const square_t sq, Board& b) {
+  assert(b.check());
+  assert(ColourValid(b.turn));
   piece p = b.board[sq];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -552,7 +664,7 @@ inline static void clearPiece(const square_t sq, Board& b) {
     }
   } else { // is a pawn
     CLRBIT(b.pawns[colour], sq);
-    CLRBIT(b.pawns[2], sq); // 2 is BOTH
+    CLRBIT(b.pawns[BOTH], sq); // 2 is BOTH
   }
 
   // Finally, clear the piece off the piece list
@@ -562,19 +674,23 @@ inline static void clearPiece(const square_t sq, Board& b) {
     }
   }
 
+  assert(pIdx != -1);
+  assert(pIdx >= 0 && pIdx <= 10);
   // Instead of clearning, we swap it with last element
   // and decrement the piece count
-  b.pieceList[p][pIdx] = b.pieceList[p][--b.pceCount[p]];
+  b.pceCount[p]--;
+  b.pieceList[p][pIdx] = b.pieceList[p][b.pceCount[p]];
 }
 
 inline static void addPiece(const square_t sq, const piece p, Board& b) {
+  assert(ColourValid(b.turn));
   bool colour = Piece::IsColour(p, Piece::White);
-
-  // Hash the piece into the Zobrist key
-  hashPiece(p, sq);
 
   // Add piece to the board
   b.board[sq] = p;
+
+  // Hash the piece into the Zobrist key
+  hashPiece(p, sq);
 
   // Update counts
   if (Piece::IsBig(p)) {
@@ -597,6 +713,10 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
 }
 
 inline static void movePiece(const square_t from, const square_t to, Board& b) {
+  // assert(b.check()) <- this assert should fail, since we haven't flipped sides yet
+  assert(IsOK(from));
+  assert(IsOK(to));
+  assert(ColourValid(b.turn));
   piece p = b.board[from];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -627,7 +747,9 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 
 // Returns True if move was legal, False otherwise
 bool Board::makeMove(move_t move) {
-
+  //printf("makemove start check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[getFrom(move)])], toString(move).c_str());
+  assert(this->check());
+  assert(ColourValid(this->turn));
   // Extract move data
   square_t to = getTo(move);
   square_t from = getFrom(move);
@@ -643,8 +765,12 @@ bool Board::makeMove(move_t move) {
   undo.captured = board[to];
   undo.posKey = this->posKey;
   undo.castlePerm = castlePerm;
+  undo.fiftyMoveCounter = fiftyMoveCounter;
 
   /* Update state */
+
+  // Handle fifty move rule
+  fiftyMoveCounter++;
 
   // If en passant performed, remove captured pawn
   if (flags == EpCapture) {
@@ -654,6 +780,8 @@ bool Board::makeMove(move_t move) {
     //board[targetSquare] = Piece::None;
     clearPiece(targetSquare, *this);
     undo.captured = capturedPawn;
+    // piece captured + pawn move -> reset 50 move counter
+    fiftyMoveCounter = 0;
   } else if (flags == KingCastle) {
     // Move the rook to its new square
     if (to == G1) {
@@ -677,27 +805,41 @@ bool Board::makeMove(move_t move) {
     }
   }
 
-  // Handle en passant square
+  /* Handle en passant */
+  // Hash out old en passant square (if was set)
+  if (epSquare != NO_SQ) {
+    hashEnPassant(epSquare);
+  }
+
+  // Handle new en passant square (if double pawn push)
   if (flags == DoublePawnPush) {
     epSquare = (to + from) >> 1;
+    assert(IsOK(epSquare));
     hashEnPassant(epSquare);
   } else {
     epSquare = NO_SQ;
   }
 
-  // Handle castle permissions
-  castlePerm &= castlePermDelta[from];
-  castlePerm &= castlePermDelta[to];
+  /* Handle castle permissions */
+  // Hash out old permissions
   hashCastle();
 
-  boardHistory.push_back(undo);
+  // Set new permissions
+  castlePerm &= castlePermDelta[from];
+  castlePerm &= castlePermDelta[to];
 
-  // Handle fifty move rule
-  fiftyMoveCounter++;
+  // Hash in new permissions
+  hashCastle();
 
-  // Perform the move
+  boardHistory.emplace_back(undo);
+
+  // Perform the move (captures reset the 50 move counter)
   if (board[to] != Piece::None) {
     clearPiece(to, *this);
+    fiftyMoveCounter = 0;
+  }
+
+  if (Piece::PieceType(board[from]) == Piece::Pawn) {
     fiftyMoveCounter = 0;
   }
 
@@ -736,12 +878,10 @@ bool Board::makeMove(move_t move) {
   int op = OPPONENT(turn);
   turn = op;
   ply++;
-  fiftyMoveCounter++;
-  //this->posKey = generatePosKey();
   hashTurn();
 
-  // This should be more incremental (to be fast) but works for now
-  //this->updateMaterial();
+  //printf("makemove end check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[to])], toString(move).c_str());
+  assert(this->check());
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
   if (SquareAttacked(kingSquare[op == Piece::Black], op)) {
@@ -752,11 +892,15 @@ bool Board::makeMove(move_t move) {
 }
 
 void Board::undoMove(move_t move) {
+  //printf("undomove start check (%s)!\n", toString(move).c_str());
+  assert(this->check());
+  assert(ColourValid(this->turn));
   square_t to = getTo(move);
   square_t from = getFrom(move);
   int flags = getFlags(move);
 
-  if (boardHistory.size() == 0) return;
+  //if (boardHistory.size() == 0) return;
+  assert(boardHistory.size() >= 0); // should never be called otherwise
   undo_t last = boardHistory.back();
   boardHistory.pop_back();
 
@@ -765,14 +909,16 @@ void Board::undoMove(move_t move) {
   hashTurn();
 
   // undo the actual move
-  //board[from] = board[to];
   movePiece(to, from, *this);
 
-  // Hash out the en passant square if currently set
+  // Hash out the en passant square if was currently set
   if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // Restore the en passant square from pre-move state
   epSquare = last.enPas;
+
+  // Hash in the old en passant square (if set)
+  if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // If en passant performed, restore the captured pawn
   if (flags == EpCapture) {
@@ -812,9 +958,16 @@ void Board::undoMove(move_t move) {
     }
   }
 
-  // restore castling permissions
-  hashCastle(); // hash out post-move permissions
-  castlePerm = last.castlePerm; // restore pre-move permissions
+  /* Handle castling permissions */
+
+  // Hash out current permissions
+  hashCastle();
+
+  // Revert to old castling permissions
+  castlePerm = last.castlePerm;
+
+  // Hash in old castling permissions
+  hashCastle();
 
   // restore 50 move counter
   fiftyMoveCounter = last.fiftyMoveCounter;
@@ -833,24 +986,17 @@ void Board::undoMove(move_t move) {
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
-  // TODO: Debug
   ply--;
-  if (last.posKey != posKey) {
-    printf("Assert failed while undoing move %s\n", toString(move).c_str());
-    std::cout << this->toFEN() << std::endl;
-    printf("Desired   hash: %llu\n", last.posKey);
-    printf("Generated hash: %llu\n", posKey);
-    fflush(stdout);
-    assert(last.posKey == posKey);
-  }
-  //this->posKey = generatePosKey();
 
-  // This should be more incremental but works for now
-  //this->updateMaterial();
+  // Debug checks
+  //printf("undomove end check (%s)!\n", toString(move).c_str());
+  assert(this->check());
 }
 
 
 void Board::makeNullMove() {
+  assert(this->check());
+
   ply++;
 
   // Store the pre-move state
@@ -869,16 +1015,21 @@ void Board::makeNullMove() {
   }
   epSquare = NO_SQ;
 
-  boardHistory.push_back(undo);
+  boardHistory.emplace_back(undo);
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove++;
   int op = OPPONENT(turn);
   turn = op;
+  // Hash in the turn (null move switches the side playing)
   hashTurn();
+
+  assert(this->check());
 }
 
 void Board::undoNullMove() {
+  assert(this->check());
+
   if (boardHistory.size() == 0) return;
   ply--;
   undo_t last = boardHistory.back();
@@ -888,10 +1039,14 @@ void Board::undoNullMove() {
   turn = op;
   hashTurn();
 
+  // TODO: Debug this
+  // Hash out the en passant square (if set)
+  //if (epSquare != NO_SQ) hashEnPassant(epSquare);
+
   // Restore the en passant square from pre-move state
   epSquare = last.enPas;
 
-  // Hash out the en passant square if currently set
+  // Hash in the en passant square if previously
   if (epSquare != NO_SQ) hashEnPassant(epSquare);
 
   // restore castling permissions
@@ -902,6 +1057,9 @@ void Board::undoNullMove() {
 
   // Bookkeeping
   if (turn == Piece::Black) fullMove--;
+
+  // Debug
+  assert(this->check());
 }
 
 void Board::undoLast() {
@@ -910,21 +1068,150 @@ void Board::undoLast() {
   this->undoMove(last.move);
 }
 
+#ifdef DEBUG
+bool Board::check() const {
+  //std::cout << this->toFEN() << std::endl;
+  using namespace Piece;
+  int tmp_pceCount[24] = {0};
+  int tmp_bigPce[2] = {0};
+  int tmp_majPce[2] = {0};
+  int tmp_minPce[2] = {0};
+  int tmp_material[2] = {0};
+  piece tmp_piece;
+  bb_t tmp_pawns[3] = {0ULL, 0ULL, 0ULL};
+
+  tmp_pawns[0] = this->pawns[0];
+  tmp_pawns[1] = this->pawns[1];
+  tmp_pawns[2] = this->pawns[2];
+
+  // Check piece list
+  for (tmp_piece = None; tmp_piece <= bQ; ++tmp_piece) {
+    for (int i = 0; i < this->pceCount[tmp_piece]; ++i) {
+      // Check if piece list contains the actual piece on the board
+      square_t sq = pieceList[tmp_piece][i];
+      if (board[sq] != tmp_piece) {
+        printf("Expected piece %d but got %d\n", board[sq], tmp_piece);
+        fflush(stdout);
+        return false;
+      }
+    }
+  }
+
+  bool colour;
+  // Check piece count and other counters
+  for (square_t s = A1; s <= H8; ++s) {
+    tmp_piece = board[s];
+    tmp_pceCount[tmp_piece]++;
+    colour = IsColour(tmp_piece, White);
+    if (IsBig(tmp_piece)) tmp_bigPce[colour]++;
+    if (IsRookOrQueen(tmp_piece)) tmp_majPce[colour]++;
+    if (IsKnightOrBishop(tmp_piece)) tmp_minPce[colour]++;
+
+    tmp_material[colour] += value[PieceType(tmp_piece)];
+  }
+
+  for (tmp_piece = wK; tmp_piece <= bQ; ++tmp_piece) {
+    assert(tmp_pceCount[tmp_piece] == this->pceCount[tmp_piece]);
+  }
+
+  // Check other counts
+  int pawnCount = CNT(tmp_pawns[1]);
+  if (pawnCount != this->pceCount[wP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[wP]);
+    printBB(tmp_pawns[1]);
+    printf("vs");
+    printBB(pawns[1]);
+  }
+  assert(pawnCount == this->pceCount[wP]);
+  pawnCount = CNT(tmp_pawns[0]);
+  if (pawnCount != this->pceCount[bP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[bP]);
+    printBB(tmp_pawns[0]);
+    printf("\nvs\n");
+    printBB(pawns[0]);
+    this->print(true);
+    // print psq tables
+    for (int i = 0; i < pceCount[bP]; ++i) {
+      std::cout << toString(pieceList[bP][i]) << std::endl;
+    }
+    //std::cout << this->toFEN() << std::endl;
+  }
+  assert(pawnCount == this->pceCount[bP]);
+  pawnCount = CNT(tmp_pawns[BOTH]);
+  if (pawnCount != this->pceCount[wP] + this->pceCount[bP]) {
+    printf("Got %d pawns but expected %d\n", pawnCount, pceCount[wP] + pceCount[bP]);
+    printBB(tmp_pawns[BOTH]);
+    printf("\nvs\n");
+    printBB(pawns[BOTH]);
+  }
+  assert(pawnCount == this->pceCount[bP] + this->pceCount[wP]);
+
+  // Check if bitboards match the board
+  while (tmp_pawns[1]) {
+    square_t s = POP(this->pawns[1]);
+    CLRLSB(tmp_pawns[1]);
+    assert(board[s] == wP);
+  }
+
+  while (tmp_pawns[0]) {
+    square_t s = POP(this->pawns[0]);
+    CLRLSB(tmp_pawns[0]);
+    assert(board[s] == bP);
+  }
+
+  while (tmp_pawns[BOTH]) {
+    square_t s = POP(this->pawns[BOTH]);
+    CLRLSB(tmp_pawns[BOTH]);
+    assert(board[s] == wP || board[s] == bP);
+  }
+
+  // Check if material matches up
+  assert(tmp_material[1] == this->material[1] && tmp_material[0] == this->material[0]);
+
+  // Check if counts match up
+  assert(tmp_minPce[1] == minPce[1]);
+  assert(tmp_minPce[0] == minPce[0]);
+  assert(tmp_majPce[1] == majPce[1]);
+  assert(tmp_majPce[0] == majPce[0]);
+  assert(tmp_bigPce[1] == bigPce[1]);
+  assert(tmp_bigPce[0] == bigPce[0]);
+
+  assert(turn == White || turn == Black);
+
+  // !! critical for correct TT functionality
+  u64 expected = this->generatePosKey();
+  if (expected != this->posKey) {
+    printf("Expected: %llu\nGot:      %llu\n", expected, this->posKey);
+    //assert(false);
+    return false;
+  }
+
+  if(!(epSquare == NO_SQ || (SquareRank(epSquare) == 2 && turn == Black) ||
+     (SquareRank(epSquare) == 5 && turn == White))) {
+      printf("Square %s is on rank %d and it's %s's turn\n", toString(epSquare).c_str(), SquareRank(epSquare), (turn==White) ? "white" : "black");
+      assert(false);
+     }
+
+  assert(board[this->kingSquare[1]] == wK);
+  assert(board[this->kingSquare[0]] == bK);
+
+  assert(castlePerm >= 0 && castlePerm <= 15);
+
+  return true;
+}
+#endif // DEBUG
+
+
+
+
 inline u64 Board::rand64() {
   return rng();
-  /*
-  return (u64)std::rand() + \
-         ((u64)std::rand() << 15) + \
-         ((u64)std::rand() << 30) + \
-         ((u64)std::rand() << 45) + \
-         (((u64)std::rand() & 0xf) << 60);
-  */
 }
 
 void Board::initKeys(unsigned rng_seed) {
   // Seed the RNG
-  //std::srand(seed);
   rng.seed(rng_seed);
+
   // For each piece type and square generate a random hashkey
   for (int p = 0; p < 24; p++) {
     for (square_t s = A1; s <= H8; s++) {
@@ -941,29 +1228,36 @@ void Board::initKeys(unsigned rng_seed) {
   }
 }
 
-u64 Board::generatePosKey() {
+u64 Board::generatePosKey() const {
   using namespace Piece;
-  u64 key = 0;
+  u64 key = 0ULL;
 
   // Hash in all the pieces on the board
-  for (square_t s = A1; s <= H8; s++) {
+  for (square_t s = A1; s <= H8; ++s) {
     piece p = board[s];
     if (p != None) {
+      assert(p >= wK && p <= bQ);
       key ^= pieceKeys[p][s];
     }
   }
 
   // Hash in the side playing
-  key ^= (turn == White) ? turnKey : 0;
+  if (turn == White) {
+    key ^= turnKey;
+  }
 
   // Hash in castle permissions
-  key ^= castlePerm;
+  assert(0 <= castlePerm && castlePerm <= 15);
+  key ^= castleKeys[this->castlePerm];
 
   // Hash in the en passant square (if set)
-  key ^= pieceKeys[Piece::None][epSquare];
-
-  // Store the position key for the Board
-  this->posKey = key;
+  // key ^= pieceKeys[Piece::None][epSquare];
+  if (epSquare != NO_SQ) {
+    assert(epSquare >= A1 && epSquare <= H8);
+    assert(IsOK(epSquare));
+    assert(SquareRank(epSquare) == 5 || SquareRank(epSquare) == 2);
+    key ^= pieceKeys[Piece::None][epSquare];
+  }
 
   return key;
 }
@@ -986,6 +1280,7 @@ void Board::updateMaterial() {
 
 // Returns true if square sq is attacked by color
 bool Board::SquareAttacked(const square_t sq, const int color) {
+  assert(this->check());
   using namespace Piece;
 
   square_t from;
@@ -994,21 +1289,22 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   piece p = White | Pawn;
   if (color == White) {
     from = sq - 7;
-    if (distance(sq, from) <= 2 && board[from] == p) {
+    if (dist[sq][from] <= 2 && board[from] == p) {
       return true;
     }
     from = sq - 9;
-    if (distance(sq, from) <= 2 && board[from] == p) {
+    if (dist[sq][from] <= 2 && board[from] == p) {
       return true;
     }
   } else { // color == Black
-    p ^= White; p |= Black;
+    //p ^= White; p |= Black;
+    p ^= colorMask;
     from = sq + 7;
-    if (distance(sq, from) <= 2 && board[from] == p) {
+    if (dist[sq][from] <= 2 && board[from] == p) {
       return true;
     }
     from = sq + 9;
-    if (distance(sq, from) <= 2 && board[from] == p) {
+    if (dist[sq][from] <= 2 && board[from] == p) {
       return true;
     }
   }
@@ -1016,7 +1312,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   // Check if sq attacked by a knight
   for (const square_t& dir : knightDest) {
     from = sq + dir;
-    if (!IsOK(from) || !(distance(sq, from) == 2)) continue;
+    if (!IsOK(from) || !(dist[sq][from] == 2)) continue;
     p = board[from];
     if (PieceType(p) == Knight && IsColour(p, color)) {
       return true;
@@ -1025,7 +1321,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
 
   // Check if square attacked by a rook/queen (N, E, S, W)
   for (const square_t& dir : rookDest) {
-    for (from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+    for (from = sq + dir; IsOK(from) && dist[from][from - dir] == 1; from += dir) {
       p = board[from];
       if (p != Piece::None) {
         if (IsRookOrQueen(p) && IsColour(p, color)) {
@@ -1038,7 +1334,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
 
   // Check if square attacked by a bishop/queen (NE, SE, SW, NW)
   for (const square_t& dir : bishopDest) {
-    for (from = sq + dir; IsOK(from) && distance(from, from - dir) == 1; from += dir) {
+    for (from = sq + dir; IsOK(from) && dist[from][from - dir] == 1; from += dir) {
       p = board[from];
       if (p != Piece::None) {
         if (IsBishopOrQueen(p) && IsColour(p, color)) {
@@ -1052,7 +1348,7 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   // Check if square attacked by a King
   for (const square_t& dir : kingDest) {
       from = sq + dir;
-      if (!IsOK(from) || !(distance(sq, from) <= 2)) continue;
+      if (!IsOK(from) || !(dist[sq][from] <= 2)) continue;
       p = board[from];
       if (PieceType(p) == King && IsColour(p, color)) {
         return true;
@@ -1061,11 +1357,13 @@ bool Board::SquareAttacked(const square_t sq, const int color) {
   return false;
 }
 
+/*
 // Returns true if side color is in check
-bool Board::inCheck(const int color) {
+inline bool Board::inCheck(const int color) {
   // for (square_t s; ...)
   return SquareAttacked(kingSquare[color == Piece::White], OPPONENT(color));
 }
+*/
 
 #define MIRROR(sq) ((sq) ^ 56)
 
@@ -1116,4 +1414,34 @@ void Board::mirror() {
   posKey = this->generatePosKey();
 
   this->initPieceList();
+
+  assert(this->check());
+}
+
+void debugTest(Board& b) {
+  std::fstream epdfile;
+  epdfile.open("./tests/lct2.epd",std::ios::in);
+
+  searchinfo_t info[1];
+  clearForSearch(b, info);
+  info->depth = MAX_DEPTH;
+  info->timeSet = true;
+  int time = 100000;
+   if (epdfile.is_open()){
+      std::string fenLine;
+      while(getline(epdfile, fenLine)){
+         printf("Testing position %s\n", fenLine.c_str());
+         info->startTime = getTime();
+         info->endTime = info->startTime + time;
+         //clearTT(&b.TT);
+         b.readFEN(fenLine);
+         search(b, info);
+      }
+      epdfile.close();
+   } else {
+     std::cout << "File couldn't be opened" << std::endl;
+     exit(1);
+   }
+   std::cout << "Test finished!\n" << std::endl;
+   exit(0);
 }

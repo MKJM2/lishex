@@ -5,16 +5,18 @@ INCLUDE_DIR = include
 BUILD_DIR = build
 TARGET = lishex
 
-### Optimizations (on by default)
-optimize ?= yes
-ifeq ($(optimize),yes)
-	CXXFLAGS += -O3
-endif
-
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -g -w
+	CXXFLAGS += -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+endif
+
+### Optimizations (on by default)
+optimize ?= yes
+ifeq ($(optimize),yes)
+	ifneq ($(debug),yes)
+		CXXFLAGS += -O2 -fno-exceptions # -DNO_TT # -DNO_NMH
+	endif
 endif
 
 # List of source files
@@ -49,3 +51,5 @@ run: $(TARGET)
 help:
 	@echo "To compile LiSHeX, type: "
 	@echo "make"
+	@echo "To compile with debug options, type: "
+	@echo "make debug=yes"

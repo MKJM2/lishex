@@ -1,7 +1,8 @@
 #ifndef PIECE_H_
 #define PIECE_H_
 
-#define OPPONENT(color) (color ^ 0b11000)
+#define OPPONENT(colour) (colour ^ 0b11000)
+#define ColourValid(colour) ((colour) == Piece::White || (colour) == Piece::Black)
 
 // Piece shorthands
 #define wP (Piece::White | Piece::Pawn)
@@ -9,12 +10,15 @@
 #define wB (Piece::White | Piece::Bishop)
 #define wR (Piece::White | Piece::Rook)
 #define wQ (Piece::White | Piece::Queen)
+#define wK (Piece::White | Piece::King)
 
 #define bP (Piece::Black | Piece::Pawn)
 #define bN (Piece::Black | Piece::Knight)
 #define bB (Piece::Black | Piece::Bishop)
 #define bR (Piece::Black | Piece::Rook)
 #define bQ (Piece::Black | Piece::Queen)
+#define bK (Piece::Black | Piece::King)
+
 
 namespace Piece {
     // inspired by Sebastian Lague's design
@@ -69,6 +73,6 @@ namespace Piece {
         return (piece & 0b100) != 0;
     }
     /*                    -, K,     P,   N,   -, B,   R,   Q */
-    const int value[8] = {0, 50000, 100, 330, 0, 345, 575, 900};
+    const int value[8] = {0, 50000, 100, 325, 0, 325, 550, 1000};
 };
 #endif // PIECE_H_

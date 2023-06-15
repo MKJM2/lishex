@@ -5,10 +5,11 @@
 #include <iostream>
 #include "Square.h"
 
-#define SETBIT(bb, sq) ((bb) |=  (1UL << (sq)))
-#define CLRBIT(bb, sq) ((bb) &= ~(1UL << (sq)))
+#define SETBIT(bb, sq) ((bb) |=  (1ULL << (sq)))
+#define CLRBIT(bb, sq) ((bb) &= ~(1ULL << (sq)))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
-#define CNT(bb) (__builtin_popcount(bb))
+#define CNT(bb) (__builtin_popcountll(bb))
+#define POP(bb) (bitScanForward(bb))
 
 // bitboard type
 typedef uint64_t bb_t;
@@ -23,6 +24,8 @@ extern bb_t bPassedMask[64];
 
 // Isolated pawn masks
 extern bb_t isolatedMask[64];
+
+extern int bitScanForward(bb_t bb);
 
 void printBB(const bb_t& bb);
 void initEvalMasks();

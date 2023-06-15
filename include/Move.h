@@ -40,7 +40,7 @@ typedef uint32_t move_t;
         (((from) & 0x3f)    <<  6) | \
         ((to) & 0x3f))
 
-#define NULLMV ((move_t) 0)
+#define NULLMV ((move_t) 0U)
 
 #define getTo(move) ((move) & 0x3f)
 
@@ -50,14 +50,16 @@ typedef uint32_t move_t;
 
 #define getScore(move) (((move) >> 16) & 0xffff)
 
-#define setScore(move, score) (((score) & 0xffff) << 16 | move)
+#define setScore(move, score) ((((move_t) score) & 0xffff) << 16 | ((move) & 65535))
 
-#define isCapture(move) (((move) >> 12) == Capture || ((move) >> 12) == EpCapture)
+//#define isCapture(move) (((move) >> 12) == Capture || ((move) >> 12) == EpCapture)
+#define isCapture(move) (((move) >> 12) & 0b0100)
 
 #define isPromotion(move) (((move) >> 12) & 0b1000)
 
 /* Compares two moves ignoring their assigned scores */
-#define movecmp(m1, m2) (((m1) << 16) == ((m2) << 16))
+//#define movecmp(m1, m2) (((m1) << 16) == ((m2) << 16))
+#define movecmp(m1, m2) (((m1) & 65535) == ((m2) & 65535))
 
 std::string toString(move_t m);
 move_t fromString(std::string s);
