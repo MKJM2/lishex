@@ -792,7 +792,9 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     // bool isPvNode = beta - alpha > 1; ???
     // if current node is not the root node and not a pv_node
     // try b.ply & isPVNode as additional conditions
-    if (getHashEntry(b, &pvMv, &score, alpha, beta, depth)) {
+    bool retrieved = getHashEntry(b, &pvMv, &score, alpha, beta, depth);
+    //printf("Move %s retrieved with status %d and score %d\n", toString(pvMv).c_str(), retrieved, score);
+    if (retrieved) {
         b.TT.cut++;
         return score;
     }
@@ -849,6 +851,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
     for (moveIdx = 0; moveIdx < moves->size(); ++moveIdx) {
         // pick best scoring move (according to heuristics)
         pickNextMove(moveIdx, moves);
+        //printf("Searching move %s (%d/%d)\n", toString(moves->moveList[moveIdx]).c_str(), moveIdx, moves->size() - 1);
         if (!b.makeMove(moves->moveList[moveIdx])) continue;
         legal++;
         score = -alphaBeta(b, info, -beta, -alpha, depth - 1, DO_NULL);

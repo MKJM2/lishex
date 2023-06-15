@@ -747,7 +747,7 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 
 // Returns True if move was legal, False otherwise
 bool Board::makeMove(move_t move) {
-  printf("makemove start check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[getFrom(move)])], toString(move).c_str());
+  //printf("makemove start check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[getFrom(move)])], toString(move).c_str());
   assert(this->check());
   assert(ColourValid(this->turn));
   // Extract move data
@@ -880,7 +880,7 @@ bool Board::makeMove(move_t move) {
   ply++;
   hashTurn();
 
-  printf("makemove end check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[to])], toString(move).c_str());
+  //printf("makemove end check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[to])], toString(move).c_str());
   assert(this->check());
 
   // Finally, undo the move if puts the player in check (pseudolegal movegen)
@@ -892,7 +892,7 @@ bool Board::makeMove(move_t move) {
 }
 
 void Board::undoMove(move_t move) {
-  printf("undomove start check (%s)!\n", toString(move).c_str());
+  //printf("undomove start check (%s)!\n", toString(move).c_str());
   assert(this->check());
   assert(ColourValid(this->turn));
   square_t to = getTo(move);
@@ -989,7 +989,7 @@ void Board::undoMove(move_t move) {
   ply--;
 
   // Debug checks
-  printf("undomove end check (%s)!\n", toString(move).c_str());
+  //printf("undomove end check (%s)!\n", toString(move).c_str());
   assert(this->check());
 }
 
@@ -1070,7 +1070,7 @@ void Board::undoLast() {
 
 #ifdef DEBUG
 bool Board::check() const {
-  std::cout << this->toFEN() << std::endl;
+  //std::cout << this->toFEN() << std::endl;
   using namespace Piece;
   int tmp_pceCount[24] = {0};
   int tmp_bigPce[2] = {0};
@@ -1134,7 +1134,7 @@ bool Board::check() const {
     for (int i = 0; i < pceCount[bP]; ++i) {
       std::cout << toString(pieceList[bP][i]) << std::endl;
     }
-    std::cout << this->toFEN() << std::endl;
+    //std::cout << this->toFEN() << std::endl;
   }
   assert(pawnCount == this->pceCount[bP]);
   pawnCount = CNT(tmp_pawns[BOTH]);
