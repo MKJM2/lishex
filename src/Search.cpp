@@ -933,8 +933,8 @@ void search(Board &b, searchinfo_t *info) {
     }
     pvMoves = getPV(b, currDepth);
     bestMv = b.pv[0];
-    //printf("info score cp %d depth %d nodes %lld time %lu hashfull %d ",
-    printf("info score cp %d depth %d nodes %lld time %lu ",
+    //printf("info score cp %d depth %d nodes %lld time %lu ",
+    printf("info score cp %d depth %d nodes %lld time %lu hashfull %d ",
            bestScore, currDepth, info->nodes, getTime() - info->startTime,
            (int)(((double)b.TT.new_writes / b.TT.no_entries) * 1000));
     // TODO:
