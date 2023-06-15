@@ -1,7 +1,8 @@
 #ifndef PIECE_H_
 #define PIECE_H_
 
-#define OPPONENT(color) (color ^ 0b11000)
+#define OPPONENT(colour) (colour ^ 0b11000)
+#define ColourValid(colour) ((colour) == Piece::White || (colour) == Piece::Black)
 
 // Piece shorthands
 #define wP (Piece::White | Piece::Pawn)
@@ -17,6 +18,7 @@
 #define bR (Piece::Black | Piece::Rook)
 #define bQ (Piece::Black | Piece::Queen)
 #define bK (Piece::Black | Piece::King)
+
 
 namespace Piece {
     // inspired by Sebastian Lague's design

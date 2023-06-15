@@ -152,7 +152,9 @@ int main() {
             std::cout << gameboard.toFEN() << std::endl;
         } else if (command == "test") {
             //mirrorEvalTest(gameboard);
+            //std::string testFen = "r2qkb1r/pb1npppp/2p5/8/1p1Pn3/3BPN2/PP3PPP/R1BQK2R w KQkq - 0 1";
             debugTest(gameboard);
+            //mirrorEvalTest(gameboard);
         }
         /*
           else if (command == "sort") {

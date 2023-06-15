@@ -2,15 +2,16 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 
-#define MATE (INFINITE-MAX_DEPTH)
+#define MATE (INFINITE - MAX_DEPTH)
 
+// For debugging purposes
 #ifndef NO_NMH // null move heuristic
 #define DO_NULL (true)
 #else
 #define DO_NULL (false)
 #endif
 
-// 64 MB TT table default size
+// 16 MB TT table default size
 #define MB 16
 static constexpr int HASH_SIZE = 0x100000 * MB;
 
@@ -417,71 +418,6 @@ inline static void pickNextMove(size_t moveIdx, movelist_t* moves) {
     moves->moveList[bestIdx] = tmp;
 }
 
-// Evaluates the position from the side's POV
-/*
-static int evaluate2(Board& b) {
-    using namespace Piece;
-    //          White           Black
-    int score = b.material[1] - b.material[0];
-    int delta = 0;
-    piece* board = b.board;
-    for (square_t s = A1; s <= H8; ++s) {
-        piece p = board[s];
-        if (p != None) {
-
-            switch (PieceType(p)) {
-                case Pawn: {
-                    if (IsColour(p, White)) {
-                        delta = pawnTable[s];
-                    } else {
-                        delta = -pawnTable[MIRROR[s]];
-                    }
-                    break;
-                }
-                case Knight: {
-                    if (IsColour(p, White)) {
-                        delta = knightTable[s];
-                    } else {
-                        delta = -knightTable[MIRROR[s]];
-                    }
-                    break;
-                }
-                case Rook: {
-                    if (IsColour(p, White)) {
-                        delta = rookTable[s];
-                    } else {
-                        delta = -rookTable[MIRROR[s]];
-                    }
-                    break;
-                }
-                case Bishop: {
-                    if (IsColour(p, White)) {
-                        delta = bishopTable[s];
-                    } else {
-                        delta = -bishopTable[MIRROR[s]];
-                    }
-                    break;
-                }
-                case Queen: {
-                    if (IsColour(p, White)) {
-                        delta = (bishopTable[s] + rookTable[s]) / 2;
-                    } else {
-                        delta = -(bishopTable[MIRROR[s]] + rookTable[MIRROR[s]]) / 2;
-                    }
-                    break;
-                }
-                default: {
-                    break;
-                }
-            }
-            score += delta;
-        }
-    }
-    return (b.turn == Piece::White) ? score : -score;
-}
-*/
-
-
 // sjeng 11.2 (adapted from Vice 1.1 by Bluefever Software)
 //8/6R1/2k5/6P1/8/8/4nP2/6K1 w - - 1 41
 inline bool MaterialDraw(const Board& b) {
@@ -507,7 +443,7 @@ inline bool MaterialDraw(const Board& b) {
   return 0;
 }
 
-// */
+// Evaluates the position from the side's POV
 inline static int evaluate(Board& b) {
     assert(b.check());
     using namespace Piece;
@@ -940,7 +876,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                         b.killersH[0][b.ply] = moves->moveList[moveIdx];
                     }
 
-                    storeHashEntry(b, bestMv, beta, HFBETA, depth);
+                    //storeHashEntry(b, bestMv, beta, HFBETA, depth);
                     return beta;
                 }
                 alpha = score; // we beat our lower-bound
@@ -969,7 +905,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         storeHashEntry(b, bestMv, best_score, HFEXACT, depth);
     } else {
         // fail-low (we weren't able to beat alpha)
-        storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
+        //storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
     return alpha;
 }

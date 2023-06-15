@@ -28,6 +28,38 @@ Board::Board() {
   initEvalMasks();
   this->boardHistory.reserve(MAX_MOVES);
   this->posKey = generatePosKey();
+
+//#ifdef DEBUG
+  for (square_t s = A1; s <= H8; ++s) {
+    piece p = board[s];
+    if (p != Piece::None) {
+      assert(p >= wK && p <= bQ);
+        char curr = pieceToChar[Piece::PieceType(p)];
+        if (Piece::IsColour(p, Piece::White)) {
+            curr = std::toupper(curr);
+        }
+      printf("%c key : %llu\n", curr, this->pieceKeys[p][s]);
+    }
+  }
+  if (turn == Piece::White) {
+    printf("Turn  : %llu\n", this->turnKey);
+  }
+  if (epSquare != NO_SQ) {
+    printf("Ep key: %llu\n", this->pieceKeys[Piece::None][epSquare]);
+  }
+
+    printf("Castle: %llu\n", this->castleKeys[castlePerm]);
+
+
+  printf("Poskey: %llu\n", this->posKey);
+  printf("Size of unsigned long long: %lu\n", sizeof(unsigned long long));
+  printf("Size of uint64_t: %lu\n", sizeof(uint64_t));
+  printf("Size of uint32_t: %lu\n", sizeof(uint32_t));
+  printf("Size of piece_t: %lu\n", sizeof(piece));
+  printf("Size of square_t: %lu\n", sizeof(square_t));
+  printf("Size of move_t: %lu\n", sizeof(move_t));
+  printf("Size of hashentry_t: %lu\n", sizeof(hashentry_t));
+//#endif
 }
 
 Board::~Board() {
@@ -607,6 +639,7 @@ std::string Board::toFEN() const {
 /* Helpers for makeMove */
 inline static void clearPiece(const square_t sq, Board& b) {
   assert(b.check());
+  assert(ColourValid(b.turn));
   piece p = b.board[sq];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -650,6 +683,7 @@ inline static void clearPiece(const square_t sq, Board& b) {
 }
 
 inline static void addPiece(const square_t sq, const piece p, Board& b) {
+  assert(ColourValid(b.turn));
   bool colour = Piece::IsColour(p, Piece::White);
 
   // Add piece to the board
@@ -657,7 +691,6 @@ inline static void addPiece(const square_t sq, const piece p, Board& b) {
 
   // Hash the piece into the Zobrist key
   hashPiece(p, sq);
-
 
   // Update counts
   if (Piece::IsBig(p)) {
@@ -683,6 +716,7 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
   // assert(b.check()) <- this assert should fail, since we haven't flipped sides yet
   assert(IsOK(from));
   assert(IsOK(to));
+  assert(ColourValid(b.turn));
   piece p = b.board[from];
   bool colour = Piece::IsColour(p, Piece::White);
 
@@ -715,6 +749,7 @@ inline static void movePiece(const square_t from, const square_t to, Board& b) {
 bool Board::makeMove(move_t move) {
   printf("makemove start check (%c to %s)!\n", pieceToChar[Piece::PieceType(board[getFrom(move)])], toString(move).c_str());
   assert(this->check());
+  assert(ColourValid(this->turn));
   // Extract move data
   square_t to = getTo(move);
   square_t from = getFrom(move);
@@ -859,6 +894,7 @@ bool Board::makeMove(move_t move) {
 void Board::undoMove(move_t move) {
   printf("undomove start check (%s)!\n", toString(move).c_str());
   assert(this->check());
+  assert(ColourValid(this->turn));
   square_t to = getTo(move);
   square_t from = getFrom(move);
   int flags = getFlags(move);
@@ -1197,7 +1233,7 @@ u64 Board::generatePosKey() const {
   u64 key = 0ULL;
 
   // Hash in all the pieces on the board
-  for (square_t s = A1; s <= H8; s++) {
+  for (square_t s = A1; s <= H8; ++s) {
     piece p = board[s];
     if (p != None) {
       assert(p >= wK && p <= bQ);
