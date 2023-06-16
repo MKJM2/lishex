@@ -12,7 +12,7 @@
 #endif
 
 // 16 MB TT table default size
-#define MB 16
+#define MB 64
 static constexpr int HASH_SIZE = 0x100000 * MB;
 
 #ifdef WIN32
@@ -119,8 +119,8 @@ void initTT(hashtable_t *table) {
 //     since we don't need to search the *entire* history
 inline static bool isRepetition(Board& b) {
     int n = b.boardHistory.size();
-    //int i = n - 1 - b.fiftyMoveCounter;
-    for (int i = 0; i < n - 1; ++i) {
+    int i = n - 1 - b.fiftyMoveCounter;
+    for (; i < n - 1; ++i) {
         if (b.boardHistory[i].posKey == b.posKey) {
             return true;
         }
@@ -304,7 +304,7 @@ inline int getPV(Board& b, const int depth) {
 // TODO: Move to a separate file
 
 // Piece-square tables
-
+// We use midgame and endgame tables between which we interpolate
 const int pawnTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0,
     10,  10,   0, -10, -10,   0,  10,  10,
@@ -316,15 +316,37 @@ const int pawnTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
+const int eg_pawnTable[64] = {
+     0,   0,   0,   0,   0,   0,   0,   0,
+     8,   8,   5,   4,   4,   5,   8,   8,
+    -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+     2,   0,   0,  -1,  -1,  10,   0,   2,
+    25,  10,   5,   5,   5,   5,  10,  25,
+    55,  50,  50,  45,  45,  50,  50,  55,
+   125, 120, 120, 110, 110, 120, 120, 125,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
 const int knightTable[64] = {
-     0, -10,   0,   0,   0,   0, -10,   0,
+    -5, -10,   0,   0,   0,   0, -10,  -5,
      0,   0,   0,   5,   5,   0,   0,   0,
      0,   0,  10,  10,  10,  10,   0,   0,
      0,   0,  10,  20,  20,  10,   5,   0,
      5,  10,  15,  20,  20,  15,  10,   5,
      5,  10,  10,  20,  20,  10,  10,   5,
      0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0
+    -5,   0,   0,   0,   0,   0,   0,  -5
+};
+
+const int eg_knightTable[64] = {
+     -35, -10,  -5,  -5,  -5,  -5, -10,  -35,
+     -10,   0,   5,  10,  10,   5,   0,  -10,
+     -10,  10,  10,  10,  10,  10,  10,  -10,
+     -10,  10,  10,  20,  20,  10,  10,  -10,
+     -10,  10,  15,  20,  20,  15,  10,  -10,
+     -10,  10,  10,  20,  20,  10,  10,  -10,
+     -10,   0,   5,  10,  10,   5,   0,  -10,
+     -35, -10,  -5,  -5,  -5,  -5, -10,  -35,
 };
 
 const int bishopTable[64] = {
@@ -338,6 +360,17 @@ const int bishopTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
+const int eg_bishopTable[64] = {
+   -20, -10, -10,   0,   0, -10, -10, -20,
+     0,   0,   0,  10,  10,   0,   0,   0,
+     0,   0,  10,  15,  15,  10,   0,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,  10,  15,  20,  20,  15,  10,   0,
+     0,   0,  10,  15,  15,  10,   0,   0,
+     0,   0,   0,  10,  10,   0,   0,   0,
+   -20, -10, -10,   0,   0, -10, -10, -20,
+};
+
 const int rookTable[64] = {
      0,   0,   5,  10,  10,   5,   0,   0,
      0,   0,   5,  10,  10,   5,   0,   0,
@@ -349,9 +382,19 @@ const int rookTable[64] = {
      0,   0,   5,  10,  10,   5,   0,   0
 };
 
+const int eg_rookTable[64] = {
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+    15,  15,  15,  15,  15,  15,  15,  15,
+     0,   0,   5,  10,  10,   5,   0,   0
+};
 
 
-const int kingEndgame[64] = {
+const int eg_kingTable[64] = {
    -50, -10,   0,   0,   0,   0, -10, -50,
    -10,   0,  10,  10,  10,  10,   0, -10,
      0,  10,  20,  20,  20,  20,  10,   0,
@@ -362,7 +405,7 @@ const int kingEndgame[64] = {
    -50, -10,   0,   0,   0,   0, -10, -50
 };
 
-const int kingOpening[64] = {
+const int kingTable[64] = {
      0,   5,   5, -10, -10,   0,  10,   5,
    -30, -30, -30, -30, -30, -30, -30, -30,
    -50, -50, -50, -50, -50, -50, -50, -50,
@@ -447,11 +490,34 @@ inline bool MaterialDraw(const Board& b) {
 inline static int evaluate(Board& b) {
     assert(b.check());
     using namespace Piece;
+
+    // Game phase based on material left on board
+    // Assumes material values 1,3,3,5,9 for P,N,B,R,Q
+
+    // Count # of total material on the board (sum up to 78)
+    int ps = CNT(b.pawns[BOTH]);
+    int ns = b.pceCount[wN] + b.pceCount[bN];
+    int bs = b.pceCount[wB] + b.pceCount[bB];
+    int rs = b.pceCount[wR] + b.pceCount[bR];
+    int qs = b.pceCount[wQ] + b.pceCount[bQ];
+
+    // Phase can range from 78 to 0 (all pieces -> no pieces except kings)
+    // The closer to the endgame we are, the more heavily endgame pcsq-tables
+    // are weighed. We use min(max(0, 4x-32), 78) to scale between the game phases
+    int phase = ps + 3*ns + 3*bs + 5*rs + 9*qs;
+    phase <<= 2;
+    phase -= 32;
+    phase = std::min(std::max(0, phase), 78);
+
     //          White           Black
-    int score = b.material[1] - b.material[0];
+    //int score = b.material[1] - b.material[0];
     //printf("%d: White: %d Black %d\n", score, b.material[1], b.material[0]);
     square_t sq;
     int i;
+
+    int score[2]; // stores the score for mid and endgames
+    // TODO: This should consider the relative piece values in separate phases
+    score[0] = score[1] = b.material[1] - b.material[0];
 
     // Check for material draw (assuming optimal play)
 	if(!b.pceCount[wP] && !b.pceCount[bP] && MaterialDraw(b)) {
@@ -463,15 +529,18 @@ inline static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        score += pawnTable[sq];
+        score[0] += pawnTable[sq];
+        score[1] += eg_pawnTable[sq];
         //printf("+%d: white pawn on %s\n", pawnTable[sq], toString(sq).c_str());
         if ((b.pawns[1] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
-            score += pawnIsolated;
+            score[0] += pawnIsolated;
+            score[1] += pawnIsolated;
         }
         if ((wPassedMask[sq] & b.pawns[0]) == 0) {
             // Add in pass pawn bonus
-            score += pawnPassed[SquareRank(sq)];
+            score[0] += pawnPassed[SquareRank(sq)];
+            score[1] += pawnPassed[SquareRank(sq)];
         }
     }
 
@@ -483,15 +552,18 @@ inline static int evaluate(Board& b) {
         assert(IsOK(MIRROR(sq)));
         assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        score -= pawnTable[MIRROR(sq)];
+        score[0] -= pawnTable[MIRROR(sq)];
+        score[1] -= eg_pawnTable[MIRROR(sq)];
         //printf("-%d: black pawn on %s\n", pawnTable[MIRROR[sq]], toString(sq).c_str());
         if ((b.pawns[0] & isolatedMask[sq]) == 0) {
             // Add in isolated pawn penalty
-            score -= pawnIsolated;
+            score[0] -= pawnIsolated;
+            score[1] -= pawnIsolated;
         }
         if ((bPassedMask[sq] & b.pawns[1]) == 0) {
             // Add in pass pawn bonus
-            score -= pawnPassed[SquareRank(sq, Black)];
+            score[0] -= pawnPassed[SquareRank(sq, Black)];
+            score[1] -= pawnPassed[SquareRank(sq, Black)];
         }
     }
 
@@ -500,7 +572,8 @@ inline static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        score += knightTable[sq];
+        score[0] += knightTable[sq];
+        score[1] += eg_knightTable[sq];
         //printf("+%d: white knight on %s\n", knightTable[sq], toString(sq).c_str());
     }
 
@@ -512,7 +585,8 @@ inline static int evaluate(Board& b) {
         assert(IsOK(MIRROR(sq)));
         assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        score -= knightTable[MIRROR(sq)];
+        score[0] -= knightTable[MIRROR(sq)];
+        score[1] -= eg_knightTable[MIRROR(sq)];
         //printf("-%d: black knight on %s\n", knightTable[MIRROR[sq]], toString(sq).c_str());
     }
 
@@ -521,7 +595,8 @@ inline static int evaluate(Board& b) {
         sq = b.pieceList[p][i];
         assert(IsOK(sq));
         assert(A1 <= sq && sq <= H8);
-        score += bishopTable[sq];
+        score[0] += bishopTable[sq];
+        score[1] += eg_bishopTable[sq];
         //printf("+%d: white bishop on %s\n", bishopTable[sq], toString(sq).c_str());
     }
 
@@ -533,7 +608,8 @@ inline static int evaluate(Board& b) {
         assert(IsOK(MIRROR(sq)))
         assert(MIRROR(sq) == Mirror64[sq]);
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        score -= bishopTable[MIRROR(sq)];
+        score[0] -= bishopTable[MIRROR(sq)];
+        score[1] -= eg_bishopTable[MIRROR(sq)];
         //printf("-%d: black bishop on %s\n", bishopTable[MIRROR[sq]], toString(sq).c_str());
     }
 
@@ -544,12 +620,15 @@ inline static int evaluate(Board& b) {
         assert(A1 <= sq && sq <= H8);
         assert(IsOK(MIRROR(sq)))
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        score += rookTable[sq];
+        score[0] += rookTable[sq];
+        score[1] += eg_rookTable[sq];
         //printf("+%d: white rook on %s\n", rookTable[sq], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
-            score += rookOpenFile;
+            score[0] += rookOpenFile;
+            score[1] += rookOpenFile;
         } else if (!(b.pawns[1] & fileBBMask[SquareFile(sq)])) {
-            score += rookSemiOpenFile;
+            score[0] += rookSemiOpenFile;
+            score[1] += rookSemiOpenFile;
         }
     }
 
@@ -560,12 +639,15 @@ inline static int evaluate(Board& b) {
         assert(A1 <= sq && sq <= H8);
         assert(IsOK(MIRROR(sq)))
         assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
-        score -= rookTable[MIRROR(sq)];
+        score[0] -= rookTable[MIRROR(sq)];
+        score[1] -= eg_rookTable[MIRROR(sq)];
         //printf("-%d: black rook on %s\n", rookTable[MIRROR[sq]], toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
-            score -= rookOpenFile;
+            score[0] -= rookOpenFile;
+            score[1] -= rookOpenFile;
         } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
-            score -= rookSemiOpenFile;
+            score[0] -= rookSemiOpenFile;
+            score[1] -= rookSemiOpenFile;
         }
     }
 
@@ -576,9 +658,11 @@ inline static int evaluate(Board& b) {
         assert(A1 <= sq && sq <= H8);
         //printf("+%d: white queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
-            score += queenOpenFile;
+            score[0] += queenOpenFile;
+            score[1] += queenOpenFile;
         } else if (!(b.pawns[1] & fileBBMask[SquareFile(sq)])) {
-            score += queenSemiOpenFile;
+            score[0] += queenSemiOpenFile;
+            score[1] += queenSemiOpenFile;
         }
     }
 
@@ -589,9 +673,11 @@ inline static int evaluate(Board& b) {
         assert(A1 <= sq && sq <= H8);
         //printf("-%d: black queen on %s\n", delta, toString(sq).c_str());
         if (!(b.pawns[BOTH] & fileBBMask[SquareFile(sq)])) {
-            score -= queenOpenFile;
+            score[0] -= queenOpenFile;
+            score[1] -= queenOpenFile;
         } else if (!(b.pawns[0] & fileBBMask[SquareFile(sq)])) {
-            score -= queenSemiOpenFile;
+            score[0] -= queenSemiOpenFile;
+            score[1] -= queenSemiOpenFile;
         }
     }
 
@@ -602,11 +688,15 @@ inline static int evaluate(Board& b) {
     assert(A1 <= sq && sq <= H8);
     assert(IsOK(MIRROR(sq)))
     assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
+    score[0] += kingTable[sq];
+    score[1] += eg_kingTable[sq];
+    /*
     if (isEndgame(b.material[0])) {
-        score += kingEndgame[sq];
+        score += eg_kingTable[sq];
     } else {
-        score += kingOpening[sq];
+        score += kingTable[sq];
     }
+    */
 
     p = Black | King;
     assert(b.pieceList[p][0] == b.kingSquare[0])
@@ -615,21 +705,29 @@ inline static int evaluate(Board& b) {
     assert(A1 <= sq && sq <= H8);
     assert(IsOK(MIRROR(sq)))
     assert(A1 <= MIRROR(sq) && MIRROR(sq) <= H8);
+    score[0] -= kingTable[MIRROR(sq)];
+    score[1] -= eg_kingTable[MIRROR(sq)];
+    /*
     if (isEndgame(b.material[1])) {
-        score -= kingEndgame[MIRROR(sq)];
+        score -= eg_kingTable[MIRROR(sq)];
     } else {
-        score -= kingOpening[MIRROR(sq)];
+        score -= kingTable[MIRROR(sq)];
     }
+    */
 
     // Bonus score for a bishop pair
     if (b.pceCount[wB] >= 2) {
-        score += bishopPair;
+        score[0] += bishopPair;
+        score[1] += bishopPair;
     }
     if (b.pceCount[bB] >= 2) {
-        score -= bishopPair;
+        score[0] -= bishopPair;
+        score[1] -= bishopPair;
     }
 
-    return (b.turn == White) ? score : -score;
+    int result = (score[0] * phase + score[1] * (78 - phase)) / 78;
+
+    return (b.turn == White) ? result : -result;
 }
 
 void clearTT(hashtable_t* table) {

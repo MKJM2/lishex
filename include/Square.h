@@ -41,6 +41,10 @@ inline int distance(square_t a, square_t b) {
 // TODO: Populate at compile time with constexpr and template metaprogramming?
 extern square_t dist[64][64];
 
+// Array containing distance to the edge in a given direction (closest offboard square)
+// indexed by square and direction {N, E, S, W}
+extern square_t distToEdge[64][4];
+
 inline bool IsOK(square_t s) {
      // check for presense of highset 6 bits
      return (s >= -1) && (s & ~0x3F) == 0;

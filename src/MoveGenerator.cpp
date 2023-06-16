@@ -130,10 +130,11 @@ void generateMoves(Board& b, movelist_t* moves) {
     // add pawn moves
     if (me == White) {
         // Handle pawn moves
+        int dir;
         for (int pawnIdx = 0; pawnIdx < b.pceCount[wP]; ++pawnIdx) {
             from = b.pieceList[wP][pawnIdx];
             assert(IsOK(from));
-            int dir = pawnDest[me == White];
+            dir = pawnDest[me == White];
             assert(dir == N);
             to = from + dir;
             if (board[to] == None) {
@@ -188,10 +189,11 @@ void generateMoves(Board& b, movelist_t* moves) {
     } else { // turn == Black
 
         // Handle pawn moves
+        int dir;
         for (int pawnIdx = 0; pawnIdx < b.pceCount[bP]; ++pawnIdx) {
             from = b.pieceList[bP][pawnIdx];
             assert(IsOK(from));
-            int dir = pawnDest[me == White]; // == pawnDest[0]
+            dir = pawnDest[me == White]; // == pawnDest[0]
             assert(dir == S);
             to = from + dir;
             if (board[to] == None) {
@@ -254,8 +256,9 @@ void generateMoves(Board& b, movelist_t* moves) {
         for (int i = 0; i < b.pceCount[p]; ++i) {
             from = b.pieceList[p][i];
             assert(IsOK(from));
+            int dir;
             for (int j = 0; j < numDest[p]; ++j) {
-                int dir = pieceDest[p][j];
+                dir = pieceDest[p][j];
                 to = from + dir;
                 while (IsOK(to) && dist[to][to - dir] <= 2) {
                     if (board[to] != None) {
@@ -280,8 +283,9 @@ void generateMoves(Board& b, movelist_t* moves) {
         for (int i = 0; i < b.pceCount[p]; ++i) {
             from = b.pieceList[p][i];
             assert(IsOK(from));
+            int dir;
             for (int j = 0; j < numDest[p]; ++j) {
-                int dir = pieceDest[p][j];
+                dir = pieceDest[p][j];
                 to = from + dir;
                 if (dist[from][to] > 2 || !IsOK(to)) {
                     continue;
@@ -314,10 +318,11 @@ void generateCaptures(Board& b, movelist_t* moves) {
     // add pawn moves
     if (me == White) {
         // Handle pawn moves
+        int dir;
         for (int pawnIdx = 0; pawnIdx < b.pceCount[wP]; ++pawnIdx) {
             from = b.pieceList[wP][pawnIdx];
             assert(IsOK(from));
-            int dir = pawnDest[me == White];
+            dir = pawnDest[me == White];
             assert(dir == N);
 
             // Check if pawn can capture diagonally to west
@@ -347,10 +352,11 @@ void generateCaptures(Board& b, movelist_t* moves) {
     } else { // turn == Black
 
         // Handle pawn moves
+        int dir;
         for (int pawnIdx = 0; pawnIdx < b.pceCount[bP]; ++pawnIdx) {
             from = b.pieceList[bP][pawnIdx];
             assert(IsOK(from));
-            int dir = pawnDest[me == White]; // == pawnDest[0]
+            dir = pawnDest[me == White]; // == pawnDest[0]
             assert(dir == S);
 
             // Check if pawn can capture diagonally to west
@@ -413,8 +419,9 @@ void generateCaptures(Board& b, movelist_t* moves) {
         for (int i = 0; i < b.pceCount[p]; ++i) {
             from = b.pieceList[p][i];
             assert(IsOK(from));
+            int dir;
             for (int j = 0; j < numDest[p]; ++j) {
-                int dir = pieceDest[p][j];
+                dir = pieceDest[p][j];
                 to = from + dir;
                 if (IsOK(to) && dist[from][to] <= 2) {
                     if (board[to] != None) {

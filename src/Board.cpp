@@ -2,6 +2,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Piece.h"
+#include "Square.h"
 
 #define hashPiece(p, sq) (b.posKey ^= b.pieceKeys[(p)][(sq)])
 #define hashEnPassant(epSquare) (posKey ^= pieceKeys[Piece::None][epSquare])
@@ -29,7 +30,7 @@ Board::Board() {
   this->boardHistory.reserve(MAX_MOVES);
   this->posKey = generatePosKey();
 
-//#ifdef DEBUG
+#ifdef DEBUG
   for (square_t s = A1; s <= H8; ++s) {
     piece p = board[s];
     if (p != Piece::None) {
@@ -59,7 +60,7 @@ Board::Board() {
   printf("Size of square_t: %lu\n", sizeof(square_t));
   printf("Size of move_t: %lu\n", sizeof(move_t));
   printf("Size of hashentry_t: %lu\n", sizeof(hashentry_t));
-//#endif
+#endif
 }
 
 Board::~Board() {
@@ -73,6 +74,23 @@ void initDistArray(square_t dist[64][64]) {
     for (square_t y = A1; y <= H8; ++y) {
       dist[x][y] = distance(x, y);
     }
+  }
+}
+
+void initDistToEdgeArray(square_t distToEdge[64][4]) {
+
+  // 0: North (8 - row - 1)
+  // 1: East (8 - file - 1)
+  // 2: South (row)
+  // 3: West (file)
+  int rank, file;
+  for (square_t sq = A1; sq <= H8; ++sq) {
+    rank = SquareRank(sq);
+    file = SquareFile(sq);
+    distToEdge[sq][0] = 7 - rank;
+    distToEdge[sq][1] = 7 - file;
+    distToEdge[sq][2] = rank;
+    distToEdge[sq][3] = file;
   }
 }
 
@@ -526,7 +544,7 @@ void Board::readGo(std::string goStr, searchinfo_t *info) {
       movestogo = 1;
     } else {
       //movestogo = est_moves_left(*this);
-      movestogo = 30;
+      movestogo = 25;
     }
 
     info->startTime = getTime();
