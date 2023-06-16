@@ -7,7 +7,7 @@ using namespace Piece;
 // score of a victim, by piece type
 const int VictimScore[24] = {
       0, // None
-      0, // King (never actually captured)
+    600, // King (never actually captured)
     100, // Pawn
     200, // Knight
       0, // -
@@ -15,7 +15,7 @@ const int VictimScore[24] = {
     400, // Rook
     500, // Queen
       0,
-      0, // White King
+    600, // White King
     100, // White Pawn
     200, // White Knight
       0, // -
@@ -23,7 +23,7 @@ const int VictimScore[24] = {
     400, // White Rook
     500, // White Queen
       0,
-      0, // Black King
+    600, // Black King
     100, // Black Pawn
     200, // Black Knight
       0, // -
@@ -42,10 +42,10 @@ static int MVVLVA[24][24];
 
 void initMVVLVA() {
   using namespace Piece;
-  int attacker;
-  int victim;
-  for (attacker = wK; attacker <= bQ; attacker++) {
-    for (victim = wK; victim <= bQ; victim++) {
+  piece attacker;
+  piece victim;
+  for (attacker = wK; attacker <= bQ; ++attacker) {
+    for (victim = wK; victim <= bQ; ++victim) {
         MVVLVA[victim][attacker] =
             VictimScore[victim] + 6 - (VictimScore[attacker] / 100);
     }

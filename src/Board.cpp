@@ -1436,30 +1436,52 @@ void Board::mirror() {
   assert(this->check());
 }
 
-void debugTest(Board& b) {
+void debugTest(Board &b) {
   std::fstream epdfile;
-  epdfile.open("./tests/lct2.epd",std::ios::in);
+  epdfile.open("./tests/lct2.epd", std::ios::in);
 
   searchinfo_t info[1];
   clearForSearch(b, info);
   info->depth = MAX_DEPTH;
   info->timeSet = true;
   int time = 100000;
-   if (epdfile.is_open()){
-      std::string fenLine;
-      while(getline(epdfile, fenLine)){
-         printf("Testing position %s\n", fenLine.c_str());
-         info->startTime = getTime();
-         info->endTime = info->startTime + time;
-         //clearTT(&b.TT);
-         b.readFEN(fenLine);
-         search(b, info);
-      }
-      epdfile.close();
-   } else {
-     std::cout << "File couldn't be opened" << std::endl;
-     exit(1);
-   }
-   std::cout << "Test finished!\n" << std::endl;
-   exit(0);
+  if (epdfile.is_open()) {
+    std::string fenLine;
+    while (getline(epdfile, fenLine)) {
+      printf("Testing position %s\n", fenLine.c_str());
+      info->startTime = getTime();
+      info->endTime = info->startTime + time;
+      // clearTT(&b.TT);
+      b.readFEN(fenLine);
+      search(b, info);
+    }
+    epdfile.close();
+  } else {
+    std::cout << "File couldn't be opened" << std::endl;
+    exit(1);
+  }
+  std::cout << "LCT2 test finished!\n" << std::endl;
+
+  epdfile.open("./tests/kaufman.epd", std::ios::in);
+  clearForSearch(b, info);
+  info->depth = MAX_DEPTH;
+  info->timeSet = true;
+  time = 100000;
+  if (epdfile.is_open()) {
+    std::string fenLine;
+    while (getline(epdfile, fenLine)) {
+      printf("Testing position %s\n", fenLine.c_str());
+      info->startTime = getTime();
+      info->endTime = info->startTime + time;
+      // clearTT(&b.TT);
+      b.readFEN(fenLine);
+      search(b, info);
+    }
+    epdfile.close();
+  } else {
+    std::cout << "File couldn't be opened" << std::endl;
+    exit(1);
+  }
+  std::cout << "Kaufman test finished!\n" << std::endl;
+  exit(0);
 }

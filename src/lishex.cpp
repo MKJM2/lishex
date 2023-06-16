@@ -156,21 +156,23 @@ int main() {
             debugTest(gameboard);
             //mirrorEvalTest(gameboard);
         }
-        /*
-          else if (command == "sort") {
+        else if (command == "movescore") {
             movelist_t moves[1];
             generateMoves(gameboard, moves);
-            std::sort(moves->begin(),
-                 moves->end(),
-                 [](move_t a, move_t b) {return getScore(a) > getScore(b); }
-            );
-            for (const move_t& m : moves->moveList) {
-                std::cout << toString(m) << " " << getScore(m) << std::endl;
+            for (size_t i = 0; i < moves->size(); ++i) {
+              std::cout << toString(moves->moveList[i]) << " "
+                        << getScore(moves->moveList[i]) << std::endl;
             }
             std::cout << "\n";
 
+        } else if (command == "dumphistory") {
+            for (int p = 0; p < 24; ++p) {
+                std::cout << p << ": \n";
+                for (int i = 0; i < 64; ++i) {
+                    std::cout << "  " << gameboard.historyH[p][i] << std::endl;
+                }
+            }
         }
-        */
         if (info->quit) break;
     }
     return 0;

@@ -12,7 +12,7 @@
 #endif
 
 // 16 MB TT table default size
-#define MB 64
+#define MB 16
 static constexpr int HASH_SIZE = 0x100000 * MB;
 
 #ifdef WIN32
@@ -976,15 +976,15 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
                         b.killersH[1][b.ply] = b.killersH[0][b.ply];
                         b.killersH[0][b.ply] = moves->moveList[moveIdx];
                     }
-
+                    // TODO
                     //storeHashEntry(b, bestMv, beta, HFBETA, depth);
                     return beta;
                 }
                 alpha = score; // we beat our lower-bound
 
                 // History heuristic
-                if (!isCapture(bestMv)) {
-                    b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += depth;
+                if (!isCapture(bestMv)) {                               // avoid overflows
+                    b.historyH[b.board[getFrom(bestMv)]][getTo(bestMv)] += (depth >> 1);
                 }
             }
         }
@@ -1006,6 +1006,7 @@ static int alphaBeta(Board& b, searchinfo_t *info, int alpha, int beta, int dept
         storeHashEntry(b, bestMv, best_score, HFEXACT, depth);
     } else {
         // fail-low (we weren't able to beat alpha)
+        //TODO:
         //storeHashEntry(b, bestMv, alpha, HFALPHA, depth);
     }
     return alpha;

@@ -74,6 +74,6 @@ namespace Piece {
     }
     /*                    -, K,     P,   N,   -, B,   R,   Q */
     const int value[8] = {0, 50000, 100, 325, 0, 325, 550, 1000};
-    const int eg_value[8] = {0, 50000, 150, 300, 0, 300, 600, 950};
+    const int eg_value[8] = {0, 50000, 125, 300, 0, 300, 600, 950};
 };
 #endif // PIECE_H_
