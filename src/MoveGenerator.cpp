@@ -146,13 +146,13 @@ void generateMoves(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
+            if (IsOK(captureL) && dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir + 1;
-            if (dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
+            if (IsOK(captureR) && dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
@@ -205,13 +205,13 @@ void generateMoves(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir + 1;
-            if (dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
+            if (IsOK(captureL) && dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir - 1;
-            if (dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
+            if (IsOK(captureR) && dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
@@ -327,13 +327,13 @@ void generateCaptures(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir - 1;
-            if (dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
+            if (IsOK(captureL) && dist[captureL][from] <= 2 && IsColour(board[captureL], Black)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir + 1;
-            if (dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
+            if (IsOK(captureR) && dist[captureR][from] <= 2 && IsColour(board[captureR], Black)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
@@ -361,24 +361,24 @@ void generateCaptures(Board& b, movelist_t* moves) {
 
             // Check if pawn can capture diagonally to west
             square_t captureL = from + dir + 1;
-            if (dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
+            if (IsOK(captureL) && dist[captureL][from] <= 2 && IsColour(board[captureL], White)) {
                 assert(IsOK(captureL));
                 addPawnCapture(from, captureL, moves, b);
             }
             // Check if pawn can capture diagonally to the east
             square_t captureR = from + dir - 1;
-            if (dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
+            if (IsOK(captureR) && dist[captureR][from] <= 2 && IsColour(board[captureR], White)) {
                 assert(IsOK(captureR));
                 addPawnCapture(from, captureR, moves, b);
             }
             // Check if can perform en passant
             // std::cout << "google en passant" << std::endl;
-            if (dist[captureL][from] <= 2 && captureL == b.epSquare) {
+            if (IsOK(captureL) && dist[captureL][from] <= 2 && captureL == b.epSquare) {
                 assert(IsOK(captureL));
                 addEnPassant(from, captureL, moves);
             }
 
-            if (dist[captureR][from] <= 2 && captureR == b.epSquare) {
+            if (IsOK(captureR) && dist[captureR][from] <= 2 && captureR == b.epSquare) {
                 assert(IsOK(captureR));
                 addEnPassant(from, captureR, moves);
             }

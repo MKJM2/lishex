@@ -8,14 +8,14 @@ TARGET = lishex
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+	CXXFLAGS += -O2 -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
 endif
 
 ### Optimizations (on by default)
 optimize ?= yes
 ifeq ($(optimize),yes)
 	ifneq ($(debug),yes)
-		CXXFLAGS += -O2 -fno-exceptions # -DNO_TT # -DNO_NMH
+		CXXFLAGS += -Ofast #-fno-exceptions # -DNO_TT # -DNO_NMH
 	endif
 endif
 
