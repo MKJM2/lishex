@@ -93,6 +93,7 @@ class Board;
 
 void mirrorEvalTest(Board& b);
 void debugTest(Board& b);
+void perftTest(Board& b);
 
 #define MAX_MOVES (256)
 

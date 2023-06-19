@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iomanip>
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Piece.h"
@@ -1484,4 +1485,48 @@ void debugTest(Board &b) {
   }
   std::cout << "Kaufman test finished!\n" << std::endl;
   exit(0);
+}
+
+void perftTest(Board &b) {
+  std::ifstream inputFile("perftsuite.epd");
+    if (!inputFile) {
+        std::cerr << "Failed to open file." << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        std::istringstream iss(line);
+        std::string token;
+        std::vector<std::string> parts;
+
+        printf("Parsing %s\n", line.c_str());
+
+        // Extract the FEN string (first part)
+        std::string fen;
+        iss >> std::quoted(fen);
+
+        std::cout << "FEN: " << fen << std::endl;
+        b.readFEN(fen);
+
+        uint64_t node_no;
+        for (int depth = 1; depth < 7; ++depth) {
+            int NPS = 0; // # Nodes per (mili)second
+            //auto start = high_resolution_clock::now();
+            auto start = getTime();
+            node_no = perft(b, depth);
+            //auto end = high_resolution_clock::now();
+            auto end = getTime();
+            auto elapsed = end - start;
+            //auto elapsed =
+                //duration_cast<milliseconds>(end - start).count();
+            NPS = static_cast<double>(node_no) / elapsed;
+            NPS *= 1000; // nodes per ms -> nodes per s
+            printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
+                            depth,     node_no,     elapsed,  NPS);
+        }
+        std::cout << std::endl;
+    }
+
+    inputFile.close();
 }
