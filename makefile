@@ -1,7 +1,6 @@
 CXX = g++
 CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17
 SRC_DIR = src
-INCLUDE_DIR = include
 BUILD_DIR = build
 TARGET = lishex
 
@@ -32,7 +31,9 @@ all: $(TARGET)
 
 # Compile source files into object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INC_DIRS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+### $(CXX) $(CXXFLAGS) $(INC_DIRS) -c $< -o $@
 
 # Link object files into executable
 $(TARGET): $(OBJS)
@@ -53,3 +54,5 @@ help:
 	@echo "make"
 	@echo "To compile with debug options, type: "
 	@echo "make debug=yes"
+	@echo "To compile without optimizations, type: "
+	@echo "make optimize=no"

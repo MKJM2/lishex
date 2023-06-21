@@ -1,4 +1,5 @@
-#include "Bitboard.h"
+#include "types.h"
+#include <iostream>
 
 // Useful bitmasks
 bb_t fileBBMask[8];
@@ -52,7 +53,7 @@ void printBB(const bb_t& bb) {
 
 void initEvalMasks() {
     int rank, file;
-    square_t sq, to;
+    int sq, to;
 
     // Initializer helper bitboard masks
 	for(sq = 0; sq < 8; ++sq) {
@@ -88,8 +89,8 @@ void initEvalMasks() {
             to -= 8;
         }
 
-        if (SquareFile(sq) > 0) {
-            isolatedMask[sq] |= fileBBMask[SquareFile(sq) - 1];
+        if (SQUARE_FILE(sq) > 0) {
+            isolatedMask[sq] |= fileBBMask[SQUARE_FILE(sq) - 1];
 
             to = sq + 7;
             while (to < 64) {
@@ -104,8 +105,8 @@ void initEvalMasks() {
             }
         }
 
-        if (SquareFile(sq) < 7) {
-            isolatedMask[sq] |= fileBBMask[SquareFile(sq) + 1];
+        if (SQUARE_FILE(sq) < 7) {
+            isolatedMask[sq] |= fileBBMask[SQUARE_FILE(sq) + 1];
 
             to = sq + 9;
             while (to < 64) {
