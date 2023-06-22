@@ -1,4 +1,4 @@
-#include "types.h"
+#include "bitboard.h"
 #include <iostream>
 
 // Useful bitmasks

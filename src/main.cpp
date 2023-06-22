@@ -1,6 +1,17 @@
 #include <iostream>
+#include "bitboard.h"
 
 int main() {
-    std::cout << "Hello, world!" << std::endl;
+
+    // Print engine info
+    // TODO:
+
+    // Init all
+    bb_t board = 0ULL;
+    printBB(board);
+    initEvalMasks();
+
+    // Start UCI loop
+    // TODO
     return 0;
 }

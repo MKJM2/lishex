@@ -24,9 +24,6 @@ SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 # List of object files
 OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
-# Include directories
-INC_DIRS = -I$(INCLUDE_DIR)
-
 all: $(TARGET)
 
 # Compile source files into object files
