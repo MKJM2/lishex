@@ -117,7 +117,7 @@ void setup(board_t *board, const std::string& fen) {
     // TODO: Set the fullmove clock (currently not being used!)
 }
 
-void print(board_t *board) {
+void print(board_t *board, bool verbose) {
     std::cout << "Printing bitboards" << std::endl;
     for (piece_t pc : pieces) {
         printBB(board->bitboards[pc]);
@@ -155,29 +155,31 @@ void print(board_t *board) {
     // Print files underneath the board
     std::cout << "    a   b   c   d   e   f   g   h" << std::endl;
 
-    /*
     if (!verbose) return;
-    // Print additional information, like castle permissions
+    // Print additional information, like castle permissions, side to move etc.
     std::cout << "Side to play: " \
-              << ((turn == Piece::White) ? "White" : "Black") << std::endl;
-    std::cout << "En Passant square: " \
-              << ((epSquare == NO_SQ) ? "null" : toString(epSquare)) << std::endl;
+              << ((board->turn) ? "White" : "Black") << std::endl;
+    std::cout << "En Passant square: "
+              << ((board->ep_square == NO_SQ) ? "null"
+                                              : square_to_str(board->ep_square))
+              << std::endl;
     std::cout << "Castle permissions: ";
 
     // TODO: Make into a separate function
     std::string s;
-    if (castlePerm & WKCastle) s.push_back('K');
-    if (castlePerm & WQCastle) s.push_back('Q');
-    if (castlePerm & BKCastle) s.push_back('k');
-    if (castlePerm & BQCastle) s.push_back('q');
+    if (board->castle_rights & WK) s.push_back('K');
+    if (board->castle_rights & WQ) s.push_back('Q');
+    if (board->castle_rights & BK) s.push_back('k');
+    if (board->castle_rights & BQ) s.push_back('q');
     std::cout << s << std::endl;
 
     std::cout << "Zobrist hash key: " \
-              << posKey << std::endl;
+              << board->key << std::endl;
 
     std::cout << "King squares: White at " \
-              << toString(kingSquare[1]) << ", Black at " \
-              << toString(kingSquare[0]) << std::endl;
+              << square_to_str(board->king_square[1]) << ", Black at " \
+              << square_to_str(board->king_square[0]) << std::endl;
+    /*
     std::cout << "Piece counts: " << std::endl;
     std::cout << "White pawns: ";
     std::cout << pceCount[Piece::White | Piece::Pawn] << std::endl;

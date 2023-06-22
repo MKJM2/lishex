@@ -1,8 +1,10 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
+#include <string>
 #include <cstdint>
 #include <algorithm>
+#include <unordered_map>
 
 #define NAME "Lishex"
 #define AUTHOR "Michal Kurek"
@@ -62,6 +64,12 @@ enum : int {
     WEST  = -EAST
 };
 
+
+inline std::string square_to_str(square_t sq) {
+    return std::string{(char)('a'+SQUARE_FILE(sq)),(char)('1'+SQUARE_RANK(sq))};
+}
+
+
 /**********/
 /* Pieces */
 /**********/
@@ -107,6 +115,55 @@ inline std::unordered_map<char, piece_t> char_to_piece = {
 /*********/
 
 using move_t = uint32_t;
+
+/* Inspired by
+ * https://www.chessprogramming.org/Encoding_Moves
+ * Each move is represented using 16 bits:
+ *  4 bits for flags
+ *  6 bits for the source square
+ *  6 bits for the destination square
+ * 16 bits for the score in move ordering (optional)
+
+   0b  0000000000000000 0000  000000  000000
+       score            flag  from    to
+
+ * In this implementation we use only the last 16 bits, with
+ * move scores stored separately in the move list. We
+ * use the native 32-bit integer type to avoid x86 16-bit optimization
+ * issues
+*/
+
+// Types of moves (flags)
+enum {
+    QUIET          = 0b0000,
+    PAWNPUSH       = 0b0001,
+    KINGCASTLE     = 0b0010,
+    QUEENCASTLE    = 0b0011,
+    CAPTURE        = 0b0100,
+    EPCAPTURE      = 0b0101,
+    KNIGHTPROMO    = 0b1000,
+    BISHOPPROMO    = 0b1001,
+    ROOKPROMO      = 0b1010,
+    QUEENPROMO     = 0b1011
+};
+
+// Constructor
+#define Move(from, to, flags) \
+        ((((flags) & 0xf)  << 12) | \
+          (((from) & 0x3f) <<  6) | \
+             ((to) & 0x3f))
+
+#define NULLMV ((move_t) 0U)
+
+#define get_to(move) ((move) & 0x3f)
+
+#define get_from(move) (((move) >> 6) & 0x3f)
+
+#define get_flags(move) (((move) >> 12) & 0xf)
+
+#define is_capture(move) (((move) >> 12) & 0b0100)
+
+#define is_promotion(move) (((move) >> 12) & 0b1000)
 
 // Undo move structure
 typedef struct {

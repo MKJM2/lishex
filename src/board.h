@@ -40,7 +40,7 @@ extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);
 
-extern void print(board_t *board);
+extern void print(board_t *board, bool verbose = true);
 
 
 #endif // BOARD_H_
