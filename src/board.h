@@ -12,7 +12,7 @@
 // The Board type
 typedef struct {
     // We store a separate bitboard for each piece (type, color)
-    bb_t bitboards[PIECE_NB];
+    bb_t bitboards[PIECE_NO];
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Material for each side (TODO: might not be necessary)
@@ -39,6 +39,8 @@ typedef struct {
 extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);
+
+extern void print(board_t *board);
 
 
 #endif // BOARD_H_

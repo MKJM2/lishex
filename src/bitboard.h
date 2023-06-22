@@ -8,6 +8,7 @@
 
 #define SETBIT(bb, sq) ((bb) |=  (1ULL << (sq)))
 #define CLRBIT(bb, sq) ((bb) &= ~(1ULL << (sq)))
+#define GETBIT(bb, sq) ((bb) & (1ULL << (sq)))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
 #define CNT(bb) (__builtin_popcountll(bb))
 #define POP(bb) (bitScanForward(bb))

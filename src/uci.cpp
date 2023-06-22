@@ -34,7 +34,7 @@ void loop(int argc, char* argv[]) {
         } else if (token == "stop" || token == "quit") {
             info->quit = true;
         } else if (token == "print" || token == "d") {
-            std::cout << "Printing the board!" << std::endl;
+            print(board);
         } else {
             std::cout << "Unknown command: '" << token << "'." << std::endl;
         }

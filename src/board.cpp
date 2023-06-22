@@ -13,8 +13,8 @@ void reset(board_t *board) {
     memset(board->history, 0, MAX_MOVES * sizeof(undo_t));
 
     // Reset all bitboards
-    for (int i = 0; i < PIECE_NB; ++i) {
-        board->bitboards[i] = 0ULL;
+    for (piece_t pc : pieces) {
+        board->bitboards[pc] = 0ULL;
     }
 
     // Reset the turn
@@ -60,7 +60,7 @@ void setup(board_t *board, const std::string& fen) {
         }
     }
 
-    // Make sure the board is reset (TODO: Try not to call reset too much)
+    // Make sure the board is reset
     reset(board);
 
     // Fill the bitboards with pieces from FEN
@@ -73,7 +73,10 @@ void setup(board_t *board, const std::string& fen) {
         } else if (isdigit(c)) {
             sq += (int)c - '0';
         } else {
+            std::cout << c << ": setting sq " << sq << " on bitboard for " \
+                      << char_to_piece[c] << " (" << c << ")" << std::endl;
             SETBIT(board->bitboards[char_to_piece[c]], sq);
+            ++sq;
         }
     }
 
@@ -112,4 +115,90 @@ void setup(board_t *board, const std::string& fen) {
     }
 
     // TODO: Set the fullmove clock (currently not being used!)
+}
+
+void print(board_t *board) {
+    std::cout << "Printing bitboards" << std::endl;
+    for (piece_t pc : pieces) {
+        printBB(board->bitboards[pc]);
+        std::cout << std::endl;
+    }
+
+    // TODO: We might want to use " ╚═╔├ "?
+    static const std::string horizontal_line = "  +---+---+---+---+---+---+---+---+";
+
+    std::cout << horizontal_line << std::endl;
+    // Loop over all ranks
+    for (int rank = RANK_8; rank >= RANK_1; --rank) {
+        std::cout << rank + 1 << " ";
+        // Loop over all files
+        for (int file = A_FILE; file <= H_FILE; ++file) {
+            // Current square to print
+            square_t sq = rank * RANK_NO + file;
+
+            piece_t piece_on_sq = NO_PIECE;
+            // Check if any bitboards contain a piece on sq
+            //for (piece_t piece = P; piece <= k; ++piece) {
+            for (piece_t pc : pieces) {
+                if (GETBIT(board->bitboards[pc], sq)) {
+                    piece_on_sq = pc;
+                    break;
+                }
+            }
+            // Print the piece
+            std::cout << "| " << piece_to_ascii[piece_on_sq] << " ";
+        }
+        // Print rank number to the right of current rank
+        std::cout << "|" << std::endl;
+        std::cout << horizontal_line << std::endl;
+    }
+    // Print files underneath the board
+    std::cout << "    a   b   c   d   e   f   g   h" << std::endl;
+
+    /*
+    if (!verbose) return;
+    // Print additional information, like castle permissions
+    std::cout << "Side to play: " \
+              << ((turn == Piece::White) ? "White" : "Black") << std::endl;
+    std::cout << "En Passant square: " \
+              << ((epSquare == NO_SQ) ? "null" : toString(epSquare)) << std::endl;
+    std::cout << "Castle permissions: ";
+
+    // TODO: Make into a separate function
+    std::string s;
+    if (castlePerm & WKCastle) s.push_back('K');
+    if (castlePerm & WQCastle) s.push_back('Q');
+    if (castlePerm & BKCastle) s.push_back('k');
+    if (castlePerm & BQCastle) s.push_back('q');
+    std::cout << s << std::endl;
+
+    std::cout << "Zobrist hash key: " \
+              << posKey << std::endl;
+
+    std::cout << "King squares: White at " \
+              << toString(kingSquare[1]) << ", Black at " \
+              << toString(kingSquare[0]) << std::endl;
+    std::cout << "Piece counts: " << std::endl;
+    std::cout << "White pawns: ";
+    std::cout << pceCount[Piece::White | Piece::Pawn] << std::endl;
+    std::cout << "Black pawns: ";
+    std::cout << pceCount[Piece::Black | Piece::Pawn] << std::endl;
+    std::cout << "White Knights: ";
+    std::cout << pceCount[Piece::White | Piece::Knight] << std::endl;
+    std::cout << "Black Knights: ";
+    std::cout << pceCount[Piece::Black | Piece::Knight] << std::endl;
+    std::cout << "White Bishops: ";
+    std::cout << pceCount[Piece::White | Piece::Bishop] << std::endl;
+    std::cout << "Black Bishops: ";
+    std::cout << pceCount[Piece::Black | Piece::Bishop] << std::endl;
+    std::cout << "White Rooks: ";
+    std::cout << pceCount[Piece::White | Piece::Rook] << std::endl;
+    std::cout << "Black Rooks: ";
+    std::cout << pceCount[Piece::Black | Piece::Rook] << std::endl;
+    std::cout << "White Queens: ";
+    std::cout << pceCount[Piece::White | Piece::Queen] << std::endl;
+    std::cout << "Black Queens: ";
+    std::cout << pceCount[Piece::Black | Piece::Queen] << std::endl;
+    std::cout << "Fifty Move Counter: " << fiftyMoveCounter << "\n";
+    */
 }

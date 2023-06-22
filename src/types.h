@@ -46,11 +46,13 @@ enum : square_t {
 };
 
 enum : int {
-    A_FILE = 0, B_FILE, C_FILE, D_FILE, E_FILE, F_FILE, G_FILE, H_FILE = 7
+    A_FILE = 0, B_FILE, C_FILE, D_FILE, E_FILE, F_FILE, G_FILE, H_FILE,
+    FILE_NO = 8
 };
 
 enum : int {
-    RANK_1 = 0, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 = 7
+    RANK_1 = 0, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
+    RANK_NO = 8
 };
 
 enum : int {
@@ -72,28 +74,32 @@ enum : piece_t {
 };
 
 enum : piece_t {
-  NO_PIECE, P = PAWN, N, B, R, Q, K, p = PAWN + 8, n, b, r, q, k, PIECE_NB = 12
+  NO_PIECE, P = PAWN, N, B, R, Q, K, p = PAWN + 8, n, b, r, q, k, PIECE_NO
 };
+
+// Iterable piece array
+constexpr piece_t pieces[] = { P, N, B, R, Q, K, p, n, b, r, q, k };
 
 // Colors
 enum { WHITE = 0, BLACK = 1, BOTH = 2 };
 
 // For printing
-constexpr inline char piece_to_ascii[] = " PNBRQKpnbrqk";
-constexpr inline char piece_to_unicode[] = " ♙♘♗♖♕♔♟♞♝♜♛♚";
+constexpr inline char piece_to_ascii[] = " PNBRQK  pnbrqk";
+constexpr inline char piece_to_unicode[] = " ♙♘♗♖♕♔  ♟♞♝♜♛♚";
 inline std::unordered_map<char, piece_t> char_to_piece = {
     {'0', NO_PIECE },
-    {'r', r},
-    {'n', n},
-    {'b', b},
-    {'q', q},
-    {'k', k},
-    {'p', p},
-    {'R', r},
-    {'N', n},
+    {'P', P},
+    {'R', R},
+    {'N', N},
     {'B', B},
     {'Q', Q},
-    {'K', k}
+    {'K', K},
+    {'p', p},
+    {'n', n},
+    {'r', r},
+    {'b', b},
+    {'q', q},
+    {'k', k}
 };
 
 /*********/

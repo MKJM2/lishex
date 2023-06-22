@@ -9,11 +9,10 @@ int main(int argc, char* argv[]) {
     std::cout << "Built on " << __TIMESTAMP__ << std::endl;
 
     // Initialize
-    bb_t board = 0ULL;
-    printBB(board);
     initEvalMasks();
 
     // Start UCI driver loop
     loop(argc, argv);
+
     return 0;
 }
