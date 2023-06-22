@@ -123,6 +123,12 @@ typedef struct {
 // Castling rights encoding (4 bits)
 enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
 
+typedef struct {
+    int start;
+    int end;
+    bool quit = false;
+} searchinfo_t;
+
 
 /*************/
 /* Bitboards */

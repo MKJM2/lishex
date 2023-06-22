@@ -110,4 +110,6 @@ void setup(board_t *board, const std::string& fen) {
     if (fen_parts[4].size()) {
         board->ply = stoi(fen_parts[4]);
     }
+
+    // TODO: Set the fullmove clock (currently not being used!)
 }

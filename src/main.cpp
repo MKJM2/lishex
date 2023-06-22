@@ -1,17 +1,19 @@
 #include <iostream>
 #include "bitboard.h"
+#include "uci.h"
 
-int main() {
+int main(int argc, char* argv[]) {
 
     // Print engine info
-    // TODO:
+    std::cout << NAME << " by " << AUTHOR << std::endl;
+    std::cout << "Built on " << __TIMESTAMP__ << std::endl;
 
-    // Init all
+    // Initialize
     bb_t board = 0ULL;
     printBB(board);
     initEvalMasks();
 
-    // Start UCI loop
-    // TODO
+    // Start UCI driver loop
+    loop(argc, argv);
     return 0;
 }
