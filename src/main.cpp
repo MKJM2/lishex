@@ -1,6 +1,8 @@
 #include <iostream>
+
 #include "bitboard.h"
 #include "uci.h"
+#include "board.h"
 
 int main(int argc, char* argv[]) {
 
@@ -9,7 +11,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Built on " << __TIMESTAMP__ << std::endl;
 
     // Initialize
-    initEvalMasks();
+    init_eval_masks();
+    init_keys();
 
     // Start UCI driver loop
     loop(argc, argv);

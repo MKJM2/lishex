@@ -36,6 +36,8 @@ typedef struct {
 } board_t;
 
 
+extern void init_keys(uint64_t rng_seed = 69420ULL);
+
 extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);

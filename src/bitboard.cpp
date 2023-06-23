@@ -26,16 +26,15 @@ const int lsb_64_table[64] =
 };
 
 /**
- * bitScanForward
+ * bit_scan_forward
  * @author Matt Taylor (2003)
  * @param bb bitboard to scan
  * @precondition bb != 0
  * @return index (0..63) of least significant one bit
  */
-int bitScanForward(bb_t bb) {
-   unsigned int folded;
+int bit_scan_forward(bb_t bb) {
    bb ^= bb - 1;
-   folded = (int) bb ^ (bb >> 32);
+   unsigned int folded = (int) bb ^ (bb >> 32);
    return lsb_64_table[folded * 0x78291ACF >> 26];
 }
 
@@ -51,7 +50,7 @@ void printBB(const bb_t& bb) {
     }
 }
 
-void initEvalMasks() {
+void init_eval_masks() {
     int rank, file;
     int sq, to;
 

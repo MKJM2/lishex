@@ -46,6 +46,7 @@ enum : square_t {
     A8 = 56, B8, C8, D8, E8, F8, G8, H8,
     NO_SQ                                // NO_SQ >= 64
 };
+const int SQUARE_NO = 64;
 
 enum : int {
     A_FILE = 0, B_FILE, C_FILE, D_FILE, E_FILE, F_FILE, G_FILE, H_FILE,
@@ -78,18 +79,18 @@ using piece_t = int;
 
 // Types
 enum : piece_t {
-  NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+  NONE = 0, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
 };
 
 enum : piece_t {
-  NO_PIECE, P = PAWN, N, B, R, Q, K, p = PAWN + 8, n, b, r, q, k, PIECE_NO
+  NO_PIECE = 0, P = PAWN, N, B, R, Q, K, p = PAWN + 8, n, b, r, q, k, PIECE_NO
 };
 
 // Iterable piece array
 constexpr piece_t pieces[] = { P, N, B, R, Q, K, p, n, b, r, q, k };
 
 // Colors
-enum { WHITE = 0, BLACK = 1, BOTH = 2 };
+enum { BLACK = 0, WHITE = 1, BOTH = 2 };
 
 // For printing
 constexpr inline char piece_to_ascii[] = " PNBRQK  pnbrqk";

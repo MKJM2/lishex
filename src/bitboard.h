@@ -24,10 +24,10 @@ extern bb_t bPassedMask[64];
 // Isolated pawn masks
 extern bb_t isolatedMask[64];
 
-extern int bitScanForward(bb_t bb);
+extern int bit_scan_forward(bb_t bb);
 
 void printBB(const bb_t& bb);
-void initEvalMasks();
+void init_eval_masks();
 
 
 
