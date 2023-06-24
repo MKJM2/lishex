@@ -8,10 +8,10 @@
 /* Zobrist hashing */
 /*******************/
 
-// we use piece_keys for the none piece for the en passant square key
 uint64_t piece_keys[PIECE_NO][SQUARE_NO];
 uint64_t turn_key = 0ULL;
 uint64_t castle_keys[16]; // == WK | WQ | BK | BQ + 1 = 0b1111 + 1
+uint64_t ep_keys[SQUARE_NO];
 
 /*
  * Adapted from: https://en.wikipedia.org/wiki/Xorshift
@@ -74,6 +74,12 @@ void init_keys(uint64_t rng_seed) {
     // Generate hash keys for castling rights
     for (int i = 0; i < 16; ++i) {
         castle_keys[i] = xoshiro256ss(rng_state);
+    }
+
+    // Generate hash keys for en passant squares
+    // (though we only need 16, having 64 keys makes the code cleaner)
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        ep_keys[sq] = xoshiro256ss(rng_state);
     }
 }
 
@@ -148,8 +154,6 @@ void setup(board_t *board, const std::string& fen) {
         } else if (isdigit(c)) {
             sq += (int)c - '0';
         } else {
-            std::cout << c << ": setting sq " << sq << " on bitboard for " \
-                      << char_to_piece[c] << " (" << c << ")" << std::endl;
             SETBIT(board->bitboards[char_to_piece[c]], sq);
             ++sq;
         }
@@ -190,15 +194,13 @@ void setup(board_t *board, const std::string& fen) {
     }
 
     // TODO: Set the fullmove clock (currently not being used!)
+
+    // Generate the starting position key for this FEN
+    board->key = generate_pos_key(board);
 }
 
+/* Prints the board to stdout */
 void print(board_t *board, bool verbose) {
-    std::cout << "Printing bitboards" << std::endl;
-    for (piece_t pc : pieces) {
-        printBB(board->bitboards[pc]);
-        std::cout << std::endl;
-    }
-
     // TODO: We might want to use " ╚═╔├ "?
     static const std::string horizontal_line = "  +---+---+---+---+---+---+---+---+";
 
@@ -248,13 +250,26 @@ void print(board_t *board, bool verbose) {
     if (board->castle_rights & BQ) s.push_back('q');
     std::cout << s << std::endl;
 
-    std::cout << "Zobrist hash key: " \
-              << board->key << std::endl;
+    std::cout << "Zobrist hash key: " << std::hex \
+              << board->key << std::dec << std::endl;
 
     std::cout << "King squares: White at " \
               << square_to_str(board->king_square[1]) << ", Black at " \
               << square_to_str(board->king_square[0]) << std::endl;
+
     /*
+    std::cout << "Keys:" << std::endl;
+    for (piece_t p : pieces) {
+        for (square_t sq = A1; sq <= H8; ++sq) {
+            std::cout << piece_keys[p][sq] << std::endl;
+        }
+    }
+    std::cout << "Turn key:" << std::endl;
+    std::cout << turn_key << std::endl;
+    std::cout << "Castle keys:" << std::endl;
+    for (int i = 0; i < 16; ++i) {
+        std::cout << castle_keys[i] << std::endl;
+    }
     std::cout << "Piece counts: " << std::endl;
     std::cout << "White pawns: ";
     std::cout << pceCount[Piece::White | Piece::Pawn] << std::endl;
@@ -279,3 +294,59 @@ void print(board_t *board, bool verbose) {
     std::cout << "Fifty Move Counter: " << fiftyMoveCounter << "\n";
     */
 }
+
+/* Generates the position key from scratch for the current position */
+uint64_t generate_pos_key(board_t *board) {
+    uint64_t key = 0ULL;
+
+    // Hash in all the pieces on the board
+    for (piece_t p : pieces) {
+        for (square_t sq = A1; sq <= H8; ++sq) {
+            if (GETBIT(board->bitboards[p], sq)) {
+                key ^= piece_keys[p][sq];
+            }
+        }
+    }
+
+    // Hash in the side playing
+    if (board->turn == WHITE) {
+        key ^= turn_key;
+    }
+
+    // Hash in castling rights
+    key ^= castle_keys[board->castle_rights];
+
+    // Hash in the en passant square (if set)
+    if (board->ep_square != NO_SQ) {
+        key ^= ep_keys[board->ep_square];
+    }
+
+    return key;
+}
+
+/* Verifies that the position is valid (useful for debugging) */
+#ifdef DEBUG
+bool check(board_t *board) {
+
+    assert(board->turn == WHITE || board->turn == BLACK);
+
+    // Verify the board Zobrist key (critical for TT functionality)
+    uint64_t expected = generate_pos_key(board);
+    if (expected != this->key) {
+        std::cout << "Expected: " << expected << "\nGot: " << this->key;
+        //assert(false);
+        return false;
+    }
+
+    assert(board->ep_square == NO_SQ ||
+           (SQUARE_RANK(board->ep_square) == RANK_3 && board->turn == BLACK) ||
+           (SQUARE_RANK(board->ep_square) == RANK_6 && board->turn == WHITE));
+
+    assert((1ULL << board->king_square[WHITE]) == board->bitboards[K]);
+    assert((1ULL << board->king_square[BLACK]) == board->bitboards[k]);
+
+    assert(board->castle_rights >= 0 && board->castle_rights <= 15);
+
+    return true;
+}
+#endif // DEBUG
