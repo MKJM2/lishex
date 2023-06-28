@@ -4,6 +4,7 @@
 #include <string>
 
 #include "types.h"
+#include "bitboard.h"
 
 /************************/
 /* Board representation */
@@ -44,7 +45,10 @@ extern void setup(board_t *board, const std::string& fen);
 
 extern void print(board_t *board, bool verbose = true);
 
+extern void test(board_t *board);
+
 extern uint64_t generate_pos_key(board_t *board);
+
 
 #ifdef DEBUG
 extern void check(board_t *board);

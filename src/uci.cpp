@@ -35,6 +35,8 @@ void loop(int argc, char* argv[]) {
             info->quit = true;
         } else if (token == "print" || token == "d") {
             print(board);
+        } else if (token == "test") {
+            test(board);
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }

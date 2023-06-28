@@ -32,12 +32,12 @@ const bb_t NOT_AFILE = 0xfefefefefefefefe; // ~0x0101010101010101
 const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
 inline bb_t  n_shift(bb_t bb) {return bb << 8;}
 inline bb_t  s_shift(bb_t bb) {return bb >> 8;}
-inline bb_t  e_shift(bb_t bb) {return (bb << 1) & NOT_AFILE;}
-inline bb_t  w_shift(bb_t bb) {return (bb >> 1) & NOT_HFILE;}
-inline bb_t ne_shift(bb_t bb) {return (bb << 9) & NOT_AFILE;}
-inline bb_t se_shift(bb_t bb) {return (bb >> 7) & NOT_AFILE;}
-inline bb_t sw_shift(bb_t bb) {return (bb >> 9) & NOT_HFILE;}
-inline bb_t nw_shift(bb_t bb) {return (bb << 7) & NOT_AFILE;}
+inline bb_t  e_shift(bb_t bb) {return (bb & NOT_HFILE) << 1;}
+inline bb_t  w_shift(bb_t bb) {return (bb & NOT_AFILE) >> 1;}
+inline bb_t ne_shift(bb_t bb) {return (bb & NOT_HFILE) << 9;}
+inline bb_t se_shift(bb_t bb) {return (bb & NOT_HFILE) >> 7;}
+inline bb_t sw_shift(bb_t bb) {return (bb & NOT_AFILE) >> 9;}
+inline bb_t nw_shift(bb_t bb) {return (bb & NOT_AFILE) << 7;}
 
 extern int bit_scan_forward(bb_t bb);
 

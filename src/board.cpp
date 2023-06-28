@@ -324,6 +324,28 @@ uint64_t generate_pos_key(board_t *board) {
     return key;
 }
 
+void test(board_t *board) {
+   bb_t pawns = 0x100840a0020500;
+   std::cout << "Pawns:\n";
+   printBB(pawns);
+   std::cout << "N:\n";
+   printBB(n_shift(pawns));
+   std::cout << "E:\n";
+   printBB(e_shift(pawns));
+   std::cout << "S:\n";
+   printBB(s_shift(pawns));
+   std::cout << "W:\n";
+   printBB(w_shift(pawns));
+   std::cout << "NE:\n";
+   printBB(ne_shift(pawns));
+   std::cout << "SE:\n";
+   printBB(se_shift(pawns));
+   std::cout << "SW:\n";
+   printBB(sw_shift(pawns));
+   std::cout << "NW:\n";
+   printBB(nw_shift(pawns));
+}
+
 /* Verifies that the position is valid (useful for debugging) */
 #ifdef DEBUG
 bool check(board_t *board) {

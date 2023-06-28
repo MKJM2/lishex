@@ -179,6 +179,18 @@ typedef struct {
     // Zobrist key of the position before the move
 } undo_t;
 
+// Move list structure
+typedef struct movelist_t {
+    const move_t* begin() const { return moveList; };
+    const move_t* end() const { return last; };
+    size_t size() const { return last - moveList; };
+    void push_back(const move_t& m) {
+        assert(size() < MAX_MOVES);
+        *last++ = m;
+    };
+    move_t moveList[MAX_MOVES], *last = moveList;
+} movelist_t;
+
 
 /*****************/
 /* Miscellaneous */
@@ -187,7 +199,7 @@ typedef struct {
 // Castling rights encoding (4 bits)
 enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
 
-typedef struct {
+typedef struct searchinfo_t {
     int start;
     int end;
     bool quit = false;
