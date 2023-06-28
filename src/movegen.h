@@ -2,8 +2,12 @@
 #define MOVEGEN_H_
 
 #include "types.h"
+#include "bitboard.h"
+#include "board.h"
 
-void generate_pawn_moves(movelist_t *mv_list);
+int generate_quiet(board_t *board, movelist_t *moves);
+int generate_noisy(board_t *board, movelist_t *moves);
+int generate_moves(board_t *board, movelist_t *moves);
 
 
 #endif // MOVEGEN_H_

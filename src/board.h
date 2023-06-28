@@ -14,6 +14,8 @@
 typedef struct {
     // We store a separate bitboard for each piece (type, color)
     bb_t bitboards[PIECE_NO];
+    // Additionally, we store bitboards of all pieces for a given side
+    bb_t pieces[BOTH];
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Material for each side (TODO: might not be necessary)
@@ -48,6 +50,12 @@ extern void print(board_t *board, bool verbose = true);
 extern void test(board_t *board);
 
 extern uint64_t generate_pos_key(board_t *board);
+
+/* TODO: */
+// Helpers handling bitboard manipulation & hashing:
+// add_piece
+// rm_piece
+// mv_piece
 
 
 #ifdef DEBUG

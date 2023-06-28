@@ -179,16 +179,17 @@ typedef struct {
     // Zobrist key of the position before the move
 } undo_t;
 
-// Move list structure
+// Move list structure (TODO: Add scores)
 typedef struct movelist_t {
-    const move_t* begin() const { return moveList; };
-    const move_t* end() const { return last; };
-    size_t size() const { return last - moveList; };
+    const move_t* begin() const { return moveList; }
+    const move_t* end() const { return last; }
+    size_t size() const { return static_cast<size_t>(last - moveList); }
     void push_back(const move_t& m) {
         assert(size() < MAX_MOVES);
         *last++ = m;
-    };
-    move_t moveList[MAX_MOVES], *last = moveList;
+    }
+    move_t moveList[MAX_MOVES];
+    move_t* last = moveList;
 } movelist_t;
 
 
