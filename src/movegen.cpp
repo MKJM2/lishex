@@ -2,6 +2,50 @@
 #include "movegen.h"
 
 /**
+ * generate_quiet_moves_for<piece_t>
+ * @brief Generate non-captures for the given piece type
+ * @param moves movelist to append moves to
+*/
+template<piece_t PIECE_T>
+void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
+
+    bb_t pieces = board->bitboards[set_color(PIECE_T, board->turn)];
+    const bb_t occupied = all_pieces(board);
+
+    while (pieces) {
+        square_t from = POPLSB(pieces);
+        // Since we're generating quiet moves, mask out all other pieces
+        bb_t attacked = attacks<PIECE_T>(from) & ~occupied;
+
+        while (attacked) {
+            moves->push_back(Move(from, POPLSB(attacked), QUIET));
+        }
+    }
+}
+
+/**
+ * generate_noisy_moves_for<piece_t>
+ * @brief Generate captures for the given piece type
+ * @param moves movelist to append moves to
+*/
+template<piece_t PIECE_T>
+void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
+
+    bb_t pieces = board->bitboards[set_color(PIECE_T, board->turn)];
+    const bb_t opp_pieces = board->pieces[board->turn ^ 1];
+
+    while (pieces) {
+        square_t from = POPLSB(pieces);
+        // Since we're generating noisy moves, only consider captures
+        bb_t attacked = attacks<PIECE_T>(from) & opp_pieces;
+
+        while (attacked) {
+            moves->push_back(Move(from, POPLSB(attacked), QUIET));
+        }
+    }
+}
+
+/**
  * generate_quiet
  * @param board board struct representing the current position
  * @param moves pointer to a move list
@@ -32,17 +76,18 @@ int generate_quiet(board_t *board, movelist_t *moves) {
 
     while (pawn_pushes) {
         // TODO: Verify that POP clears the least significant bit
-        square_t to = POP(pawn_pushes); CLRLSB(pawn_pushes);
+        square_t to = POPLSB(pawn_pushes);
         moves->push_back(Move(to - dir, to, QUIET));
     }
 
     while (double_pawn_pushes) {
-        square_t to = POP(double_pawn_pushes); CLRLSB(double_pawn_pushes);
+        square_t to = POPLSB(double_pawn_pushes);
         moves->push_back(Move(to - dir - dir, to, QUIET));
     }
 
-    /* Non-sliding Piece moves */
-    // TODO
+    /* Non-sliding (leaping) Piece moves */
+    generate_quiet_moves_for<KNIGHT>(board, moves);
+    generate_quiet_moves_for<KING>(board, moves);
 
     /* Sliding Piece moves */
     // TODO

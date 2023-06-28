@@ -62,9 +62,12 @@ enum : int {
     NORTH = 8,
     EAST  = 1,
     SOUTH = -NORTH,
-    WEST  = -EAST
+    WEST  = -EAST,
+    NORTH_EAST = NORTH + EAST,
+    SOUTH_EAST = SOUTH + EAST,
+    SOUTH_WEST = -NORTH_EAST,
+    NORTH_WEST = -SOUTH_EAST
 };
-
 
 inline std::string square_to_str(square_t sq) {
     return std::string{(char)('a'+SQUARE_FILE(sq)),(char)('1'+SQUARE_RANK(sq))};
@@ -92,9 +95,17 @@ constexpr piece_t pieces[] = { P, N, B, R, Q, K, p, n, b, r, q, k };
 // Colors
 enum { BLACK = 0, WHITE = 1, BOTH = 2 };
 
+inline int piece_color(piece_t p) {
+    return (p & 0b1000) ? BLACK : WHITE;
+}
+
+inline int set_color(piece_t p, int colour) {
+    return p | (colour ? 0 : 0b1000);
+}
+
 // For printing
-constexpr inline char piece_to_ascii[] = " PNBRQK  pnbrqk";
-constexpr inline char piece_to_unicode[] = " ♙♘♗♖♕♔  ♟♞♝♜♛♚";
+constexpr char piece_to_ascii[] = " PNBRQK  pnbrqk";
+constexpr char piece_to_unicode[] = " ♙♘♗♖♕♔  ♟♞♝♜♛♚";
 inline std::unordered_map<char, piece_t> char_to_piece = {
     {'0', NO_PIECE },
     {'P', P},

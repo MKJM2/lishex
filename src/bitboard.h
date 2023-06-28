@@ -9,10 +9,11 @@
 #define SETBIT(bb, sq) ((bb) |=  (1ULL << (sq)))
 #define CLRBIT(bb, sq) ((bb) &= ~(1ULL << (sq)))
 #define GETBIT(bb, sq) ((bb) & (1ULL << (sq)))
+#define SQ_TO_BB(sq) (1ULL << (sq))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
 #define CNT(bb) (__builtin_popcountll(bb))
 #define POP(bb) (bit_scan_forward(bb))
-#define POPLSB(bb) (POP(bb); CLRLSB(bb))
+#define POPLSB(bb) (bit_drop_forward(bb))
 
 // Useful bitmasks
 extern bb_t fileBBMask[8];
@@ -42,7 +43,8 @@ inline bb_t se_shift(bb_t bb) {return (bb & NOT_HFILE) >> 7;}
 inline bb_t sw_shift(bb_t bb) {return (bb & NOT_AFILE) >> 9;}
 inline bb_t nw_shift(bb_t bb) {return (bb & NOT_AFILE) << 7;}
 
-extern int bit_scan_forward(bb_t bb);
+extern square_t bit_scan_forward(bb_t bb);
+extern square_t bit_drop_forward(bb_t &bb);
 
 inline bb_t NOT_PROMOTING(int side) {
     return (side ? NOT_RANK7 : NOT_RANK2);

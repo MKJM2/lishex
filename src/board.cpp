@@ -1,7 +1,9 @@
+#include "board.h"
+
 #include <cstring> //std::memset
 
 #include "bitboard.h"
-#include "board.h"
+#include "attack.h"
 
 
 /*******************/
@@ -154,7 +156,9 @@ void setup(board_t *board, const std::string& fen) {
         } else if (isdigit(c)) {
             sq += (int)c - '0';
         } else {
-            SETBIT(board->bitboards[char_to_piece[c]], sq);
+            piece_t piece = char_to_piece[c];
+            SETBIT(board->bitboards[piece], sq);
+            SETBIT(board->pieces[piece_color(piece)], sq);
             ++sq;
         }
     }
@@ -325,25 +329,7 @@ uint64_t generate_pos_key(board_t *board) {
 }
 
 void test(board_t *board) {
-   bb_t pawns = 0x100840a0020500;
-   std::cout << "Pawns:\n";
-   printBB(pawns);
-   std::cout << "N:\n";
-   printBB(n_shift(pawns));
-   std::cout << "E:\n";
-   printBB(e_shift(pawns));
-   std::cout << "S:\n";
-   printBB(s_shift(pawns));
-   std::cout << "W:\n";
-   printBB(w_shift(pawns));
-   std::cout << "NE:\n";
-   printBB(ne_shift(pawns));
-   std::cout << "SE:\n";
-   printBB(se_shift(pawns));
-   std::cout << "SW:\n";
-   printBB(sw_shift(pawns));
-   std::cout << "NW:\n";
-   printBB(nw_shift(pawns));
+    board->turn ^= 1;
 }
 
 /* Verifies that the position is valid (useful for debugging) */
