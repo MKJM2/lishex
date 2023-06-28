@@ -17,7 +17,7 @@ void loop(int argc, char* argv[]) {
     searchinfo_t info[1];
 
     std::string input, token;
-    do {
+    while (!info->quit) {
         //fflush(stdout); // for printf calls (if any)
         if (!std::getline(std::cin, input)) {
             info->quit = true;
@@ -38,7 +38,7 @@ void loop(int argc, char* argv[]) {
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
-    } while (!info->quit);
+    };
 }
 
 std::string move_to_str(move_t m) {
