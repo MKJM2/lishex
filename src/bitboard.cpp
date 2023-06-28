@@ -38,7 +38,6 @@ int bit_scan_forward(bb_t bb) {
    return lsb_64_table[folded * 0x78291ACF >> 26];
 }
 
-
 void printBB(const bb_t& bb) {
     square_t sq;
     for (int rank = 7; rank >= 0; --rank) {

@@ -354,8 +354,8 @@ bool check(board_t *board) {
 
     // Verify the board Zobrist key (critical for TT functionality)
     uint64_t expected = generate_pos_key(board);
-    if (expected != this->key) {
-        std::cout << "Expected: " << expected << "\nGot: " << this->key;
+    if (expected != board->key) {
+        std::cout << "Expected: " << expected << "\nGot: " << board->key;
         //assert(false);
         return false;
     }

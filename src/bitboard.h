@@ -11,7 +11,8 @@
 #define GETBIT(bb, sq) ((bb) & (1ULL << (sq)))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
 #define CNT(bb) (__builtin_popcountll(bb))
-#define POP(bb) (bitScanForward(bb))
+#define POP(bb) (bit_scan_forward(bb))
+#define POPLSB(bb) (POP(bb); CLRLSB(bb))
 
 // Useful bitmasks
 extern bb_t fileBBMask[8];
@@ -45,6 +46,11 @@ extern int bit_scan_forward(bb_t bb);
 
 inline bb_t NOT_PROMOTING(int side) {
     return (side ? NOT_RANK7 : NOT_RANK2);
+}
+
+// Returns a bitboard of a mask covering rank 'r' (for the player 'side')
+inline bb_t RANK_TO_BB(int r, int side = WHITE) {
+    return rankBBMask[side ? (r - 1) : 7 - r];
 }
 
 void printBB(const bb_t& bb);

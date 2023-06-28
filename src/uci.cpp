@@ -1,7 +1,7 @@
+#include "uci.h"
 #include <iostream>
 #include <sstream>
 
-#include "board.h"
 
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -35,6 +35,13 @@ void loop(int argc, char* argv[]) {
             info->quit = true;
         } else if (token == "print" || token == "d") {
             print(board);
+        } else if (token == "moves") {
+            movelist_t moves;
+            generate_moves(board, &moves);
+            for (const move_t* it = moves.begin(); it != moves.end(); ++it) {
+                std::cout << move_to_str(*it) << " ";
+            }
+            std::cout << std::endl;
         } else if (token == "test") {
             test(board);
         } else {
@@ -43,7 +50,7 @@ void loop(int argc, char* argv[]) {
     };
 }
 
-std::string move_to_str(move_t m) {
+std::string move_to_str(const move_t m) {
 
     if (m == NULLMV) return "null";
 

@@ -136,16 +136,16 @@ using move_t = uint32_t;
 
 // Types of moves (flags)
 enum {
-    QUIET          = 0b0000,
-    PAWNPUSH       = 0b0001,
-    KINGCASTLE     = 0b0010,
-    QUEENCASTLE    = 0b0011,
-    CAPTURE        = 0b0100,
-    EPCAPTURE      = 0b0101,
-    KNIGHTPROMO    = 0b1000,
-    BISHOPPROMO    = 0b1001,
-    ROOKPROMO      = 0b1010,
-    QUEENPROMO     = 0b1011
+    QUIET       = 0b0000,
+    PAWNPUSH    = 0b0001,
+    KINGCASTLE  = 0b0010,
+    QUEENCASTLE = 0b0011,
+    CAPTURE     = 0b0100,
+    EPCAPTURE   = 0b0101,
+    KNIGHTPROMO = 0b1000,
+    BISHOPPROMO = 0b1001,
+    ROOKPROMO   = 0b1010,
+    QUEENPROMO  = 0b1011
 };
 
 // Constructor
@@ -177,6 +177,7 @@ typedef struct {
     // Fifty move counter before the move
     int fifty_move;
     // Zobrist key of the position before the move
+    uint64_t key;
 } undo_t;
 
 // Move list structure (TODO: Add scores)
@@ -187,6 +188,9 @@ typedef struct movelist_t {
     void push_back(const move_t& m) {
         assert(size() < MAX_MOVES);
         *last++ = m;
+    }
+    void clear() {
+        last = moveList;
     }
     move_t moveList[MAX_MOVES];
     move_t* last = moveList;

@@ -51,6 +51,10 @@ extern void test(board_t *board);
 
 extern uint64_t generate_pos_key(board_t *board);
 
+inline bb_t all_pieces(board_t *board) {
+    return board->pieces[BLACK] | board->pieces[WHITE];
+}
+
 /* TODO: */
 // Helpers handling bitboard manipulation & hashing:
 // add_piece
@@ -59,7 +63,7 @@ extern uint64_t generate_pos_key(board_t *board);
 
 
 #ifdef DEBUG
-extern void check(board_t *board);
+extern bool check(board_t *board);
 #endif // DEBUG
 
 
