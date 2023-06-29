@@ -15,14 +15,34 @@
 #define GETLSB(bb) (bit_scan_forward(bb))
 #define POPLSB(bb) (bit_drop_forward(bb))
 
-// Useful bitmasks
+// Useful bitboards/bitmasks
+
+const bb_t RANK1_BB = 0x00000000000000ffULL;
+const bb_t RANK2_BB = 0x000000000000ff00ULL;
+const bb_t RANK3_BB = 0x0000000000ff0000ULL;
+const bb_t RANK4_BB = 0x00000000ff000000ULL;
+const bb_t RANK5_BB = 0x000000ff00000000ULL;
+const bb_t RANK6_BB = 0x0000ff0000000000ULL;
+const bb_t RANK7_BB = 0x00ff000000000000ULL;
+const bb_t RANK8_BB = 0xff00000000000000ULL;
+
+const bb_t FILEA_BB = 0x0101010101010101ULL;
+const bb_t FILEB_BB = 0x0202020202020202ULL;
+const bb_t FILEC_BB = 0x0404040404040404ULL;
+const bb_t FILED_BB = 0x0808080808080808ULL;
+const bb_t FILEE_BB = 0x1010101010101010ULL;
+const bb_t FILEF_BB = 0x2020202020202020ULL;
+const bb_t FILEG_BB = 0x4040404040404040ULL;
+const bb_t FILEH_BB = 0x8080808080808080ULL;
+
 extern bb_t fileBBMask[8];
 extern bb_t rankBBMask[8];
-const bb_t NOT_AFILE = 0xfefefefefefefefe; // ~0x0101010101010101
-const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
+const bb_t NOT_AFILE = 0xfefefefefefefefe; // ~FILEA_BB
+const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7f; // ~FILEH_BB
 const bb_t NOT_RANK7 = 0xff00ffffffffffff; // ~0x00ff000000000000
 const bb_t NOT_RANK2 = 0xffffffffffff00ff; // ~0x000000000000ff00
 const bb_t BORDER_SQ = 0xff818181818181ff; // squares on the border of the board
+
 
 // Passing pawn masks
 extern bb_t wPassedMask[64];

@@ -65,8 +65,10 @@ void init_leap_attacks() {
 
 // Set relevant occupancy bits for a bishop on each origin square
 void init_bishop_occupancies() {
+
+    bb_t occupancies = 0ULL;
     for (square_t sq = A1; sq <= H8; ++sq) {
-        bb_t occupancies = 0ULL;
+        occupancies = 0ULL;
 
         // Bitboard representing the destination square
         bb_t start = SQ_TO_BB(sq);
@@ -102,8 +104,13 @@ void init_bishop_occupancies() {
 
 // Set relevant occupancy bits for a rook on each origin square
 void init_rook_occupancies() {
+
+    bb_t occupancies = 0ULL;
     for (square_t sq = A1; sq <= H8; ++sq) {
-        bb_t occupancies = 0ULL;
+
+        // For occupancies, we don't care the squares on the border of the board
+        // so we mask them out (we use masks for the edges of the board)
+        occupancies = 0ULL;
 
         // Bitboard representing the destination square
         bb_t start = SQ_TO_BB(sq);
@@ -111,29 +118,28 @@ void init_rook_occupancies() {
 
         // NORTH
         while ((dest = n_shift(dest))) {
-            occupancies |= dest;
+            occupancies |= dest & ~RANK8_BB; // mask the north edge of the board
         }
 
         // EAST
         dest = start;
         while ((dest = e_shift(dest))) {
-            occupancies |= dest;
+            occupancies |= dest & NOT_HFILE; // ~fileBBMask[7]
         }
 
         // SOUTH
         dest = start;
         while ((dest = s_shift(dest))) {
-            occupancies |= dest;
+            occupancies |= dest & ~RANK1_BB;
         }
 
         // WEST
         dest = start;
         while ((dest = w_shift(dest))) {
-            occupancies |= dest;
+            occupancies |= dest & NOT_AFILE;
         }
 
-        // For occupancies, we don't care the squares on the border of the board
-        rook_occupancies[sq] = occupancies & ~BORDER_SQ;
+        rook_occupancies[sq] = occupancies;
     }
 }
 

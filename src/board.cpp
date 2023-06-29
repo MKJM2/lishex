@@ -340,11 +340,17 @@ void test(board_t *board) {
 
     bb_t blockers = 0x8005000022400ULL;
 
-    printBB(blockers);
+    //printBB(gen_rook_attacks(D5, blockers));
+
+    printBB(bishop_occupancies[B1]);
     std::cout << std::endl;
-    printBB(gen_bishop_attacks(D4, blockers));
+    printBB(bishop_occupancies[D4]);
     std::cout << std::endl;
-    printBB(gen_rook_attacks(D5, blockers));
+    printBB(rook_occupancies[D4]);
+    std::cout << std::endl;
+    printBB(rook_occupancies[A1]);
+    std::cout << std::endl;
+    printBB(rook_occupancies[B2]);
 }
 
 /* Verifies that the position is valid (useful for debugging) */
