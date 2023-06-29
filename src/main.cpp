@@ -16,6 +16,8 @@ int main(int argc, char* argv[]) {
     init_keys();
     init_pawn_attacks();
     init_leap_attacks();
+    init_bishop_occupancies();
+    init_rook_occupancies();
     init_slider_attacks();
 
     // Start UCI driver loop

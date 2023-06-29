@@ -99,6 +99,10 @@ inline int piece_color(piece_t p) {
     return (p & 0b1000) ? BLACK : WHITE;
 }
 
+inline int piece_type(piece_t p) {
+   return p & ~(0b1000);
+}
+
 inline int set_color(piece_t p, int colour) {
     return p | (colour ? 0 : 0b1000);
 }

@@ -12,7 +12,7 @@
 #define SQ_TO_BB(sq) (1ULL << (sq))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
 #define CNT(bb) (__builtin_popcountll(bb))
-#define POP(bb) (bit_scan_forward(bb))
+#define GETLSB(bb) (bit_scan_forward(bb))
 #define POPLSB(bb) (bit_drop_forward(bb))
 
 // Useful bitmasks
@@ -22,6 +22,7 @@ const bb_t NOT_AFILE = 0xfefefefefefefefe; // ~0x0101010101010101
 const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
 const bb_t NOT_RANK7 = 0xff00ffffffffffff; // ~0x00ff000000000000
 const bb_t NOT_RANK2 = 0xffffffffffff00ff; // ~0x000000000000ff00
+const bb_t BORDER_SQ = 0xff818181818181ff; // squares on the border of the board
 
 // Passing pawn masks
 extern bb_t wPassedMask[64];

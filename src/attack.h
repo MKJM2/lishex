@@ -6,7 +6,13 @@
 
 void init_pawn_attacks();
 void init_leap_attacks();
+void init_bishop_occupancies();
+void init_rook_occupancies();
 void init_slider_attacks();
+
+// On the fly generation (for generating magics)
+bb_t gen_bishop_attacks(square_t sq, bb_t blockers);
+bb_t gen_rook_attacks(square_t sq, bb_t blockers);
 
 extern bb_t pawn_attacks[2][SQUARE_NO];
 
@@ -15,6 +21,8 @@ extern bb_t knight_attacks[SQUARE_NO];
 extern bb_t king_attacks[SQUARE_NO];
 
 /* Sliding pieces */
+extern bb_t bishop_occupancies[SQUARE_NO];
+extern bb_t rook_occupancies[SQUARE_NO];
 extern bb_t bishop_attacks[SQUARE_NO];
 extern bb_t rook_attacks[SQUARE_NO];
 

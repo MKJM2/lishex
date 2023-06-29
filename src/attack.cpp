@@ -14,6 +14,8 @@ bb_t king_attacks[SQUARE_NO];
 
 /* Sliding pieces */
 // TODO: Magics, PEXT
+bb_t bishop_occupancies[SQUARE_NO];
+bb_t rook_occupancies[SQUARE_NO];
 bb_t bishop_attacks[SQUARE_NO];
 bb_t rook_attacks[SQUARE_NO];
 
@@ -60,6 +62,157 @@ void init_leap_attacks() {
         knight_attacks[sq] |= nw_shift(n_shift(bb));
     }
 }
+
+// Set relevant occupancy bits for a bishop on each origin square
+void init_bishop_occupancies() {
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        bb_t occupancies = 0ULL;
+
+        // Bitboard representing the destination square
+        bb_t start = SQ_TO_BB(sq);
+        bb_t dest = start;
+
+        // NORTH_EAST
+        while ((dest = ne_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // SOUTH_EAST
+        dest = start;
+        while ((dest = se_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // SOUTH_WEST
+        dest = start;
+        while ((dest = sw_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // NORTH_WEST
+        dest = start;
+        while ((dest = nw_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // For occupancies, we don't care the squares on the border of the board
+        bishop_occupancies[sq] = occupancies & ~BORDER_SQ;
+    }
+}
+
+// Set relevant occupancy bits for a rook on each origin square
+void init_rook_occupancies() {
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        bb_t occupancies = 0ULL;
+
+        // Bitboard representing the destination square
+        bb_t start = SQ_TO_BB(sq);
+        bb_t dest = start;
+
+        // NORTH
+        while ((dest = n_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // EAST
+        dest = start;
+        while ((dest = e_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // SOUTH
+        dest = start;
+        while ((dest = s_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // WEST
+        dest = start;
+        while ((dest = w_shift(dest))) {
+            occupancies |= dest;
+        }
+
+        // For occupancies, we don't care the squares on the border of the board
+        rook_occupancies[sq] = occupancies & ~BORDER_SQ;
+    }
+}
+
+bb_t gen_bishop_attacks(square_t sq, bb_t blockers) {
+
+    bb_t attacks = 0ULL;
+
+    // Bitboard representing the destination square
+    bb_t start = SQ_TO_BB(sq);
+    bb_t dest = start;
+
+    // NORTH_EAST
+    while ((dest = ne_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // SOUTH_EAST
+    dest = start;
+    while ((dest = se_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // SOUTH_WEST
+    dest = start;
+    while ((dest = sw_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // NORTH_WEST
+    dest = start;
+    while ((dest = nw_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    return attacks;
+}
+
+bb_t gen_rook_attacks(square_t sq, bb_t blockers) {
+
+    bb_t attacks = 0ULL;
+
+    // Bitboard representing the destination square
+    bb_t start = SQ_TO_BB(sq);
+    bb_t dest = start;
+
+    // NORTH
+    while ((dest = n_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // EAST
+    dest = start;
+    while ((dest = e_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // SOUTH
+    dest = start;
+    while ((dest = s_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    // WEST
+    dest = start;
+    while ((dest = w_shift(dest))) {
+        attacks |= dest;
+        if (dest & blockers) break;
+    }
+
+    return attacks;
+}
+
 
 void init_slider_attacks() {
     for (square_t sq = A1; sq <= H8; ++sq) {

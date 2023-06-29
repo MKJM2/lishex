@@ -4,6 +4,7 @@
 
 #include "bitboard.h"
 #include "attack.h"
+#include "types.h"
 
 
 /*******************/
@@ -98,6 +99,7 @@ void reset(board_t *board) {
     for (piece_t pc : pieces) {
         board->bitboards[pc] = 0ULL;
     }
+    board->pieces[BLACK] = board->pieces[WHITE] = 0ULL;
 
     // Reset the turn
     board->turn = BOTH;
@@ -162,6 +164,11 @@ void setup(board_t *board, const std::string& fen) {
             ++sq;
         }
     }
+
+    // Set the king squares
+    assert(CNT(board->bitboards[K]) == CNT(board->bitboards[k]) == 1);
+    board->king_square[WHITE] = GETLSB(board->bitboards[K]);
+    board->king_square[BLACK] = GETLSB(board->bitboards[k]);
 
     // Set the side to move
     board->turn = (fen_parts[1] == "w") ? WHITE : BLACK;
@@ -329,7 +336,15 @@ uint64_t generate_pos_key(board_t *board) {
 }
 
 void test(board_t *board) {
-    board->turn ^= 1;
+    assert(check(board));
+
+    bb_t blockers = 0x8005000022400ULL;
+
+    printBB(blockers);
+    std::cout << std::endl;
+    printBB(gen_bishop_attacks(D4, blockers));
+    std::cout << std::endl;
+    printBB(gen_rook_attacks(D5, blockers));
 }
 
 /* Verifies that the position is valid (useful for debugging) */
@@ -341,9 +356,10 @@ bool check(board_t *board) {
     // Verify the board Zobrist key (critical for TT functionality)
     uint64_t expected = generate_pos_key(board);
     if (expected != board->key) {
-        std::cout << "Expected: " << expected << "\nGot: " << board->key;
-        //assert(false);
-        return false;
+      std::cout << std::hex << "Expected: " << expected \
+                << "\nGot: " << board->key << std::dec << std::endl;
+      // assert(false);
+      return false;
     }
 
     assert(board->ep_square == NO_SQ ||

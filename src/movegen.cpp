@@ -75,7 +75,6 @@ int generate_quiet(board_t *board, movelist_t *moves) {
                                    : s_shift(pawn_pushes & RANK_TO_BB(6));
 
     while (pawn_pushes) {
-        // TODO: Verify that POP clears the least significant bit
         square_t to = POPLSB(pawn_pushes);
         moves->push_back(Move(to - dir, to, QUIET));
     }
@@ -106,12 +105,17 @@ int generate_quiet(board_t *board, movelist_t *moves) {
  */
 int generate_noisy(board_t *board, movelist_t *moves) {
     /* Pawn captures & en passant */
+    // TODO
 
     /* Promotions */
+    // TODO
 
     /* Captures by non-sliding pieces */
+    // TODO
 
     /* Captures by sliding pieces */
+    //TODO
+
     return 0;
 }
 
