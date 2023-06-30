@@ -14,10 +14,32 @@ bb_t king_attacks[SQUARE_NO];
 
 /* Sliding pieces */
 // TODO: Magics, PEXT
+
+/* Magics */
 bb_t bishop_occupancies[SQUARE_NO];
 bb_t rook_occupancies[SQUARE_NO];
 bb_t bishop_attacks[SQUARE_NO];
 bb_t rook_attacks[SQUARE_NO];
+
+
+// We store magics for each square
+typedef struct magic_t {
+    // Occupancy mask for this particular square
+    bb_t mask;
+    // Pointer into the attack table for this particular square
+    bb_t* attack_ptr;
+    // Magic number for sq
+    uint64_t magic;
+    // Necessary shift (# of 1 bits in the occupancy mask)
+    uint32_t shift;
+} magic_t;
+
+magic_t bishop_magics[SQUARE_NO];
+magic_t rook_magics[SQUARE_NO];
+
+inline const int index(magic_t *, bb_t occupied) {
+    return (occupied & m->mask) >> m->shift;
+}
 
 void init_pawn_attacks() {
     // Reset current boards

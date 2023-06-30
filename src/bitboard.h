@@ -37,11 +37,16 @@ const bb_t FILEH_BB = 0x8080808080808080ULL;
 
 extern bb_t fileBBMask[8];
 extern bb_t rankBBMask[8];
-const bb_t NOT_AFILE = 0xfefefefefefefefe; // ~FILEA_BB
-const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7f; // ~FILEH_BB
-const bb_t NOT_RANK7 = 0xff00ffffffffffff; // ~0x00ff000000000000
-const bb_t NOT_RANK2 = 0xffffffffffff00ff; // ~0x000000000000ff00
-const bb_t BORDER_SQ = 0xff818181818181ff; // squares on the border of the board
+// const bb_t NOT_AFILE = 0xfefefefefefefefeULL; // ~FILEA_BB
+// const bb_t NOT_HFILE = 0x7f7f7f7f7f7f7f7fULL; // ~FILEH_BB
+// const bb_t NOT_RANK7 = 0xff00ffffffffffffULL; // ~0x00ff000000000000
+// const bb_t NOT_RANK2 = 0xffffffffffff00ffULL; // ~0x000000000000ff00
+// const bb_t BORDER_SQ = 0xff818181818181ffULL; // squares on the border of the board
+constexpr bb_t NOT_AFILE = ~FILEA_BB;
+constexpr bb_t NOT_HFILE = ~FILEH_BB;
+constexpr bb_t NOT_RANK7 = ~RANK7_BB;
+constexpr bb_t NOT_RANK2 = ~RANK2_BB;
+constexpr bb_t BORDER_SQ = FILEA_BB | RANK8_BB | FILEH_BB | RANK1_BB;
 
 
 // Passing pawn masks
