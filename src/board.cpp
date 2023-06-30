@@ -6,6 +6,7 @@
 #include "attack.h"
 #include "types.h"
 
+// TODO: This should be a separate file
 
 /*******************/
 /* Zobrist hashing */
@@ -84,6 +85,14 @@ void init_keys(uint64_t rng_seed) {
     for (square_t sq = A1; sq <= H8; ++sq) {
         ep_keys[sq] = xoshiro256ss(rng_state);
     }
+}
+
+// Assumes PRNG has been seeded (init_keys)
+// Returns a random sparse (low number of set bits) 64-bit integer
+inline uint64_t sparse_uint64() {
+    return xoshiro256ss(rng_state) &
+           xoshiro256ss(rng_state) &
+           xoshiro256ss(rng_state);
 }
 
 /* Zeroes out the entire position */

@@ -4,6 +4,7 @@
 /**
  * generate_quiet_moves_for<piece_t>
  * @brief Generate non-captures for the given piece type
+ * @param board current position to generate quiet moves for
  * @param moves movelist to append moves to
 */
 template<piece_t PIECE_T>
@@ -26,6 +27,7 @@ void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
 /**
  * generate_noisy_moves_for<piece_t>
  * @brief Generate captures for the given piece type
+ * @param board current position to generate non-quiet moves for
  * @param moves movelist to append moves to
 */
 template<piece_t PIECE_T>

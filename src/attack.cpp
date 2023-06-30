@@ -15,30 +15,29 @@ bb_t king_attacks[SQUARE_NO];
 /* Sliding pieces */
 // TODO: Magics, PEXT
 
-/* Magics */
+/* Fancy Magics */
 bb_t bishop_occupancies[SQUARE_NO];
 bb_t rook_occupancies[SQUARE_NO];
 bb_t bishop_attacks[SQUARE_NO];
 bb_t rook_attacks[SQUARE_NO];
 
-
-// We store magics for each square
-typedef struct magic_t {
-    // Occupancy mask for this particular square
-    bb_t mask;
-    // Pointer into the attack table for this particular square
-    bb_t* attack_ptr;
-    // Magic number for sq
-    uint64_t magic;
-    // Necessary shift (# of 1 bits in the occupancy mask)
-    uint32_t shift;
-} magic_t;
-
 magic_t bishop_magics[SQUARE_NO];
 magic_t rook_magics[SQUARE_NO];
 
-inline const int index(magic_t *, bb_t occupied) {
-    return (occupied & m->mask) >> m->shift;
+// Initializing magic bitboards at startup
+// see: https://www.chessprogramming.org/Looking_for_Magics
+void find_magics() {
+    // Bishops
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        magic_t& magic = bishop_magics[sq];
+        // Mask for relevant occupancy bits
+        magic.mask = bishop_occupancies[sq];
+        // The shift is 64 - # of set bits in the mask
+        magic.shift = SQUARE_NO - CNT(magic.mask);
+
+    }
+
+    // Rooks
 }
 
 void init_pawn_attacks() {
