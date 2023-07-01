@@ -17,7 +17,4 @@ inline uint64_t sparse_uint64() {
            rand_uint64();
 }
 
-
-
-
 #endif // RNG_H_

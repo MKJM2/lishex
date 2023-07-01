@@ -208,6 +208,7 @@ bb_t generate_attacks<BISHOP>(square_t sq, bb_t blockers) {
     return attacks;
 }
 
+
 template<>
 bb_t generate_attacks<ROOK>(square_t sq, bb_t blockers) {
 

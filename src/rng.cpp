@@ -3,8 +3,6 @@
 /*
  * Adapted from: https://en.wikipedia.org/wiki/Xorshift
  */
-
-
 namespace {
 
 // We use the SplitMix64 generator to initialize xoshiro256+
@@ -42,7 +40,6 @@ uint64_t xoshiro256ss(xoshiro256ss_state *state) {
 
     return result;
 }
-
 
 } // namespace
 

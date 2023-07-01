@@ -46,7 +46,7 @@ template<piece_t PIECE_T>
 void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
 
     bb_t pieces = board->bitboards[set_colour(PIECE_T, board->turn)];
-    const bb_t opp_pieces = board->pieces[board->turn ^ 1];
+    const bb_t opp_pieces = board->sides_pieces[board->turn ^ 1];
     const bb_t occupied = all_pieces(board);
 
     while (pieces) {
@@ -67,13 +67,60 @@ void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
     }
 }
 
-// TODO:
+// Returns promotions
 void generate_promotions(board_t *board, movelist_t *moves) {
-    (void) board;
-    (void) moves;
+
+    square_t from, to;
+
+    int& me = board->turn;
+
+    // We need to flag capture promotions accordingly (for move ordering etc.)
+    bb_t pawns_bb = board->bitboards[me ? P : p] & PROMOTING(me);
+
+    /* Captures */
+    bb_t opp_pieces = board->sides_pieces[me ^ 1];
+    bb_t promotable_bb = pawns_bb;
+
+    bb_t captures = 0ULL;
+
+    // TODO: No need for an outer for-loop, instead of processing pawns 1-by-1
+    // we can shift the entire bitboard all at once
+
+    // For each pawn that can be promoted
+    while (promotable_bb) {
+        captures  = (me) ? ne_shift(promotable_bb) : se_shift(promotable_bb);
+        captures |= (me) ? nw_shift(promotable_bb) : sw_shift(promotable_bb);
+        captures &= opp_pieces;
+
+        from = POPLSB(promotable_bb);
+        while (captures) {
+            // Add all possible capture promotions to the move list
+            to = POPLSB(captures);
+            for (int type = QUEENCASTLE; type >= KNIGHTPROMO; --type) {
+                // We additionally flag the move as a capture
+                moves->push_back(Move(from, to, type | CAPTURE));
+            }
+        }
+    }
+
+    /* Non-captures */
+    bb_t empty_squares = ~all_pieces(board);
+    bb_t pushes = 0ULL;
+    promotable_bb = pawns_bb;
+
+    while (promotable_bb) {
+        pushes = (me) ? n_shift(promotable_bb) : s_shift(promotable_bb);
+        pushes &= empty_squares;
+        from = POPLSB(promotable_bb);
+        while (pushes) {
+            to = POPLSB(promotable_bb);
+            for (int type = QUEENCASTLE; type >= KNIGHTPROMO; --type) {
+                moves->push_back(Move(from, to, type));
+            }
+        }
+    }
 }
 
-// TODO:
 // enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
 void generate_castles(board_t *board, movelist_t *moves) {
 
@@ -133,7 +180,6 @@ int generate_quiet(board_t *board, movelist_t *moves) {
     int move_count = moves->size();
     // We collapse the implementation for both black and white
     int& me = board->turn;
-    int opp = me ^ 1;
 
     /* Pawn pushes & double pushes (we handle promotions in generate_noisy) */
     int dir = (me) ? NORTH : SOUTH;
@@ -190,11 +236,13 @@ int generate_noisy(board_t *board, movelist_t *moves) {
     int move_count = moves->size();
     int& me = board->turn;
     int opp = me ^ 1;
-    bb_t opp_pieces = board->pieces[opp];
+    bb_t opp_pieces = board->sides_pieces[opp];
 
     // Directions of pawn movement
     int dir = (me) ? NORTH : SOUTH;
 
+    // TODO: Use a while loop popping the lsb of a clone of pawns_bb like in
+    // generate_promotions()
     bb_t pawns_bb = board->bitboards[me ? P : p];
 
     /* Pawn captures & en passant */
@@ -216,7 +264,7 @@ int generate_noisy(board_t *board, movelist_t *moves) {
 
     /* En passant captures */
 
-    bb_t attacked_square = SQ_TO_BB(board->ep_square);
+    //bb_t attacked_square = SQ_TO_BB(board->ep_square);
     bb_t attacked_by = opp ? ne_shift(pawns_bb) | nw_shift(pawns_bb) :
                              se_shift(pawns_bb) | sw_shift(pawns_bb);
 
@@ -228,7 +276,7 @@ int generate_noisy(board_t *board, movelist_t *moves) {
     }
 
     /* Promotions */
-    // TODO
+    generate_promotions(board, moves);
 
     /* Captures by non-sliding pieces */
     generate_noisy_moves_for<KNIGHT>(board, moves);

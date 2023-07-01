@@ -8,8 +8,6 @@
 #include "movegen.h"
 #include "rng.h"
 
-// TODO: This should be a separate file
-
 /*******************/
 /* Zobrist hashing */
 /*******************/
@@ -56,7 +54,7 @@ void reset(board_t *board) {
     for (piece_t pc : pieces) {
         board->bitboards[pc] = 0ULL;
     }
-    board->pieces[BLACK] = board->pieces[WHITE] = 0ULL;
+    board->sides_pieces[BLACK] = board->sides_pieces[WHITE] = 0ULL;
 
     // Reset the turn
     board->turn = BOTH;
@@ -117,7 +115,7 @@ void setup(board_t *board, const std::string& fen) {
         } else {
             piece_t piece = char_to_piece[c];
             SETBIT(board->bitboards[piece], sq);
-            SETBIT(board->pieces[piece_color(piece)], sq);
+            SETBIT(board->sides_pieces[piece_color(piece)], sq);
             ++sq;
         }
     }
@@ -308,6 +306,60 @@ void test(board_t *board) {
     }
 
 }
+
+/* Helpers for manipulating pieces on the board */
+
+// Adds a piece pce to board on square sq
+inline static void add_piece(board_t *board, piece_t pce, square_t sq) {
+
+    assert(check(board));
+
+    // Add piece to the board
+    // 8x8 board
+    board->pieces[sq] = pce;
+    // Bitboards
+    board->bitboards[pce] |= SQ_TO_BB(sq);
+    board->sides_pieces[piece_color(pce)] |= SQ_TO_BB(sq);
+
+    // Hash the piece into the Zobrist key for the board
+    board->key ^= piece_keys[pce][sq];
+}
+
+// Removes a piece pce from board on square sq
+inline static void rm_piece(board_t *board, square_t sq) {
+
+    assert(check(board));
+    piece_t pce = board->pieces[sq];
+
+    /* Clear piece off the board */
+    // 8x8 board
+    board->pieces[sq] = NO_PIECE;
+    // Bitboards
+    board->bitboards[pce] ^= SQ_TO_BB(sq);
+    board->sides_pieces[piece_color(pce)] ^= SQ_TO_BB(sq);
+
+    // Hash the piece out of the Zobrist key for the board
+    board->key ^= piece_keys[pce][sq];
+}
+
+// Moves a piece pce from 'from' to 'to'
+inline static void mv_piece(board_t *board, square_t from, square_t to) {
+
+    /* Move the piece on the board */
+    piece_t pce = board->pieces[from];
+    // 8x8 board
+    board->pieces[to] = board->pieces[from];
+    board->pieces[from] = NO_PIECE;
+    // Bitboards
+    board->bitboards[pce] ^= SQ_TO_BB(from);
+    board->bitboards[pce] |= SQ_TO_BB(to);
+
+    /* Hash the piece out of the old square and into the new */
+    board->key ^= piece_keys[pce][from];
+    board->key ^= piece_keys[pce][to];
+}
+
+
 
 /* Verifies that the position is valid (useful for debugging) */
 #ifdef DEBUG

@@ -157,6 +157,9 @@ using move_t = uint32_t;
 */
 
 // Types of moves (flags)
+// TODO: Possible bug:
+// A capturing promotion to a bishop could be flagged as en passant
+// (promotions to a bishop are rare)
 enum {
     QUIET       = 0b0000,
     PAWNPUSH    = 0b0001,

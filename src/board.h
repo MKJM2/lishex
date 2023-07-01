@@ -14,8 +14,11 @@
 typedef struct board_t {
     // We store a separate bitboard for each piece (type, color)
     bb_t bitboards[PIECE_NO];
+    // In addition to bitboards, we store a regular 8x8 array
+    // for quick piece lookups during move-making
+    piece_t pieces[SQUARE_NO];
     // Additionally, we store bitboards of all pieces for a given side
-    bb_t pieces[BOTH];
+    bb_t sides_pieces[BOTH];
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Material for each side (TODO: might not be necessary)
@@ -51,7 +54,7 @@ extern void test(board_t *board);
 extern uint64_t generate_pos_key(const board_t *board);
 
 inline bb_t all_pieces(const board_t *board) {
-    return board->pieces[BLACK] | board->pieces[WHITE];
+    return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
 }
 
 /* TODO: */
