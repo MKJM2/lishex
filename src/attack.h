@@ -8,7 +8,6 @@
 #include "bitboard.h"
 #include "rng.h"
 
-void init_pawn_attacks();
 void init_leap_attacks();
 void init_bishop_occupancies();
 void init_rook_occupancies();

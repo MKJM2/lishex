@@ -5,6 +5,7 @@
 #include "bitboard.h"
 #include "attack.h"
 #include "types.h"
+#include "movegen.h"
 #include "rng.h"
 
 // TODO: This should be a separate file
@@ -263,7 +264,7 @@ void print(board_t *board, bool verbose) {
 }
 
 /* Generates the position key from scratch for the current position */
-uint64_t generate_pos_key(board_t *board) {
+uint64_t generate_pos_key(const board_t *board) {
     uint64_t key = 0ULL;
 
     // Hash in all the pieces on the board
@@ -294,24 +295,23 @@ uint64_t generate_pos_key(board_t *board) {
 void test(board_t *board) {
     assert(check(board));
 
-    bb_t blockers = 0x8005000022400ULL;
+    // bb_t blockers = 0x8005000022400ULL;
 
     //printBB(gen_rook_attacks(D5, blockers));
+    square_t sq;
+    for (int rank = RANK_8; rank >= RANK_1; --rank) {
+        for (int file = A_FILE; file <= H_FILE; ++file) {
+            sq = rank * 8 + file;
+            std::cout << (is_attacked(board, sq, WHITE) ? "X " : "0 ");
+        }
+        std::cout << std::endl;
+    }
 
-    printBB(bishop_occupancies[B1]);
-    std::cout << std::endl;
-    printBB(bishop_occupancies[D4]);
-    std::cout << std::endl;
-    printBB(rook_occupancies[D4]);
-    std::cout << std::endl;
-    printBB(rook_occupancies[A1]);
-    std::cout << std::endl;
-    printBB(rook_occupancies[B2]);
 }
 
 /* Verifies that the position is valid (useful for debugging) */
 #ifdef DEBUG
-bool check(board_t *board) {
+bool check(const board_t *board) {
 
     assert(board->turn == WHITE || board->turn == BLACK);
 

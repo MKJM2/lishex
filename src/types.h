@@ -116,7 +116,7 @@ inline int set_colour(piece_t p, int colour) {
 
 // For printing
 constexpr char piece_to_ascii[] = " PNBRQK  pnbrqk";
-constexpr char piece_to_unicode[] = " ♙♘♗♖♕♔  ♟♞♝♜♛♚";
+//constexpr wchar_t piece_to_unicode[] = L" ♙♘♗♖♕♔  ♟♞♝♜♛♚";
 inline std::unordered_map<char, piece_t> char_to_piece = {
     {'0', NO_PIECE },
     {'P', P},

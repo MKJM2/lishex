@@ -15,7 +15,6 @@ int main(int argc, char* argv[]) {
     // Initialization
     init_eval_masks();
     init_keys();
-    init_pawn_attacks();
     init_leap_attacks();
     init_bishop_occupancies();
     init_rook_occupancies();

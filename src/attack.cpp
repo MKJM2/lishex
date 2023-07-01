@@ -18,7 +18,7 @@ bb_t knight_attacks[SQUARE_NO];
 bb_t king_attacks[SQUARE_NO];
 
 /* Sliding pieces */
-// TODO: Magics, PEXT
+// TODO: PEXT
 
 /* Fancy Magics */
 bb_t bishop_occupancies[SQUARE_NO];
@@ -49,16 +49,6 @@ bb_t attacks<r>(square_t from, bb_t blockers) {
     return attacks<R>(from, blockers);
 }
 */
-
-
-void init_pawn_attacks() {
-    // Reset current boards
-    for (square_t sq = A1; sq <= H8; ++sq) {
-        pawn_attacks[BLACK][sq] = 0ULL;
-        pawn_attacks[WHITE][sq] = 0ULL;
-    }
-    // TODO: set pawn attacks
-}
 
 void init_leap_attacks() {
     // Reset current attack boards

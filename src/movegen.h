@@ -10,6 +10,6 @@ int generate_quiet(board_t *board, movelist_t *moves);
 int generate_noisy(board_t *board, movelist_t *moves);
 int generate_moves(board_t *board, movelist_t *moves);
 
-int is_attacked(board_t *board, square_t sq);
+bb_t is_attacked(board_t *board, square_t sq, int colour);
 
 #endif // MOVEGEN_H_

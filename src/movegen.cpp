@@ -73,6 +73,54 @@ void generate_promotions(board_t *board, movelist_t *moves) {
     (void) moves;
 }
 
+// TODO:
+// enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
+void generate_castles(board_t *board, movelist_t *moves) {
+
+    // Masks to check for obstacles between the king and the rook
+    static const bb_t WK_BB = 0x60ULL;
+    static const bb_t WQ_BB = 0x0eULL;
+    static const bb_t BK_BB = 0x6000000000000000ULL;
+    static const bb_t BQ_BB = 0x0e00000000000000ULL;
+
+    int& me = board->turn;
+
+    const bb_t occupied = all_pieces(board);
+
+    // TODO: Collapse into a single implementation (templates?)
+    if (me == WHITE) {
+        // King side castle
+        if ((board->castle_rights & WK) &&
+            ((occupied & WK_BB) == 0) &&
+             !is_attacked(board, E1, BLACK) &&
+             !is_attacked(board, F1, BLACK)) {
+            moves->push_back(Move(E1, G1, KINGCASTLE));
+        }
+        // Queen side castle
+        if ((board->castle_rights & WQ) &&
+            ((occupied & WQ_BB) == 0) &&
+             !is_attacked(board, C1, BLACK) &&
+             !is_attacked(board, B1, BLACK)) {
+            moves->push_back(Move(E1, C1, QUEENCASTLE));
+        }
+    } else { /* BLACK's turn */
+        // King side castle
+        if ((board->castle_rights & BK) &&
+            ((occupied & BK_BB) == 0) &&
+             !is_attacked(board, E8, WHITE) &&
+             !is_attacked(board, F8, WHITE)) {
+            moves->push_back(Move(E8, G8, KINGCASTLE));
+        }
+        // Queen side castle
+        if ((board->castle_rights & BQ) &&
+            ((occupied & BQ_BB) == 0) &&
+             !is_attacked(board, C8, WHITE) &&
+             !is_attacked(board, B8, WHITE)) {
+            moves->push_back(Move(E8, C8, QUEENCASTLE));
+        }
+    }
+}
+
 /**
  * generate_quiet
  * @param board board struct representing the current position
@@ -125,7 +173,7 @@ int generate_quiet(board_t *board, movelist_t *moves) {
     generate_quiet_moves_for<QUEEN>(board, moves);
 
     /* Castling */
-    // TODO
+    generate_castles(board, moves);
 
     return moves->size() - move_count;
 }
@@ -200,14 +248,11 @@ int generate_moves(board_t *board, movelist_t *moves) {
  * @brief Checks if a given square is attacked by the given color
  * @param board current position
  * @param sq square to check
- * @return Non-zero integer if attacked, zero otherwise
+ * @return Non-zero bitboard of relevant attackers if attacked, empty otherwise
 */
-int is_attacked(const board_t *board, const square_t sq, const int colour) {
+bb_t is_attacked(board_t *board, const square_t sq, const int colour) {
     bb_t attackers = 0ULL;
-    assert(board->check());
-
-    // Convert square to bitboard
-    bb_t target = SQ_TO_BB(sq);
+    assert(check(board));
 
     // Check if attacked by pawns
     piece_t pce = set_colour(p, colour);
@@ -219,34 +264,30 @@ int is_attacked(const board_t *board, const square_t sq, const int colour) {
         attackers |= se_shift(curr);
         attackers |= sw_shift(curr);
     }
-    if (attackers)
+    if (attackers & SQ_TO_BB(sq))
         return attackers;
 
     pce = set_colour(KNIGHT, colour);
-    attackers |= attacks<KNIGHT>(sq) & board->bitboards[pce];
-    if (attackers)
+    if ((attackers = attacks<KNIGHT>(sq) & board->bitboards[pce]))
         return attackers;
 
     pce = set_colour(KING, colour);
-    attackers |= attacks<KING>(sq) & board->bitboards[pce];
-    if (attackers)
+    if ((attackers = attacks<KING>(sq) & board->bitboards[pce]))
         return attackers;
 
     // For sliding pieces, we need the occupancy board
     bb_t occupied = all_pieces(board);
     pce = set_colour(BISHOP, colour);
-    attackers |= attacks<BISHOP>(sq, occupied) & board->bitboards[pce];
-    if (attackers)
+    if ((attackers = attacks<BISHOP>(sq, occupied) & board->bitboards[pce]))
         return attackers;
 
     pce = set_colour(ROOK, colour);
-    attackers |= attacks<ROOK>(sq, occupied) & board->bitboards[pce];
-    if (attackers) return attackers;
-
-    pce = set_colour(QUEEN, colour);
-    attackers |= attacks<QUEEN>(sq, occupied) & board->bitboards[pce];
-    if (attackers)
+    if ((attackers = attacks<ROOK>(sq, occupied) & board->bitboards[pce]))
         return attackers;
 
-    return 0;
+    pce = set_colour(QUEEN, colour);
+    if ((attackers = attacks<QUEEN>(sq, occupied) & board->bitboards[pce]))
+        return attackers;
+
+    return 0ULL;
 }
