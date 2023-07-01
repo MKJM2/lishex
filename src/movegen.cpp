@@ -211,11 +211,21 @@ int generate_noisy(board_t *board, movelist_t *moves) {
 
     while (pawn_captures_west) {
         to = POPLSB(pawn_captures_west);
-        moves->push_back(Move(to - dir - EAST, to, CAPTURE));
+        moves->push_back(Move(to - dir - WEST, to, CAPTURE));
     }
 
     /* En passant captures */
-    // TODO
+
+    bb_t attacked_square = SQ_TO_BB(board->ep_square);
+    bb_t attacked_by = opp ? ne_shift(pawns_bb) | nw_shift(pawns_bb) :
+                             se_shift(pawns_bb) | sw_shift(pawns_bb);
+
+    // If attacked by one of our pawns
+    if (attacked_by &= pawns_bb) {
+        while (attacked_by) {
+            moves->push_back(Move(POPLSB(attacked_by), board->ep_square, EPCAPTURE));
+        }
+    }
 
     /* Promotions */
     // TODO

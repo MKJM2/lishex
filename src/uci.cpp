@@ -4,7 +4,7 @@
 
 
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1";
+const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
 /* UCI driver loop */
 void loop(int argc, char* argv[]) {
@@ -37,6 +37,10 @@ void loop(int argc, char* argv[]) {
             info->quit = true;
         } else if (token == "print" || token == "d") {
             print(board);
+        } else if (token == "move") {
+            std::string move_string = "";
+            iss >> move_string;
+            (void) str_to_move(board, move_string);
         } else if (token == "moves") {
             movelist_t moves;
             generate_moves(board, &moves);
@@ -76,8 +80,16 @@ std::string move_to_str(const move_t m) {
     return s;
 }
 
-move_t str_to_move(std::string& s) {
-    // TODO: Implement with a move generatior to only convert to *legal* moves
-    (void) s;
+move_t str_to_move(board_t *board, std::string& s) {
+    // TODO: Implement with a move generator to only convert to *legal* moves
+    movelist_t moves;
+    generate_moves(board, &moves);
+    for (const move_t *it = moves.begin(); it != moves.end(); ++it) {
+        if (move_to_str(*it) == s) {
+            std::cout << "Move '" << s << "' made!" << std::endl;
+            return *it;
+        }
+    }
+    std::cout << "Move '" << s << "' is invalid!" << std::endl;
     return NULLMV;
 }
