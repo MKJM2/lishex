@@ -5,6 +5,7 @@
 #include "bitboard.h"
 #include "attack.h"
 #include "types.h"
+#include "rng.h"
 
 // TODO: This should be a separate file
 
@@ -17,82 +18,28 @@ uint64_t turn_key = 0ULL;
 uint64_t castle_keys[16]; // == WK | WQ | BK | BQ + 1 = 0b1111 + 1
 uint64_t ep_keys[SQUARE_NO];
 
-/*
- * Adapted from: https://en.wikipedia.org/wiki/Xorshift
- */
-
-// We use the SplitMix64 generator to initialize xoshiro256+
-static uint64_t x; /* The state can be seeded with any value. */
-
-uint64_t splitmix_next() {
-	uint64_t z = (x += 0x9e3779b97f4a7c15);
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-	return z ^ (z >> 31);
-}
-
-static uint64_t rol64(uint64_t x, int k) {
-    return (x << k) | (x >> (64 - k));
-}
-
-typedef struct xoshiro256ss_state {
-    uint64_t s[4];
-} xoshiro256ss_state;
-
-static xoshiro256ss_state rng_state[1];
-
-uint64_t xoshiro256ss(xoshiro256ss_state *state) {
-    uint64_t *s = state->s;
-    uint64_t const result = rol64(s[1] * 5, 7) * 9;
-    uint64_t const t = s[1] << 17;
-
-    s[2] ^= s[0];
-    s[3] ^= s[1];
-    s[1] ^= s[2];
-    s[0] ^= s[3];
-
-    s[2] ^= t;
-    s[3] = rol64(s[3], 45);
-
-    return result;
-}
-
-void init_keys(uint64_t rng_seed) {
-    // Seed the RNG
-    x = rng_seed;
-    rng_state->s[0] = splitmix_next();
-    rng_state->s[1] = splitmix_next();
-    rng_state->s[2] = splitmix_next();
-    rng_state->s[3] = splitmix_next();
-
+void init_keys() {
+    seed_rng();
     // For each piece type and square generate a random key
     for (piece_t p : pieces) {
         for (square_t sq = A1; sq <= H8; ++sq) {
-            piece_keys[p][sq] = xoshiro256ss(rng_state);
+            piece_keys[p][sq] = rand_uint64();
         }
     }
 
     // Generate hash key for White's side to play
-    turn_key = xoshiro256ss(rng_state);
+    turn_key = rand_uint64();
 
     // Generate hash keys for castling rights
     for (int i = 0; i < 16; ++i) {
-        castle_keys[i] = xoshiro256ss(rng_state);
+        castle_keys[i] = rand_uint64();
     }
 
     // Generate hash keys for en passant squares
     // (though we only need 16, having 64 keys makes the code cleaner)
     for (square_t sq = A1; sq <= H8; ++sq) {
-        ep_keys[sq] = xoshiro256ss(rng_state);
+        ep_keys[sq] = rand_uint64();
     }
-}
-
-// Assumes PRNG has been seeded (init_keys)
-// Returns a random sparse (low number of set bits) 64-bit integer
-inline uint64_t sparse_uint64() {
-    return xoshiro256ss(rng_state) &
-           xoshiro256ss(rng_state) &
-           xoshiro256ss(rng_state);
 }
 
 /* Zeroes out the entire position */

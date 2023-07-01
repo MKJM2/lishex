@@ -11,7 +11,7 @@
 /************************/
 
 // The Board type
-typedef struct {
+typedef struct board_t {
     // We store a separate bitboard for each piece (type, color)
     bb_t bitboards[PIECE_NO];
     // Additionally, we store bitboards of all pieces for a given side
@@ -38,8 +38,7 @@ typedef struct {
     undo_t history[MAX_MOVES];
 } board_t;
 
-
-extern void init_keys(uint64_t rng_seed = 69420ULL);
+extern void init_keys();
 
 extern void reset(board_t *board);
 

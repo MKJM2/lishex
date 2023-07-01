@@ -76,6 +76,10 @@ inline bb_t NOT_PROMOTING(int side) {
     return (side ? NOT_RANK7 : NOT_RANK2);
 }
 
+inline bb_t PROMOTING(int side) {
+    return (side ? RANK7_BB : RANK2_BB);
+}
+
 // Returns a bitboard of a mask covering rank 'r' (for the player 'side')
 inline bb_t RANK_TO_BB(int r, int side = WHITE) {
     return rankBBMask[side ? (r - 1) : 7 - r];

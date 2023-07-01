@@ -3,6 +3,11 @@
 
 #include "attack.h"
 
+#include <cstring> // memset
+
+#include "rng.h"
+#include "types.h"
+
 // For pawns, we index the attack table by [side to move] and [origin square].
 // We get a bitboard back, representing the squares being attacked by pawn of
 // color [side to move] located on [origin square]
@@ -18,27 +23,33 @@ bb_t king_attacks[SQUARE_NO];
 /* Fancy Magics */
 bb_t bishop_occupancies[SQUARE_NO];
 bb_t rook_occupancies[SQUARE_NO];
-bb_t bishop_attacks[SQUARE_NO];
-bb_t rook_attacks[SQUARE_NO];
+bb_t bishop_attacks[5248];
+bb_t rook_attacks[102400];
 
 magic_t bishop_magics[SQUARE_NO];
 magic_t rook_magics[SQUARE_NO];
 
 // Initializing magic bitboards at startup
 // see: https://www.chessprogramming.org/Looking_for_Magics
-void find_magics() {
-    // Bishops
-    for (square_t sq = A1; sq <= H8; ++sq) {
-        magic_t& magic = bishop_magics[sq];
-        // Mask for relevant occupancy bits
-        magic.mask = bishop_occupancies[sq];
-        // The shift is 64 - # of set bits in the mask
-        magic.shift = SQUARE_NO - CNT(magic.mask);
 
-    }
+/*
+template<>
+bb_t attacks<B>(square_t from, bb_t blockers);
 
-    // Rooks
+template<>
+bb_t attacks<b>(square_t from, bb_t blockers) {
+    return attacks<B>(from, blockers);
 }
+
+template<>
+bb_t attacks<R>(square_t from, bb_t blockers);
+
+template<>
+bb_t attacks<r>(square_t from, bb_t blockers) {
+    return attacks<R>(from, blockers);
+}
+*/
+
 
 void init_pawn_attacks() {
     // Reset current boards
@@ -164,7 +175,12 @@ void init_rook_occupancies() {
     }
 }
 
-bb_t gen_bishop_attacks(square_t sq, bb_t blockers) {
+
+template<>
+bb_t attacks<BISHOP>(square_t sq, bb_t blockers);
+
+template<>
+bb_t generate_attacks<BISHOP>(square_t sq, bb_t blockers) {
 
     bb_t attacks = 0ULL;
 
@@ -202,7 +218,8 @@ bb_t gen_bishop_attacks(square_t sq, bb_t blockers) {
     return attacks;
 }
 
-bb_t gen_rook_attacks(square_t sq, bb_t blockers) {
+template<>
+bb_t generate_attacks<ROOK>(square_t sq, bb_t blockers) {
 
     bb_t attacks = 0ULL;
 

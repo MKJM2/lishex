@@ -103,8 +103,15 @@ inline int piece_type(piece_t p) {
    return p & ~(0b1000);
 }
 
+// Determining whether a piece is sliding
+constexpr bool is_sliding_arr[] = { 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0 };
+
+template<piece_t PIECE_T>
+constexpr bool is_sliding = is_sliding_arr[PIECE_T];
+
+// Set or clear the colour bit depending on specified colour
 inline int set_color(piece_t p, int colour) {
-    return p | (colour ? 0 : 0b1000);
+    return colour ? (p & ~0b1000) : (p | 0b1000);
 }
 
 // For printing
