@@ -50,7 +50,7 @@ extern void test(board_t *board);
 
 extern uint64_t generate_pos_key(board_t *board);
 
-inline bb_t all_pieces(board_t *board) {
+inline bb_t all_pieces(const board_t *board) {
     return board->pieces[BLACK] | board->pieces[WHITE];
 }
 

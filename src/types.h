@@ -110,7 +110,7 @@ template<piece_t PIECE_T>
 constexpr bool is_sliding = is_sliding_arr[PIECE_T];
 
 // Set or clear the colour bit depending on specified colour
-inline int set_color(piece_t p, int colour) {
+inline int set_colour(piece_t p, int colour) {
     return colour ? (p & ~0b1000) : (p | 0b1000);
 }
 

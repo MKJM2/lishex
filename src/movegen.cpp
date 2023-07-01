@@ -1,5 +1,6 @@
 /* Move generation logic (separate for quiet and non-quiet moves) */
 #include "movegen.h"
+#include "attack.h"
 
 // TODO: Collapse the implementation for quiet and noisy
 // move generation with templates to not do the same work twice
@@ -14,7 +15,7 @@
 template<piece_t PIECE_T>
 void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
 
-    bb_t pieces = board->bitboards[set_color(PIECE_T, board->turn)];
+    bb_t pieces = board->bitboards[set_colour(PIECE_T, board->turn)];
     const bb_t occupied = all_pieces(board);
 
     while (pieces) {
@@ -44,7 +45,7 @@ void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
 template<piece_t PIECE_T>
 void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
 
-    bb_t pieces = board->bitboards[set_color(PIECE_T, board->turn)];
+    bb_t pieces = board->bitboards[set_colour(PIECE_T, board->turn)];
     const bb_t opp_pieces = board->pieces[board->turn ^ 1];
     const bb_t occupied = all_pieces(board);
 
@@ -193,4 +194,59 @@ int generate_noisy(board_t *board, movelist_t *moves) {
 int generate_moves(board_t *board, movelist_t *moves) {
     moves->clear();
     return generate_quiet(board, moves) + generate_noisy(board, moves);
+}
+
+/**
+ * @brief Checks if a given square is attacked by the given color
+ * @param board current position
+ * @param sq square to check
+ * @return Non-zero integer if attacked, zero otherwise
+*/
+int is_attacked(const board_t *board, const square_t sq, const int colour) {
+    bb_t attackers = 0ULL;
+    assert(board->check());
+
+    // Convert square to bitboard
+    bb_t target = SQ_TO_BB(sq);
+
+    // Check if attacked by pawns
+    piece_t pce = set_colour(p, colour);
+    bb_t curr = board->bitboards[pce];
+    if (colour) {
+        attackers |= ne_shift(curr);
+        attackers |= nw_shift(curr);
+    } else {
+        attackers |= se_shift(curr);
+        attackers |= sw_shift(curr);
+    }
+    if (attackers)
+        return attackers;
+
+    pce = set_colour(KNIGHT, colour);
+    attackers |= attacks<KNIGHT>(sq) & board->bitboards[pce];
+    if (attackers)
+        return attackers;
+
+    pce = set_colour(KING, colour);
+    attackers |= attacks<KING>(sq) & board->bitboards[pce];
+    if (attackers)
+        return attackers;
+
+    // For sliding pieces, we need the occupancy board
+    bb_t occupied = all_pieces(board);
+    pce = set_colour(BISHOP, colour);
+    attackers |= attacks<BISHOP>(sq, occupied) & board->bitboards[pce];
+    if (attackers)
+        return attackers;
+
+    pce = set_colour(ROOK, colour);
+    attackers |= attacks<ROOK>(sq, occupied) & board->bitboards[pce];
+    if (attackers) return attackers;
+
+    pce = set_colour(QUEEN, colour);
+    attackers |= attacks<QUEEN>(sq, occupied) & board->bitboards[pce];
+    if (attackers)
+        return attackers;
+
+    return 0;
 }
