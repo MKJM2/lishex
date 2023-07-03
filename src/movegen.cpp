@@ -244,7 +244,7 @@ int generate_noisy(board_t *board, movelist_t *moves) {
 
     // TODO: Use a while loop popping the lsb of a clone of pawns_bb like in
     // generate_promotions()
-    bb_t pawns_bb = board->bitboards[me ? P : p];
+    bb_t pawns_bb = board->bitboards[me ? P : p] & NOT_PROMOTING(me);
 
     /* Pawn captures & en passant */
     bb_t pawn_captures_east = (me) ? ne_shift(pawns_bb) : se_shift(pawns_bb);
@@ -264,15 +264,16 @@ int generate_noisy(board_t *board, movelist_t *moves) {
     }
 
     /* En passant captures */
+    if (board->ep_square != NO_SQ) {
+        bb_t attacked_sq = SQ_TO_BB(board->ep_square);
+        bb_t attacked_by = opp ? ne_shift(attacked_sq) | nw_shift(attacked_sq) :
+                                se_shift(attacked_sq) | sw_shift(attacked_sq);
 
-    //bb_t attacked_square = SQ_TO_BB(board->ep_square);
-    bb_t attacked_by = opp ? ne_shift(pawns_bb) | nw_shift(pawns_bb) :
-                             se_shift(pawns_bb) | sw_shift(pawns_bb);
-
-    // If attacked by one of our pawns
-    if (attacked_by &= pawns_bb) {
-        while (attacked_by) {
-            moves->push_back(Move(POPLSB(attacked_by), board->ep_square, EPCAPTURE));
+        // If attacked by one of our pawns
+        if (attacked_by &= pawns_bb) {
+            while (attacked_by) {
+                moves->push_back(Move(POPLSB(attacked_by), board->ep_square, EPCAPTURE));
+            }
         }
     }
 

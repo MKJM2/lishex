@@ -418,7 +418,7 @@ bool make_move(board_t *board, move_t move) {
         board->ep_square,
         board->fifty_move,
         board->key,
-        NO_PIECE
+        board->pieces[to] // captured piece, if any
     };
 
     #ifdef DEBUG
@@ -437,10 +437,9 @@ bool make_move(board_t *board, move_t move) {
     if (flags == EPCAPTURE) {
         // std::cout << "Holy hell!\n";
         square_t target_square = board->ep_square;
-        target_square += me ? NORTH : SOUTH;
-        piece_t captured_pawn = board->pieces[target_square];
+        target_square += opp ? NORTH : SOUTH;
+        undo.captured = board->pieces[target_square];
         rm_piece(board, target_square);
-        undo.captured = captured_pawn;
 
         // Since a capture was performed, we reset the 50move counter
         board->fifty_move = 0;
@@ -657,10 +656,11 @@ void undo_move(board_t *board) {
 bool check_against_ref(const board_t *b) {
 
     // Reference board to compare to
-    const board_t *ref_b = &ref_boards.back();
+    board_t test = ref_boards.back();
+    board_t *ref_b = &test;
 
-    std::cout << "Reference board:" << std::endl;
-    print(ref_b);
+    // std::cout << "Reference board:" << std::endl;
+    // print(ref_b);
 
     // Bitboards match
     //assert(std::equal(b->bitboards, b->bitboards + PIECE_NO, ref_b->bitboards));
@@ -673,8 +673,6 @@ bool check_against_ref(const board_t *b) {
             assert(false);
         }
     }
-
-    std::cout << "A\n";
 
     // 8x8 boards match
     //assert(std::equal(b->pieces, b->pieces + SQUARE_NO, ref_b->pieces));
@@ -691,8 +689,6 @@ bool check_against_ref(const board_t *b) {
         }
     }
 
-    std::cout << "B\n";
-
     // Side's pieces bitboards match
     assert(b->sides_pieces[WHITE] == ref_b->sides_pieces[WHITE]);
     assert(b->sides_pieces[BLACK] == ref_b->sides_pieces[BLACK]);
@@ -708,15 +704,11 @@ bool check_against_ref(const board_t *b) {
     // Castle rights match
     assert(b->castle_rights == ref_b->castle_rights);
 
-    std::cout << "C\n";
-
     // Squares match
     assert(b->ep_square == ref_b->ep_square);
     assert(b->king_square[WHITE] == ref_b->king_square[WHITE]);
     assert(b->king_square[BLACK] == ref_b->king_square[BLACK]);
 
-
-    std::cout << "D\n";
 
     // Zobrist keys match
     if ((uint64_t)b->key != (uint64_t)ref_b->key) {
@@ -727,9 +719,9 @@ bool check_against_ref(const board_t *b) {
         assert(false);
     }
 
-    std::cout << "E\n";
-
     ref_boards.pop_back();
+
+    return true;
 }
 
 /* Verifies that the position is valid (useful for debugging) */
