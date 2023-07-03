@@ -40,7 +40,14 @@ void loop(int argc, char* argv[]) {
         } else if (token == "move") {
             std::string move_string = "";
             iss >> move_string;
-            (void) str_to_move(board, move_string);
+            move_t m = str_to_move(board, move_string);
+            if (m != NULLMV) {
+                make_move(board, m);
+            }
+            print(board);
+        } else if (token == "undo") {
+            undo_move(board);
+            print(board);
         } else if (token == "moves") {
             movelist_t moves;
             generate_moves(board, &moves);
@@ -50,34 +57,34 @@ void loop(int argc, char* argv[]) {
             std::cout << std::endl;
         } else if (token == "test") {
             test(board);
+        } else if (token == "perft") {
+            // Get user argument
+            std::string depth_str;
+            iss >> depth_str;
+
+            int depthSet = depth_str.empty() ? 5 : stoi(depth_str);
+            uint64_t node_no;
+            for (int depth = 0; depth < depthSet; ++depth) {
+                int NPS = 0; // # Nodes per (mili)second
+                //auto start = high_resolution_clock::now();
+                //auto start = getTime();
+                node_no = perft(board, depth);
+                //auto end = high_resolution_clock::now();
+                //auto end = getTime();
+                //auto elapsed = end - start;
+                //auto elapsed =
+                    //duration_cast<milliseconds>(end - start).count();
+                auto elapsed = 0UL;
+                //NPS = static_cast<double>(node_no) / elapsed;
+                //NPS *= 1000; // nodes per ms -> nodes per s
+                NPS = 0;
+                printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
+                                depth,     node_no,     elapsed,  NPS);
+            }
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
     };
-}
-
-std::string move_to_str(const move_t m) {
-
-    if (m == NULLMV) return "null";
-
-    square_t from = get_from(m);
-    square_t to = get_to(m);
-    int flags = get_flags(m);
-
-    std::string s = square_to_str(from) + square_to_str(to);
-
-    // Handle promotions
-    if (is_promotion(m)) {
-        char c;
-        switch (flags & ~CAPTURE) {
-            case KNIGHTPROMO: c = 'n'; break;
-            case ROOKPROMO:   c = 'r'; break;
-            case BISHOPPROMO: c = 'b'; break;
-            default:          c = 'q'; break;
-        }
-        s.push_back(c);
-    }
-    return s;
 }
 
 move_t str_to_move(board_t *board, std::string& s) {

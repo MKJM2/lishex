@@ -22,7 +22,7 @@ typedef struct board_t {
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Material for each side (TODO: might not be necessary)
-    int material[BOTH];
+    // int material[BOTH];
     // Ply of the game in the current search
     int ply = 0;
     // How many halfmoves have been made until current position
@@ -30,13 +30,13 @@ typedef struct board_t {
     // Current castle rights for both players
     int castle_rights = WK | WQ | BK | BQ;
     // Fifty move counter
-    int fifty_move;
+    int fifty_move = 0;
     // En passant square (if any)
     square_t ep_square = NO_SQ;
     // Kings' squares
     square_t king_square[BOTH] = {E8, E1};
     // Zobrist hash key for the current position
-    uint64_t key = 0;
+    uint64_t key = 0ULL;
     // History of previous positions
     undo_t history[MAX_MOVES];
 } board_t;
@@ -47,11 +47,16 @@ extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);
 
-extern void print(board_t *board, bool verbose = true);
+extern void print(const board_t *board, bool verbose = true);
 
 extern void test(board_t *board);
 
 extern uint64_t generate_pos_key(const board_t *board);
+
+bool make_move(board_t *board, move_t move);
+
+void undo_move(board_t *board, move_t move);
+void undo_move(board_t *board); // Undo last move
 
 inline bb_t all_pieces(const board_t *board) {
     return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
@@ -66,6 +71,7 @@ inline bb_t all_pieces(const board_t *board) {
 
 #ifdef DEBUG
 extern bool check(const board_t *board);
+extern bool check_against_ref(const board_t* b);
 #endif // DEBUG
 
 

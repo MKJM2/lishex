@@ -191,21 +191,25 @@ enum {
 
 #define is_promotion(move) (((move) >> 12) & 0b1000)
 
+
+
 // Undo move structure
 typedef struct {
     // Move to be undone
-    move_t move;
+    move_t move = NULLMV;
     // Castle permissions before the move
     int castle_rights;
     // En passant square before the move
-    square_t ep_square;
+    square_t ep_square = NO_SQ;
     // Fifty move counter before the move
     int fifty_move;
     // Zobrist key of the position before the move
     uint64_t key;
+    // Captured piece, if any
+    piece_t captured = NO_PIECE;
 } undo_t;
 
-// Move list structure (TODO: Add scores)
+// Move list structure (TODO: Add scores for move ordering?)
 typedef struct movelist_t {
     const move_t* begin() const { return moveList; }
     const move_t* end() const { return last; }
@@ -221,6 +225,29 @@ typedef struct movelist_t {
     move_t* last = moveList;
 } movelist_t;
 
+inline std::string move_to_str(const move_t m) {
+
+    if (m == NULLMV) return "null";
+
+    square_t from = get_from(m);
+    square_t to = get_to(m);
+    int flags = get_flags(m);
+
+    std::string s = square_to_str(from) + square_to_str(to);
+
+    // Handle promotions
+    if (is_promotion(m)) {
+        char c;
+        switch (flags & ~CAPTURE) {
+            case KNIGHTPROMO: c = 'n'; break;
+            case ROOKPROMO:   c = 'r'; break;
+            case BISHOPPROMO: c = 'b'; break;
+            default:          c = 'q'; break;
+        }
+        s.push_back(c);
+    }
+    return s;
+}
 
 /*****************/
 /* Miscellaneous */
@@ -228,6 +255,22 @@ typedef struct movelist_t {
 
 // Castling rights encoding (4 bits)
 enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
+
+// Castling rights can be spoiled when one of the pieces participating in it
+// moves. castle_spoils[from] determines how to change castle permissions for a
+// given (from, to) move
+// Here: 15 = 0b1111 = KQkq
+const int castle_spoils[SQUARE_NO] = {
+    13, 15, 15, 15, 12, 15, 15, 14,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    7,  15, 15, 15, 3,  15, 15, 11
+};
+
 
 typedef struct searchinfo_t {
     int start;

@@ -1,12 +1,18 @@
 #include "board.h"
 
 #include <cstring> //std::memset
+#include <vector>
 
 #include "bitboard.h"
 #include "attack.h"
 #include "types.h"
 #include "movegen.h"
 #include "rng.h"
+
+#ifdef DEBUG
+size_t boards = 0;
+std::vector<board_t> ref_boards(64); // TODO: C-style array
+#endif
 
 /*******************/
 /* Zobrist hashing */
@@ -48,10 +54,18 @@ void reset(board_t *board) {
     // std::memset(board, 0, sizeof(board_t));
 
     // Clear board history
-    memset(board->history, 0, MAX_MOVES * sizeof(undo_t));
+    // memset(board->history, 0, MAX_MOVES * sizeof(undo_t));
+    for (int his_ply = 0; his_ply < MAX_MOVES; ++his_ply) {
+        board->history[his_ply] = {
+            NULLMV, 0, NO_SQ, 0, 0ULL, NO_PIECE
+        };
+    }
+
+    // Reset the 8x8 board
+    memset(board->pieces, 0, sizeof(board->pieces));
 
     // Reset all bitboards
-    for (piece_t pc : pieces) {
+    for (piece_t pc = NO_PIECE; pc < PIECE_NO; ++pc) {
         board->bitboards[pc] = 0ULL;
     }
     board->sides_pieces[BLACK] = board->sides_pieces[WHITE] = 0ULL;
@@ -116,6 +130,7 @@ void setup(board_t *board, const std::string& fen) {
             piece_t piece = char_to_piece[c];
             SETBIT(board->bitboards[piece], sq);
             SETBIT(board->sides_pieces[piece_color(piece)], sq);
+            board->pieces[sq] = piece;
             ++sq;
         }
     }
@@ -166,7 +181,7 @@ void setup(board_t *board, const std::string& fen) {
 }
 
 /* Prints the board to stdout */
-void print(board_t *board, bool verbose) {
+void print(const board_t *board, bool verbose) {
     // TODO: We might want to use " ╚═╔├ "?
     static const std::string horizontal_line = "  +---+---+---+---+---+---+---+---+";
 
@@ -180,6 +195,7 @@ void print(board_t *board, bool verbose) {
             square_t sq = rank * RANK_NO + file;
 
             piece_t piece_on_sq = NO_PIECE;
+            /*
             // Check if any bitboards contain a piece on sq
             //for (piece_t piece = P; piece <= k; ++piece) {
             for (piece_t pc : pieces) {
@@ -188,6 +204,8 @@ void print(board_t *board, bool verbose) {
                     break;
                 }
             }
+            */
+            piece_on_sq = board->pieces[sq];
             // Print the piece
             std::cout << "| " << piece_to_ascii[piece_on_sq] << " ";
         }
@@ -266,12 +284,17 @@ uint64_t generate_pos_key(const board_t *board) {
     uint64_t key = 0ULL;
 
     // Hash in all the pieces on the board
+    /*
     for (piece_t p : pieces) {
         for (square_t sq = A1; sq <= H8; ++sq) {
             if (GETBIT(board->bitboards[p], sq)) {
                 key ^= piece_keys[p][sq];
             }
         }
+    }
+    */
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        key ^= piece_keys[board->pieces[sq]][sq];
     }
 
     // Hash in the side playing
@@ -348,21 +371,368 @@ inline static void mv_piece(board_t *board, square_t from, square_t to) {
     /* Move the piece on the board */
     piece_t pce = board->pieces[from];
     // 8x8 board
-    board->pieces[to] = board->pieces[from];
+    board->pieces[to] = pce;
     board->pieces[from] = NO_PIECE;
     // Bitboards
     board->bitboards[pce] ^= SQ_TO_BB(from);
     board->bitboards[pce] |= SQ_TO_BB(to);
+
+    board->sides_pieces[piece_color(pce)] ^= SQ_TO_BB(from);
+    board->sides_pieces[piece_color(pce)] |= SQ_TO_BB(to);
 
     /* Hash the piece out of the old square and into the new */
     board->key ^= piece_keys[pce][from];
     board->key ^= piece_keys[pce][to];
 }
 
+/**
+ @brief Performs a move, mutating the current board position
+ @param board current position
+ @param move move to be performed
+ @returns True if move was legal, False otherwise
+*/
+bool make_move(board_t *board, move_t move) {
+    assert(check(board));
 
+    // Extract move data
+    square_t to = get_to(move);
+    square_t from = get_from(move);
+    int flags = get_flags(move);
+
+    int me = board->turn;
+    int opp = me ^ 1;
+
+    // Store the pre-move state
+    /* In C++20 we can do:
+    undo_t undo = {
+        .move = move,
+        .castle_rights = board->castle_rights,
+        .ep_square = board->ep_square,
+        .fifty_move = board->fifty_move,
+        .key = board->key
+    };
+    */
+    undo_t undo = {
+        move,
+        board->castle_rights,
+        board->ep_square,
+        board->fifty_move,
+        board->key,
+        NO_PIECE
+    };
+
+    #ifdef DEBUG
+    // Store the board state (for debugging purposes)
+    //ref_boards[boards++] = *board;
+    ref_boards.push_back(*board);
+    #endif
+
+    /* Update board state */
+
+    // Handle counters
+    ++board->ply;
+    ++board->fifty_move; // if a pawn push/captures performed, we'll reset this
+
+    // If en passant performed, remove the captured pawn
+    if (flags == EPCAPTURE) {
+        // std::cout << "Holy hell!\n";
+        square_t target_square = board->ep_square;
+        target_square += me ? NORTH : SOUTH;
+        piece_t captured_pawn = board->pieces[target_square];
+        rm_piece(board, target_square);
+        undo.captured = captured_pawn;
+
+        // Since a capture was performed, we reset the 50move counter
+        board->fifty_move = 0;
+    }
+
+    // Save previous board state
+    board->history[board->history_ply++] = undo;
+
+    // If castling, move the rook to its new square
+    if (flags == KINGCASTLE) {
+        if (to == G1) {
+            mv_piece(board, H1, F1);
+        } else {
+            mv_piece(board, H8, F8);
+        }
+    } else if (flags == QUEENCASTLE) {
+        if (to == C1) {
+            mv_piece(board, A1, D1);
+        } else {
+            mv_piece(board, A8, D8);
+        }
+    }
+
+    /* Handle en passant */
+    // Hash out old en passant square (if was set)
+    if (board->ep_square != NO_SQ) {
+        board->key ^= ep_keys[board->ep_square];
+    }
+
+    // Handle new en passant square (only if double pawn push)
+    if (flags == PAWNPUSH) {
+        board->ep_square = (to + from) >> 1;
+        board->key ^= ep_keys[board->ep_square];
+    } else {
+        board->ep_square = NO_SQ;
+    }
+
+    /* Handle castle permissions */
+    // Hash out old permissions
+    board->key ^= castle_keys[board->castle_rights];
+
+    // Set new permissions
+    // (can be spoiled by e.g. moving the king)
+    board->castle_rights &= castle_spoils[from];
+    board->castle_rights &= castle_spoils[to];
+
+    // Hash in new permissions
+    board->key ^= castle_keys[board->castle_rights];
+
+    // Clear any pieces & reset 50move counter if necessary
+    if (board->pieces[to] != NO_PIECE) {
+        rm_piece(board, to);
+        board->fifty_move = 0;
+    }
+
+    // If pawn move, reset 50 move counter
+    // TODO: No need to do this before in the EPCAPTURE branch?
+    if (piece_type(board->pieces[from]) == PAWN) {
+        board->fifty_move = 0;
+    }
+
+    // Finally, we move the piece
+    mv_piece(board, from, to);
+
+    // Handle promotions
+    if (is_promotion(move)) {
+        // Update the pawn to be the capture choice
+        rm_piece(board, to);
+        // clear the capture bit
+        switch (flags & ~CAPTURE) {
+            case QUEENPROMO:
+                add_piece(board, set_colour(QUEEN, me), to); break;
+            case ROOKPROMO:
+                add_piece(board, set_colour(ROOK, me), to); break;
+            case BISHOPPROMO:
+                add_piece(board, set_colour(BISHOP, me), to); break;
+            case KNIGHTPROMO:
+                add_piece(board, set_colour(KNIGHT, me), to); break;
+        }
+    }
+
+    // Update the king square if the king was moved
+    if (piece_type(board->pieces[to]) == KING) {
+        board->king_square[me] = to;
+    }
+
+    // Miscellaneous bookkeeping
+    board->turn = opp;
+    board->key ^= turn_key;
+
+    assert(check(board));
+
+    // Finally, undo the move if puts the player in check (pseudolegal move)
+    if (is_attacked(board, board->king_square[me], opp)) {
+        undo_move(board, move);
+        return false;
+    }
+
+    return true;
+}
+
+void undo_move(board_t *board, move_t move) {
+    assert(check(board));
+
+    // Extract move data
+    square_t to = get_to(move);
+    square_t from = get_from(move);
+    int flags = get_flags(move);
+
+    undo_t last = board->history[--board->history_ply];
+
+    // Flip sides
+    int me = board->turn;
+    int opp = me ^ 1;
+    board->turn = opp;
+
+    board->key ^= turn_key;
+
+    // Undo the move
+    mv_piece(board, to, from);
+
+    // Hash out the en passant square if was currently set
+    if (board->ep_square != NO_SQ) {
+        board->key ^= ep_keys[board->ep_square];
+    }
+
+    // Restore the en passant square from pre-move state
+    board->ep_square = last.ep_square;
+
+    // Hash in old en passant square (if any)
+    if (board->ep_square != NO_SQ) {
+        board->key ^= ep_keys[board->ep_square];
+    }
+
+    // If last move was an en passant capture, restore the captured pawn
+    if (flags == EPCAPTURE) {
+        // std::cout << "New response just dropped\n";
+        square_t target_square = board->ep_square;
+        target_square += me ? NORTH : SOUTH; // TODO
+        add_piece(board, last.captured, target_square);
+    } else {
+        if (last.captured != NO_PIECE) {
+            add_piece(board, last.captured, to); // TODO
+        }
+    }
+
+    // If castled, move the rook back
+    if (flags == KINGCASTLE) {
+        if (to == G1) {
+            mv_piece(board, F1, H1);
+        } else {
+            mv_piece(board, F8, H8);
+        }
+    } else if (flags == QUEENCASTLE) {
+        if (to == C1) {
+            mv_piece(board, D1, A1);
+        } else {
+            mv_piece(board, D8, A8);
+        }
+    }
+
+    /* Handle castling permissions */
+
+    // Hash out current permissions
+    board->key ^= castle_keys[board->castle_rights];
+
+    // Restore old castle rights
+    board->castle_rights = last.castle_rights;
+
+    // Hash in old castle rights
+    board->key ^= castle_keys[board->castle_rights];
+
+    // Restore 50move counter
+    board->fifty_move = last.fifty_move;
+
+    // Restore king's square
+    if (piece_type(board->pieces[from]) == KING) {
+        board->king_square[opp] = from; // TODO Validate side?
+    }
+
+    // Undo promotions
+    if (is_promotion(move)) {
+        // Remove piece that was promoted to
+        rm_piece(board, from);
+        // Add the pawn back in
+        add_piece(board, from, set_colour(PAWN, me));
+    }
+
+    // Update ply counter
+    --board->ply;
+
+    /* DEBUG only */
+    assert(check(board));
+
+    // Assert that the board matches the previous board
+    // on the history stack
+    assert(check_against_ref(board));
+}
+
+void undo_move(board_t *board) {
+    if (board->history_ply < 1)
+        return;
+    undo_move(board, board->history[board->history_ply - 1].move);
+}
+
+
+
+
+#ifdef DEBUG
+
+// Useful for testing move generation and hashing
+// Called in undo_move if in DEBUG mode, to verify
+// whether board state was correctly restored
+bool check_against_ref(const board_t *b) {
+
+    // Reference board to compare to
+    const board_t *ref_b = &ref_boards.back();
+
+    std::cout << "Reference board:" << std::endl;
+    print(ref_b);
+
+    // Bitboards match
+    //assert(std::equal(b->bitboards, b->bitboards + PIECE_NO, ref_b->bitboards));
+    for (int i = 0; i < PIECE_NO; ++i) {
+        if (b->bitboards[i] != ref_b->bitboards[i]) {
+            std::cout << "Mismatch at piece " << piece_to_ascii[i] << std::endl;
+            printBB(b->bitboards[i]);
+            std::cout << "vs" << std::endl;
+            printBB(ref_b->bitboards[i]);
+            assert(false);
+        }
+    }
+
+    std::cout << "A\n";
+
+    // 8x8 boards match
+    //assert(std::equal(b->pieces, b->pieces + SQUARE_NO, ref_b->pieces));
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        if (b->pieces[sq] != ref_b->pieces[sq]) {
+            std::cout << "Mismatch at square " << square_to_str(sq) << std::endl;
+            std::cout << "Got " << piece_to_ascii[b->pieces[sq]] \
+                << " but expected " << piece_to_ascii[ref_b->pieces[sq]] \
+                << std::endl;
+
+            print(b);
+            print(ref_b);
+            assert(false);
+        }
+    }
+
+    std::cout << "B\n";
+
+    // Side's pieces bitboards match
+    assert(b->sides_pieces[WHITE] == ref_b->sides_pieces[WHITE]);
+    assert(b->sides_pieces[BLACK] == ref_b->sides_pieces[BLACK]);
+
+    // Side to play matches
+    assert(b->turn == ref_b->turn);
+
+    // Counters match
+    assert(b->ply == ref_b->ply);
+    assert(b->history_ply == ref_b->history_ply);
+    assert(b->fifty_move == ref_b->fifty_move);
+
+    // Castle rights match
+    assert(b->castle_rights == ref_b->castle_rights);
+
+    std::cout << "C\n";
+
+    // Squares match
+    assert(b->ep_square == ref_b->ep_square);
+    assert(b->king_square[WHITE] == ref_b->king_square[WHITE]);
+    assert(b->king_square[BLACK] == ref_b->king_square[BLACK]);
+
+
+    std::cout << "D\n";
+
+    // Zobrist keys match
+    if ((uint64_t)b->key != (uint64_t)ref_b->key) {
+        std::cout << "Board key: " << b->key;
+        std::cout << " (expected " << generate_pos_key(b) << ")" << std::endl;
+        std::cout << "Refer key: " << ref_b->key;
+        std::cout << " (expected " << generate_pos_key(ref_b) << ")" << std::endl;
+        assert(false);
+    }
+
+    std::cout << "E\n";
+
+    ref_boards.pop_back();
+}
 
 /* Verifies that the position is valid (useful for debugging) */
-#ifdef DEBUG
 bool check(const board_t *board) {
 
     assert(board->turn == WHITE || board->turn == BLACK);

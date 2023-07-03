@@ -1,6 +1,7 @@
 /* Move generation logic (separate for quiet and non-quiet moves) */
 #include "movegen.h"
 #include "attack.h"
+#include "types.h"
 
 // TODO: Collapse the implementation for quiet and noisy
 // move generation with templates to not do the same work twice
@@ -309,8 +310,9 @@ int generate_moves(board_t *board, movelist_t *moves) {
  * @return Non-zero bitboard of relevant attackers if attacked, empty otherwise
 */
 bb_t is_attacked(board_t *board, const square_t sq, const int colour) {
-    bb_t attackers = 0ULL;
     assert(check(board));
+
+    bb_t attackers = 0ULL;
 
     // Check if attacked by pawns
     piece_t pce = set_colour(p, colour);
@@ -348,4 +350,28 @@ bb_t is_attacked(board_t *board, const square_t sq, const int colour) {
         return attackers;
 
     return 0ULL;
+}
+
+uint64_t perft(board_t *board, int depth, bool verbose) {
+    if (depth == 0) {
+        return 1ULL;
+    }
+    int n_moves, i;
+    uint64_t curr;
+    uint64_t nodes = 0;
+
+    movelist_t moves[1];
+    n_moves = generate_moves(board, moves);
+    for (i = 0; i < n_moves; i++) {
+        if (!make_move(board, moves->moveList[i]))
+            continue;
+        curr = perft(board, depth - 1);
+        if (verbose) {
+            std::cout << move_to_str(moves->moveList[i]) << " " \
+                      << curr << std::endl;
+        }
+        nodes += curr;
+        undo_move(board);
+    }
+    return nodes;
 }

@@ -41,6 +41,9 @@ typedef struct magic_t {
 extern magic_t bishop_magics[SQUARE_NO];
 extern magic_t rook_magics[SQUARE_NO];
 
+extern uint64_t precomputed_bishop_magics[];
+extern uint64_t precomputed_rook_magics[];
+
 extern bb_t pawn_attacks[2][SQUARE_NO];
 
 /* Leaping pieces */
@@ -166,6 +169,17 @@ void init_magics() {
             subset = (subset - magic.mask) & magic.mask;
             ++subsets_no;
         } while (subset);
+
+        // TODO: Make this cleaner
+        /*
+        // If we have precomputed magics, just use those:
+        if (precomputed_bishop_magics) {
+            magic.magic = (PIECE_T == BISHOP) ? precomputed_bishop_magics[sq]
+                                              : precomputed_rook_magics[sq];
+            magic.attack_ptr[]
+            continue;
+        }
+        */
 
         /* Now that we have all the possible subsets stored in blockers[]
          * and all the attack bitboards generated, we look for magics */
