@@ -1,10 +1,9 @@
 #include "uci.h"
+
 #include <iostream>
 #include <sstream>
 
-
-const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+#include "board.h"
 
 /* UCI driver loop */
 void loop(int argc, char* argv[]) {
@@ -33,7 +32,7 @@ void loop(int argc, char* argv[]) {
             std::cout << "uciok" << std::endl;
         } else if (token == "isready")  {
             std::cout << "readyok" << std::endl;
-        } else if (token == "stop" || token == "quit") {
+        } else if (token == "stop" || token == "quit") { // TODO: no stop?
             info->quit = true;
         } else if (token == "print" || token == "d") {
             print(board);
@@ -81,19 +80,34 @@ void loop(int argc, char* argv[]) {
                 printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
                                 depth,     node_no,     elapsed,  NPS);
             }
+        } else if (token == "divide") {
+            // Get user argument
+            std::string depth_str;
+            iss >> depth_str;
+            int depth = depth_str.empty() ? 1 : stoi(depth_str);
+
+            uint64_t node_no = perft(board, depth, true);
+            std::cout << std::endl;
+            std::cout << node_no << std::endl;
+
+        } else if (token == "position") {
+            // Parse the position command and update the board accordingly
+            // Example: position startpos moves e2e4 e7e5
+            std::string position_str;
+            std::getline(iss, position_str);
+            parse_position(board, position_str);
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
     };
 }
 
-move_t str_to_move(board_t *board, std::string& s) {
+move_t str_to_move(board_t *board, const std::string& s) {
     // TODO: Implement with a move generator to only convert to *legal* moves
     movelist_t moves;
     generate_moves(board, &moves);
     for (const move_t *it = moves.begin(); it != moves.end(); ++it) {
         if (move_to_str(*it) == s) {
-            std::cout << "Move '" << s << "' made!" << std::endl;
             return *it;
         }
     }

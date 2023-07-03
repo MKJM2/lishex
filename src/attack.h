@@ -215,9 +215,11 @@ void init_magics() {
                 }
             }
         }
-        std::cout << std::hex << magic.magic << std::dec << "," << std::endl;
+        #ifdef DEBUG
+        // std::cout << std::hex << magic.magic << std::dec << "," << std::endl;
+        #endif
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
 }
 
 #endif // ATTACK_H_

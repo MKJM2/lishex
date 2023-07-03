@@ -147,8 +147,8 @@ void generate_castles(board_t *board, movelist_t *moves) {
         // Queen side castle
         if ((board->castle_rights & WQ) &&
             ((occupied & WQ_BB) == 0) &&
-             !is_attacked(board, C1, BLACK) &&
-             !is_attacked(board, B1, BLACK)) {
+             !is_attacked(board, E1, BLACK) &&
+             !is_attacked(board, D1, BLACK)) {
             moves->push_back(Move(E1, C1, QUEENCASTLE));
         }
     } else { /* BLACK's turn */
@@ -162,8 +162,8 @@ void generate_castles(board_t *board, movelist_t *moves) {
         // Queen side castle
         if ((board->castle_rights & BQ) &&
             ((occupied & BQ_BB) == 0) &&
-             !is_attacked(board, C8, WHITE) &&
-             !is_attacked(board, B8, WHITE)) {
+             !is_attacked(board, E8, WHITE) &&
+             !is_attacked(board, D8, WHITE)) {
             moves->push_back(Move(E8, C8, QUEENCASTLE));
         }
     }

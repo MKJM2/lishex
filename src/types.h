@@ -115,7 +115,7 @@ inline int set_colour(piece_t p, int colour) {
 }
 
 // For printing
-constexpr char piece_to_ascii[] = " PNBRQK  pnbrqk";
+constexpr char piece_to_ascii[] = ".PNBRQK  pnbrqk";
 //constexpr wchar_t piece_to_unicode[] = L" ♙♘♗♖♕♔  ♟♞♝♜♛♚";
 inline std::unordered_map<char, piece_t> char_to_piece = {
     {'0', NO_PIECE },
@@ -249,6 +249,13 @@ inline std::string move_to_str(const move_t m) {
     return s;
 }
 
+/*************/
+/* Bitboards */
+/*************/
+
+// More in bitboard.h
+using bb_t = uint64_t;
+
 /*****************/
 /* Miscellaneous */
 /*****************/
@@ -271,6 +278,14 @@ const int castle_spoils[SQUARE_NO] = {
     7,  15, 15, 15, 3,  15, 15, 11
 };
 
+inline std::string castling_rights_to_str(int castle_rights) {
+    std::string s;
+    if (castle_rights & WK) s.push_back('K');
+    if (castle_rights & WQ) s.push_back('Q');
+    if (castle_rights & BK) s.push_back('k');
+    if (castle_rights & BQ) s.push_back('q');
+    return s;
+}
 
 typedef struct searchinfo_t {
     int start;
@@ -278,11 +293,7 @@ typedef struct searchinfo_t {
     bool quit = false;
 } searchinfo_t;
 
-
-/*************/
-/* Bitboards */
-/*************/
-
-using bb_t = uint64_t;
+const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
 #endif // TYPES_H_

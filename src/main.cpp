@@ -19,8 +19,8 @@
 int main(int argc, char* argv[]) {
 
     // Print engine info
-    std::cout << NAME << " by " << AUTHOR << std::endl;
-    std::cout << "Built on " << __TIMESTAMP__ << std::endl;
+    // std::cout << NAME << " by " << AUTHOR << std::endl;
+    // std::cout << "Built on " << __TIMESTAMP__ << std::endl;
 
     // Initialization
     init_eval_masks();

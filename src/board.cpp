@@ -1,10 +1,15 @@
 #include "board.h"
 
 #include <cstring> //std::memset
+#include <sstream> //std::istringstream
+#ifdef DEBUG
 #include <vector>
+#include <iomanip>
+#endif
 
 #include "bitboard.h"
 #include "attack.h"
+#include "uci.h"
 #include "types.h"
 #include "movegen.h"
 #include "rng.h"
@@ -90,8 +95,10 @@ void reset(board_t *board) {
     board->key = 0ULL;
 
     // Reset king squares
-    board->king_square[WHITE] = board->king_square[BLACK] = NO_SQ;
+    // board->king_square[WHITE] = board->king_square[BLACK] = NO_SQ;
 }
+
+// TODO: Parsing current board position to a FEN string
 
 /* Initializes the board from given FEN string */
 void setup(board_t *board, const std::string& fen) {
@@ -137,8 +144,8 @@ void setup(board_t *board, const std::string& fen) {
 
     // Set the king squares
     assert(CNT(board->bitboards[K]) == CNT(board->bitboards[k]) == 1);
-    board->king_square[WHITE] = GETLSB(board->bitboards[K]);
-    board->king_square[BLACK] = GETLSB(board->bitboards[k]);
+    assert(king_square_bb(board, WHITE) == board->bitboards[K]);
+    assert(king_square_bb(board, WHITE) == board->bitboards[K]);
 
     // Set the side to move
     board->turn = (fen_parts[1] == "w") ? WHITE : BLACK;
@@ -180,42 +187,78 @@ void setup(board_t *board, const std::string& fen) {
     board->key = generate_pos_key(board);
 }
 
-/* Prints the board to stdout */
-void print(const board_t *board, bool verbose) {
-    // TODO: We might want to use " ╚═╔├ "?
-    static const std::string horizontal_line = "  +---+---+---+---+---+---+---+---+";
+// TODO: Pass the istringstream from the UCI loop by reference
+void parse_position(board_t *board, const std::string& pos_str) {
+    size_t start_pos = pos_str.find("startpos");
+    size_t fen_pos = pos_str.find("fen");
+    size_t moves_pos = pos_str.find("moves");
 
-    std::cout << horizontal_line << std::endl;
+    if (start_pos != std::string::npos) {
+        setup(board, start_FEN);
+    } else if (fen_pos != std::string::npos) {
+        size_t fen_start_pos = pos_str.find_first_not_of(" ", fen_pos + 3);
+        size_t fen_end_pos = pos_str.find(" moves", fen_start_pos);
+        if (moves_pos == std::string::npos) {
+          fen_end_pos = pos_str.size();
+        }
+        std::string fen_string = pos_str.substr(fen_start_pos, fen_end_pos - fen_start_pos);
+        setup(board, fen_string);
+    } else {
+        setup(board, start_FEN);
+    }
+
+    if (moves_pos != std::string::npos) {
+        size_t movesStartPos = pos_str.find_first_not_of(" ", moves_pos + 5);
+        if (movesStartPos == std::string::npos) return;
+        std::string movesString = pos_str.substr(movesStartPos);
+        std::istringstream iss(movesString);
+        std::string move_string;
+
+        while (iss >> move_string) {
+            move_t move = str_to_move(board, move_string);
+            if (move != NULLMV) {
+                make_move(board, move);
+            }
+            board->ply = 0;
+        }
+    }
+    //this->updateMaterial();
+    //this->initPieceList(); // already called by readFEN
+}
+
+/**
+ @brief Prints the board to stdout
+ @param board board to print
+ @param verbose whether to include additional information, like castling rights
+        (default True)
+*/
+void print(const board_t *board, bool verbose) {
+    static const std::string top_line =    "  ╔═══════════════╗ ";
+    static const std::string bottom_line = "  ╚═══════════════╝ ";
+
+    // Print files on top of the board
+    std::cout << "   a b c d e f g h" << std::endl;
+    std::cout << top_line << std::endl;
     // Loop over all ranks
     for (int rank = RANK_8; rank >= RANK_1; --rank) {
-        std::cout << rank + 1 << " ";
+        std::cout << rank + 1 << " ║";
         // Loop over all files
         for (int file = A_FILE; file <= H_FILE; ++file) {
             // Current square to print
             square_t sq = rank * RANK_NO + file;
 
-            piece_t piece_on_sq = NO_PIECE;
-            /*
-            // Check if any bitboards contain a piece on sq
-            //for (piece_t piece = P; piece <= k; ++piece) {
-            for (piece_t pc : pieces) {
-                if (GETBIT(board->bitboards[pc], sq)) {
-                    piece_on_sq = pc;
-                    break;
-                }
-            }
-            */
-            piece_on_sq = board->pieces[sq];
+            piece_t pce = board->pieces[sq];
             // Print the piece
-            std::cout << "| " << piece_to_ascii[piece_on_sq] << " ";
+            std::cout << piece_to_ascii[pce] << (file == H_FILE ? "" : " ");
         }
         // Print rank number to the right of current rank
-        std::cout << "|" << std::endl;
-        std::cout << horizontal_line << std::endl;
+        std::cout << "║ " << rank + 1 << std::endl;
     }
+    std::cout << bottom_line << std::endl;
     // Print files underneath the board
-    std::cout << "    a   b   c   d   e   f   g   h" << std::endl;
+    std::cout << "   a b c d e f g h" << std::endl << std::endl;
 
+    // TODO: Instead, print the FEN string
     if (!verbose) return;
     // Print additional information, like castle permissions, side to move etc.
     std::cout << "Side to play: " \
@@ -224,22 +267,15 @@ void print(const board_t *board, bool verbose) {
               << ((board->ep_square == NO_SQ) ? "null"
                                               : square_to_str(board->ep_square))
               << std::endl;
-    std::cout << "Castle permissions: ";
-
-    // TODO: Make into a separate function
-    std::string s;
-    if (board->castle_rights & WK) s.push_back('K');
-    if (board->castle_rights & WQ) s.push_back('Q');
-    if (board->castle_rights & BK) s.push_back('k');
-    if (board->castle_rights & BQ) s.push_back('q');
-    std::cout << s << std::endl;
+    std::cout << "Castle permissions: "
+              << castling_rights_to_str(board->castle_rights) << std::endl;
 
     std::cout << "Zobrist hash key: " << std::hex \
               << board->key << std::dec << std::endl;
 
     std::cout << "King squares: White at " \
-              << square_to_str(board->king_square[1]) << ", Black at " \
-              << square_to_str(board->king_square[0]) << std::endl;
+              << square_to_str(king_square(board, WHITE)) << ", Black at " \
+              << square_to_str(king_square(board, BLACK)) << std::endl;
 
     /*
     std::cout << "Keys:" << std::endl;
@@ -337,7 +373,7 @@ inline static void add_piece(board_t *board, piece_t pce, square_t sq) {
 
     assert(check(board));
 
-    // Add piece to the board
+    // Add piece to the current position
     // 8x8 board
     board->pieces[sq] = pce;
     // Bitboards
@@ -521,10 +557,18 @@ bool make_move(board_t *board, move_t move) {
         }
     }
 
+    /* TODO: King bitboard should have been updated by mv_piece
     // Update the king square if the king was moved
+    std::cout << piece_type(board->pieces[to]) << std::endl;
+    std::cout << KING << std::endl;
+
     if (piece_type(board->pieces[to]) == KING) {
-        board->king_square[me] = to;
+        std::cout << "Updating king square for ";
+        std::cout << (me ? "White" : "Black") << " to ";
+        std::cout << square_to_str(to) << std::endl;
+        // board->king_square[me] = to;
     }
+    */
 
     // Miscellaneous bookkeeping
     board->turn = opp;
@@ -533,7 +577,7 @@ bool make_move(board_t *board, move_t move) {
     assert(check(board));
 
     // Finally, undo the move if puts the player in check (pseudolegal move)
-    if (is_attacked(board, board->king_square[me], opp)) {
+    if (is_attacked(board, king_square(board, me), opp)) {
         undo_move(board, move);
         return false;
     }
@@ -553,9 +597,9 @@ void undo_move(board_t *board, move_t move) {
 
     // Flip sides
     int me = board->turn;
-    int opp = me ^ 1;
-    board->turn = opp;
+    int opp = me ^ 1; // The side that performed the move
 
+    board->turn = opp;
     board->key ^= turn_key;
 
     // Undo the move
@@ -615,17 +659,23 @@ void undo_move(board_t *board, move_t move) {
     // Restore 50move counter
     board->fifty_move = last.fifty_move;
 
+
+    /* TODO: King bitboard should have been updated by mv_piece
     // Restore king's square
     if (piece_type(board->pieces[from]) == KING) {
-        board->king_square[opp] = from; // TODO Validate side?
+        std::cout << "Updating king square for ";
+        std::cout << (opp ? "White" : "Black") << " to ";
+        std::cout << square_to_str(from) << std::endl;
+        // board->king_square[opp] = from; // TODO Validate side?
     }
+    */
 
     // Undo promotions
     if (is_promotion(move)) {
         // Remove piece that was promoted to
         rm_piece(board, from);
         // Add the pawn back in
-        add_piece(board, from, set_colour(PAWN, me));
+        add_piece(board, from, set_colour(PAWN, opp));
     }
 
     // Update ply counter
@@ -646,9 +696,39 @@ void undo_move(board_t *board) {
 }
 
 
-
-
 #ifdef DEBUG
+
+// Prints a shortened board stack info for the last n positions in the format:
+// [MOVE] : Key: [key]
+//        : Castling rights: [castle_rights]
+//        : En passant square: [ep_square]
+//        : Fifty move counter: [fifty_move]
+//        : Last captured piece: [captured]
+void history_trace(const board_t *b, size_t n) {
+    // Ensure that n does not exceed the number of positions in the history
+    n = std::min(n, static_cast<size_t>(b->history_ply));
+
+    for (size_t i = b->history_ply - n; i < b->history_ply; ++i) {
+      const undo_t &undo = b->history[i];
+      const move_t &move = undo.move;
+      std::cout << std::hex << std::showbase;
+      std::cout << "[" << move_to_str(move) << "] : Key: " << b->key << std::dec
+                << std::endl;
+      std::cout << std::setw(6) << ""
+                << " : Castling rights: "
+                << castling_rights_to_str(b->castle_rights) << std::endl;
+      std::cout << std::setw(6) << ""
+                << " : En passant square: "
+                << (b->ep_square == NO_SQ ? "-"
+                                              : square_to_str(b->ep_square))
+                << std::endl;
+      std::cout << std::setw(6) << ""
+                << " : Fifty move counter: " << b->fifty_move << std::endl;
+      std::cout << std::setw(6) << ""
+                << " : Last captured piece: " << piece_to_ascii[undo.captured]
+                << std::endl;
+    }
+}
 
 // Useful for testing move generation and hashing
 // Called in undo_move if in DEBUG mode, to verify
@@ -706,8 +786,8 @@ bool check_against_ref(const board_t *b) {
 
     // Squares match
     assert(b->ep_square == ref_b->ep_square);
-    assert(b->king_square[WHITE] == ref_b->king_square[WHITE]);
-    assert(b->king_square[BLACK] == ref_b->king_square[BLACK]);
+    assert(king_square(b, WHITE) == king_square(ref_b, WHITE));
+    assert(king_square(b, BLACK) == king_square(ref_b, BLACK));
 
 
     // Zobrist keys match
@@ -742,9 +822,8 @@ bool check(const board_t *board) {
            (SQUARE_RANK(board->ep_square) == RANK_3 && board->turn == BLACK) ||
            (SQUARE_RANK(board->ep_square) == RANK_6 && board->turn == WHITE));
 
-    assert((1ULL << board->king_square[WHITE]) == board->bitboards[K]);
-    assert((1ULL << board->king_square[BLACK]) == board->bitboards[k]);
-
+    // history_trace(board, 5);
+    assert((1ULL << king_square(board, WHITE)) == board->bitboards[K]);
     assert(board->castle_rights >= 0 && board->castle_rights <= 15);
 
     return true;

@@ -34,7 +34,7 @@ typedef struct board_t {
     // En passant square (if any)
     square_t ep_square = NO_SQ;
     // Kings' squares
-    square_t king_square[BOTH] = {E8, E1};
+    // square_t king_square[BOTH] = {E8, E1};
     // Zobrist hash key for the current position
     uint64_t key = 0ULL;
     // History of previous positions
@@ -46,6 +46,8 @@ extern void init_keys();
 extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);
+
+extern void parse_position(board_t *board, const std::string& pos_str);
 
 extern void print(const board_t *board, bool verbose = true);
 
@@ -62,6 +64,14 @@ inline bb_t all_pieces(const board_t *board) {
     return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
 }
 
+inline bb_t king_square_bb(const board_t* board, const int colour) {
+    return colour ? board->bitboards[K] : board->bitboards[k];
+}
+
+inline square_t king_square(const board_t* board, const int colour) {
+    return GETLSB(king_square_bb(board, colour));
+}
+
 /* TODO: */
 // Helpers handling bitboard manipulation & hashing:
 // add_piece
@@ -70,6 +80,7 @@ inline bb_t all_pieces(const board_t *board) {
 
 
 #ifdef DEBUG
+extern void history_trace(const board_t *board, size_t n);
 extern bool check(const board_t *board);
 extern bool check_against_ref(const board_t* b);
 #endif // DEBUG
