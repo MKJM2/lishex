@@ -2,6 +2,7 @@
 
 #include <cstring> //std::memset
 #include <sstream> //std::istringstream
+#include <string>
 #ifdef DEBUG
 #include <vector>
 #include <iomanip>
@@ -225,6 +226,64 @@ void parse_position(board_t *board, const std::string& pos_str) {
     //this->updateMaterial();
     //this->initPieceList(); // already called by readFEN
 }
+/**
+ @brief Returns a FEN representation of the current board
+ @param board current position
+ @return a FEN string representing current board state
+*/
+std::string to_fen(const board_t *board) {
+    std::string fen;
+
+    // Pieces
+    for (int rank = RANK_8; rank >= RANK_1; --rank) {
+        int empty_sqs = 0;
+        for (int file = A_FILE; file <= H_FILE; ++file) {
+            square_t sq = rank * RANK_NO + file;
+            piece_t pce = board->pieces[sq];
+
+            if (pce == NO_PIECE) {
+                ++empty_sqs;
+            } else {
+                if (empty_sqs > 0) {
+                    fen += std::to_string(empty_sqs);
+                    empty_sqs = 0;
+                }
+                fen += piece_to_ascii[pce];
+            }
+        }
+
+        if (empty_sqs > 0) {
+            fen += std::to_string(empty_sqs);
+        }
+
+        if (rank > 0) {
+            fen += '/';
+        }
+    }
+
+    // Side to move
+    fen += (board->turn) ? " w " : " b ";
+
+    // Castling permissions
+    fen += castling_rights_to_str(board->castle_rights);
+    fen += ' ';
+
+    // En passant square
+    if (board->ep_square != NO_SQ) {
+        fen += square_to_str(board->ep_square);
+    } else {
+        fen += '-';
+    }
+
+    // Halfmove clock
+    fen += ' ';
+    fen += std::to_string(board->ply);
+    fen += ' ';
+
+    // TODO: Fullmove clock
+
+    return fen;
+}
 
 /**
  @brief Prints the board to stdout
@@ -233,12 +292,9 @@ void parse_position(board_t *board, const std::string& pos_str) {
         (default True)
 */
 void print(const board_t *board, bool verbose) {
-    static const std::string top_line =    "  ╔═══════════════╗ ";
-    static const std::string bottom_line = "  ╚═══════════════╝ ";
-
     // Print files on top of the board
     std::cout << "   a b c d e f g h" << std::endl;
-    std::cout << top_line << std::endl;
+    std::cout << "  ╔═══════════════╗ " << std::endl;
     // Loop over all ranks
     for (int rank = RANK_8; rank >= RANK_1; --rank) {
         std::cout << rank + 1 << " ║";
@@ -254,12 +310,17 @@ void print(const board_t *board, bool verbose) {
         // Print rank number to the right of current rank
         std::cout << "║ " << rank + 1 << std::endl;
     }
-    std::cout << bottom_line << std::endl;
+    std::cout << "  ╚═══════════════╝ " << std::endl;
     // Print files underneath the board
     std::cout << "   a b c d e f g h" << std::endl << std::endl;
 
     // TODO: Instead, print the FEN string
     if (!verbose) return;
+
+    std::cout << "Zobrist hash key: " << std::hex << std::showbase \
+              << board->key << std::dec << std::endl;
+    std::cout << "FEN: " << to_fen(board) << std::endl;
+    /*
     // Print additional information, like castle permissions, side to move etc.
     std::cout << "Side to play: " \
               << ((board->turn) ? "White" : "Black") << std::endl;
@@ -277,7 +338,6 @@ void print(const board_t *board, bool verbose) {
               << square_to_str(king_square(board, WHITE)) << ", Black at " \
               << square_to_str(king_square(board, BLACK)) << std::endl;
 
-    /*
     std::cout << "Keys:" << std::endl;
     for (piece_t p : pieces) {
         for (square_t sq = A1; sq <= H8; ++sq) {

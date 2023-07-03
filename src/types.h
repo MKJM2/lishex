@@ -279,6 +279,9 @@ const int castle_spoils[SQUARE_NO] = {
 };
 
 inline std::string castling_rights_to_str(int castle_rights) {
+    if (!castle_rights) {
+        return "-";
+    }
     std::string s;
     if (castle_rights & WK) s.push_back('K');
     if (castle_rights & WQ) s.push_back('Q');
