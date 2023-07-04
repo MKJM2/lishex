@@ -75,16 +75,38 @@ void generate_promotions(board_t *board, movelist_t *moves) {
 
     int& me = board->turn;
 
+    // Direction of pawn movement
+    int dir = (me) ? NORTH : SOUTH;
+
     // We need to flag capture promotions accordingly (for move ordering etc.)
     bb_t pawns_bb = board->bitboards[me ? P : p] & PROMOTING(me);
 
     /* Captures */
     bb_t opp_pieces = board->sides_pieces[me ^ 1];
-    bb_t promotable_bb = pawns_bb;
 
-    bb_t captures = 0ULL;
+    // East capture promotions
+    bb_t targets = (me) ? ne_shift(pawns_bb) : se_shift(pawns_bb);
+    targets &= opp_pieces;
+    while (targets) {
+        // Add all possible east capture promotions to the move list
+        to = POPLSB(targets);
+        for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
+            moves->push_back(Move(to - dir - EAST, to, type | CAPTURE));
+        }
+    }
 
-    // TODO: No need for an outer for-loop, instead of processing pawns 1-by-1
+    // West capture promotions
+    targets = (me) ? nw_shift(pawns_bb) : sw_shift(pawns_bb);
+    targets &= opp_pieces;
+    while (targets) {
+        to = POPLSB(targets);
+        for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
+            moves->push_back(Move(to - dir - WEST, to, type | CAPTURE));
+        }
+    }
+
+    /*
+    // No need for an outer for-loop, instead of processing pawns 1-by-1
     // we can shift the entire bitboard all at once
 
     // For each pawn that can be promoted
@@ -103,23 +125,31 @@ void generate_promotions(board_t *board, movelist_t *moves) {
             }
         }
     }
+    */
 
     /* Non-captures */
     bb_t empty_squares = ~all_pieces(board);
-    bb_t pushes = 0ULL;
-    promotable_bb = pawns_bb;
 
-    while (promotable_bb) {
-        pushes = (me) ? n_shift(promotable_bb) : s_shift(promotable_bb);
-        pushes &= empty_squares;
-        from = POPLSB(promotable_bb);
-        while (pushes) {
-            to = POPLSB(pushes);
-            for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
-                moves->push_back(Move(from, to, type));
-            }
+    targets = (me) ? n_shift(pawns_bb) : s_shift(pawns_bb);
+    targets &= empty_squares;
+    while (targets) {
+        to = POPLSB(targets);
+        for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
+            moves->push_back(Move(to - dir, to, type));
         }
     }
+
+    // while (promotable_bb) {
+    //     pushes = (me) ? n_shift(promotable_bb) : s_shift(promotable_bb);
+    //     pushes &= empty_squares;
+    //     from = POPLSB(promotable_bb);
+    //     while (pushes) {
+    //         to = POPLSB(pushes);
+    //         for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
+    //             moves->push_back(Move(from, to, type));
+    //         }
+    //     }
+    // }
 }
 
 // enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };

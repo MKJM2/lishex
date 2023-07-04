@@ -300,5 +300,6 @@ const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 const std::string test1_FEN = "r3k2r/p1ppqpb1/Bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPB1PpP/R3K2R b KQkq - 0 1";
 const std::string test2_FEN = "8/8/2k5/8/8/8/5K2/R7 w - - 0 1";
+const std::string test3_FEN = "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1";
 
 #endif // TYPES_H_

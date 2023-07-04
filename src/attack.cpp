@@ -318,6 +318,7 @@ void init_slider_attacks() {
 // assert(attack_tables_valid());
 bool attack_tbs_valid(const bb_t occupancies) {
 
+
     // Testing magic entries
     bb_t b1, b2;
     for (square_t sq = A1; sq <= H8; ++sq) {
