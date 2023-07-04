@@ -23,6 +23,9 @@ bb_t king_attacks[SQUARE_NO];
 /* Fancy Magics */
 bb_t bishop_occupancies[SQUARE_NO];
 bb_t rook_occupancies[SQUARE_NO];
+// The sizes are determined by the number of possible occupancy
+// subsets for each given square. See the section on cardinality
+// at https://www.chessprogramming.org/Magic_Bitboards
 bb_t bishop_attacks[5248];
 bb_t rook_attacks[102400];
 
@@ -302,9 +305,43 @@ bb_t generate_attacks<ROOK>(square_t sq, bb_t blockers) {
 }
 
 
+/*
 void init_slider_attacks() {
     for (square_t sq = A1; sq <= H8; ++sq) {
         bishop_attacks[sq] = 0ULL;
         rook_attacks[sq] = 0ULL;
     }
 }
+*/
+
+#ifdef DEBUG
+// assert(attack_tables_valid());
+bool attack_tbs_valid(const bb_t occupancies) {
+
+    // Testing magic entries
+    bb_t b1, b2;
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        // Rooks
+        b1 = generate_attacks<ROOK>(sq, occupancies);
+        b2 = attacks<ROOK>(sq, occupancies);
+        if (b1 != b2) {
+            std::cout << "Mismatch at " << square_to_str(sq) + ":" << std::endl;
+            printBB(b1);
+            std::cout << "      vs      \n";
+            printBB(b2);
+            return false;
+        }
+        // Bishops
+        b1 = generate_attacks<BISHOP>(sq, occupancies);
+        b2 = attacks<BISHOP>(sq, occupancies);
+        if (b1 != b2) {
+            std::cout << "Mismatch at " << square_to_str(sq) + ":" << std::endl;
+            printBB(b1);
+            std::cout << "      vs      \n";
+            printBB(b2);
+            return false;
+        }
+    }
+    return true;
+}
+#endif

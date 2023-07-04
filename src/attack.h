@@ -131,15 +131,14 @@ void init_magics() {
 
     // For a given configuration, there can be at most 4096 (2^12)
     // subsets of possible blockers (for rooks, bishops have less)
-    bb_t blockers[1 << 12];
+    bb_t blockers[1 << 12] = {};
     // ...for each of them we compute the possible slider piece attacks
-    bb_t slider_attacks[1 << 12];
-
+    bb_t slider_attacks[1 << 12] = {};
     // ...and we keep track of what attacks the magics map to
-    bb_t magic_attacks[1 << 12];
+    bb_t magic_attacks[1 << 12] = {};
 
     // We keep track of the current subset of blockers
-    bb_t subset = 0;
+    bb_t subset = 0ULL;
 
     // In addition, we keep track of how many subsets there are
     size_t subsets_no = 0;
@@ -160,7 +159,7 @@ void init_magics() {
         // We use the Carry-Ripler trick
         // to iterate over all subsets for the given occupancy mask
         // (https://www.chessprogramming.org/Traversing_Subsets_of_a_Set)
-        subset = 0; subsets_no = 0;
+        subset = 0ULL; subsets_no = 0;
         do {
             // Store the subset
             blockers[subsets_no] = subset;
@@ -170,8 +169,8 @@ void init_magics() {
             ++subsets_no;
         } while (subset);
 
-        // TODO: Make this cleaner
         /*
+        // TODO: Make this cleaner
         // If we have precomputed magics, just use those:
         if (precomputed_bishop_magics) {
             magic.magic = (PIECE_T == BISHOP) ? precomputed_bishop_magics[sq]
@@ -221,5 +220,9 @@ void init_magics() {
     }
     // std::cout << std::endl;
 }
+
+#ifdef DEBUG
+bool attack_tbs_valid(const bb_t occupancies);
+#endif
 
 #endif // ATTACK_H_

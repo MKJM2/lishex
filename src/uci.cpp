@@ -13,7 +13,7 @@ void loop(int argc, char* argv[]) {
 
     board_t board[1];
     //setup(board, start_FEN);
-    setup(board, test1_FEN);
+    setup(board, test2_FEN);
 
     searchinfo_t info[1];
 

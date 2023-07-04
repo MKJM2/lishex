@@ -30,7 +30,8 @@ int main(int argc, char* argv[]) {
     init_rook_occupancies();
     init_magics<BISHOP>();
     init_magics<ROOK>();
-    init_slider_attacks();
+
+    assert(attack_tbs_valid(4398046519297ULL));
 
     // Start UCI driver loop
     loop(argc, argv);

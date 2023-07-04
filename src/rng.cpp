@@ -8,14 +8,14 @@ namespace {
 // We use the SplitMix64 generator to initialize xoshiro256+
 uint64_t x; /* The state can be seeded with any value. */
 
-uint64_t splitmix_next() {
+inline uint64_t splitmix_next() {
 	uint64_t z = (x += 0x9e3779b97f4a7c15);
 	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
 	z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
 	return z ^ (z >> 31);
 }
 
-uint64_t rol64(uint64_t x, int k) {
+inline uint64_t rol64(uint64_t x, int k) {
     return (x << k) | (x >> (64 - k));
 }
 
