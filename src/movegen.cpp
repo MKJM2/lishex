@@ -71,7 +71,7 @@ void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
 // Returns promotions
 void generate_promotions(board_t *board, movelist_t *moves) {
 
-    square_t from, to;
+    square_t to;
 
     int& me = board->turn;
 

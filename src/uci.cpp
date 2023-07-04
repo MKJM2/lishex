@@ -1,9 +1,11 @@
 #include "uci.h"
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #include "board.h"
+#include "time.h" // now()
 
 /* UCI driver loop */
 void loop(int argc, char* argv[]) {
@@ -63,22 +65,29 @@ void loop(int argc, char* argv[]) {
 
             int depthSet = depth_str.empty() ? 5 : stoi(depth_str);
             uint64_t node_no;
-            for (int depth = 0; depth < depthSet; ++depth) {
+
+            // Pretty print a table of perft results
+            std::cout << std::right << "DEPTH\t";
+            std::cout << std::setw(7) << "NODES\t";
+            std::cout << std::setw(12) << "TIME (ms)\t";
+            std::cout << std::setw(7) << "NPS" << std::endl;
+            std::string s (40, '-');
+            std::cout << s << std::endl;
+            for (int depth = 1; depth <= depthSet; ++depth) {
                 int NPS = 0; // # Nodes per (mili)second
-                //auto start = high_resolution_clock::now();
-                //auto start = getTime();
+                uint64_t start = now();
                 node_no = perft(board, depth);
-                //auto end = high_resolution_clock::now();
-                //auto end = getTime();
-                //auto elapsed = end - start;
-                //auto elapsed =
-                    //duration_cast<milliseconds>(end - start).count();
-                auto elapsed = 0UL;
-                //NPS = static_cast<double>(node_no) / elapsed;
-                //NPS *= 1000; // nodes per ms -> nodes per s
-                NPS = 0;
+                uint64_t elapsed = now() - start;
+                NPS = static_cast<double>(node_no) / elapsed;
+                NPS *= 1000; // nodes per ms -> nodes per s
+                std::cout << std::right << std::setw(7) << depth << '\t';
+                std::cout << std::right << std::setw(12) << node_no << '\t';
+                std::cout << std::right << std::setw(7) << elapsed << '\t';
+                std::cout << std::right << std::setw(7) << NPS << std::endl;
+                /*
                 printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
                                 depth,     node_no,     elapsed,  NPS);
+                */
             }
         } else if (token == "divide") {
             // Get user argument

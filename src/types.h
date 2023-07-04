@@ -69,6 +69,10 @@ enum : int {
     NORTH_WEST = -SOUTH_EAST
 };
 
+inline square_t mirror(const square_t sq) {
+    return sq ^ 56;
+}
+
 inline std::string square_to_str(square_t sq) {
     return std::string{(char)('a'+SQUARE_FILE(sq)),(char)('1'+SQUARE_RANK(sq))};
 }

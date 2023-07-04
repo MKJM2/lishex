@@ -14,7 +14,7 @@ endif
 optimize ?= yes
 ifeq ($(optimize),yes)
 	ifneq ($(debug),yes)
-		CXXFLAGS += -Ofast -fno-exceptions # -DNO_TT # -DNO_NMH
+		CXXFLAGS += -Ofast -pipe -fno-exceptions -flto -mpopcnt -m64 -mbmi2  # -DNO_TT # -DNO_NMH
 	endif
 endif
 
