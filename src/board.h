@@ -83,6 +83,7 @@ inline square_t king_square(const board_t* board, const int colour) {
 extern void history_trace(const board_t *board, size_t n);
 extern bool check(const board_t *board);
 extern bool check_against_ref(const board_t* b);
+extern void perft_test(board_t *board, const std::string& epd_filename);
 #endif // DEBUG
 
 

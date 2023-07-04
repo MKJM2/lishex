@@ -97,7 +97,7 @@ void generate_promotions(board_t *board, movelist_t *moves) {
         while (captures) {
             // Add all possible capture promotions to the move list
             to = POPLSB(captures);
-            for (int type = QUEENCASTLE; type >= KNIGHTPROMO; --type) {
+            for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
                 // We additionally flag the move as a capture
                 moves->push_back(Move(from, to, type | CAPTURE));
             }
@@ -114,8 +114,8 @@ void generate_promotions(board_t *board, movelist_t *moves) {
         pushes &= empty_squares;
         from = POPLSB(promotable_bb);
         while (pushes) {
-            to = POPLSB(promotable_bb);
-            for (int type = QUEENCASTLE; type >= KNIGHTPROMO; --type) {
+            to = POPLSB(pushes);
+            for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
                 moves->push_back(Move(from, to, type));
             }
         }

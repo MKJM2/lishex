@@ -13,7 +13,7 @@ void loop(int argc, char* argv[]) {
 
     board_t board[1];
     //setup(board, start_FEN);
-    setup(board, kiwipete_FEN);
+    setup(board, test1_FEN);
 
     searchinfo_t info[1];
 
@@ -89,7 +89,6 @@ void loop(int argc, char* argv[]) {
             uint64_t node_no = perft(board, depth, true);
             std::cout << std::endl;
             std::cout << node_no << std::endl;
-
         } else if (token == "position") {
             // Parse the position command and update the board accordingly
             // Example: position startpos moves e2e4 e7e5

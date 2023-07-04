@@ -6,6 +6,7 @@
 #ifdef DEBUG
 #include <vector>
 #include <iomanip>
+#include <fstream>
 #endif
 
 #include "bitboard.h"
@@ -292,12 +293,13 @@ std::string to_fen(const board_t *board) {
         (default True)
 */
 void print(const board_t *board, bool verbose) {
+    // TODO: Overload the << operator for board printing
     // Print files on top of the board
-    std::cout << "   a b c d e f g h" << std::endl;
-    std::cout << "  ╔═══════════════╗ " << std::endl;
+    std::cout << "    a b c d e f g h" << std::endl;
+    std::cout << "  ╔═════════════════╗ " << std::endl;
     // Loop over all ranks
     for (int rank = RANK_8; rank >= RANK_1; --rank) {
-        std::cout << rank + 1 << " ║";
+        std::cout << rank + 1 << " ║ ";
         // Loop over all files
         for (int file = A_FILE; file <= H_FILE; ++file) {
             // Current square to print
@@ -305,19 +307,20 @@ void print(const board_t *board, bool verbose) {
 
             piece_t pce = board->pieces[sq];
             // Print the piece
-            std::cout << piece_to_ascii[pce] << (file == H_FILE ? "" : " ");
+            //std::cout << piece_to_ascii[pce] << (file == H_FILE ? "" : " ");
+            std::cout << piece_to_ascii[pce] << " ";
         }
         // Print rank number to the right of current rank
         std::cout << "║ " << rank + 1 << std::endl;
     }
-    std::cout << "  ╚═══════════════╝ " << std::endl;
+    std::cout << "  ╚═════════════════╝ " << std::endl;
     // Print files underneath the board
-    std::cout << "   a b c d e f g h" << std::endl << std::endl;
+    std::cout << "    a b c d e f g h" << std::endl << std::endl;
 
-    // TODO: Instead, print the FEN string
-    if (!verbose) return;
+    if (!verbose)
+        return;
 
-    std::cout << "Zobrist hash key: " << std::hex << std::showbase \
+    std::cout << "KEY: " << std::hex << std::showbase \
               << board->key << std::dec << std::endl;
     std::cout << "FEN: " << to_fen(board) << std::endl;
     /*
@@ -337,41 +340,6 @@ void print(const board_t *board, bool verbose) {
     std::cout << "King squares: White at " \
               << square_to_str(king_square(board, WHITE)) << ", Black at " \
               << square_to_str(king_square(board, BLACK)) << std::endl;
-
-    std::cout << "Keys:" << std::endl;
-    for (piece_t p : pieces) {
-        for (square_t sq = A1; sq <= H8; ++sq) {
-            std::cout << piece_keys[p][sq] << std::endl;
-        }
-    }
-    std::cout << "Turn key:" << std::endl;
-    std::cout << turn_key << std::endl;
-    std::cout << "Castle keys:" << std::endl;
-    for (int i = 0; i < 16; ++i) {
-        std::cout << castle_keys[i] << std::endl;
-    }
-    std::cout << "Piece counts: " << std::endl;
-    std::cout << "White pawns: ";
-    std::cout << pceCount[Piece::White | Piece::Pawn] << std::endl;
-    std::cout << "Black pawns: ";
-    std::cout << pceCount[Piece::Black | Piece::Pawn] << std::endl;
-    std::cout << "White Knights: ";
-    std::cout << pceCount[Piece::White | Piece::Knight] << std::endl;
-    std::cout << "Black Knights: ";
-    std::cout << pceCount[Piece::Black | Piece::Knight] << std::endl;
-    std::cout << "White Bishops: ";
-    std::cout << pceCount[Piece::White | Piece::Bishop] << std::endl;
-    std::cout << "Black Bishops: ";
-    std::cout << pceCount[Piece::Black | Piece::Bishop] << std::endl;
-    std::cout << "White Rooks: ";
-    std::cout << pceCount[Piece::White | Piece::Rook] << std::endl;
-    std::cout << "Black Rooks: ";
-    std::cout << pceCount[Piece::Black | Piece::Rook] << std::endl;
-    std::cout << "White Queens: ";
-    std::cout << pceCount[Piece::White | Piece::Queen] << std::endl;
-    std::cout << "Black Queens: ";
-    std::cout << pceCount[Piece::Black | Piece::Queen] << std::endl;
-    std::cout << "Fifty Move Counter: " << fiftyMoveCounter << "\n";
     */
 }
 
@@ -412,18 +380,11 @@ uint64_t generate_pos_key(const board_t *board) {
 void test(board_t *board) {
     assert(check(board));
 
-    // bb_t blockers = 0x8005000022400ULL;
+    #ifdef DEBUG
+    perft_test(board, "./tests/perftsuite.epd");
+    #endif
 
-    //printBB(gen_rook_attacks(D5, blockers));
-    square_t sq;
-    for (int rank = RANK_8; rank >= RANK_1; --rank) {
-        for (int file = A_FILE; file <= H_FILE; ++file) {
-            sq = rank * 8 + file;
-            std::cout << (is_attacked(board, sq, WHITE) ? "X " : "0 ");
-        }
-        std::cout << std::endl;
-    }
-
+    assert(check(board));
 }
 
 /* Helpers for manipulating pieces on the board */
@@ -606,14 +567,14 @@ bool make_move(board_t *board, move_t move) {
         rm_piece(board, to);
         // clear the capture bit
         switch (flags & ~CAPTURE) {
-            case QUEENPROMO:
-                add_piece(board, set_colour(QUEEN, me), to); break;
             case ROOKPROMO:
                 add_piece(board, set_colour(ROOK, me), to); break;
             case BISHOPPROMO:
                 add_piece(board, set_colour(BISHOP, me), to); break;
             case KNIGHTPROMO:
                 add_piece(board, set_colour(KNIGHT, me), to); break;
+            default: /* QUEENPROMO */
+                add_piece(board, set_colour(QUEEN, me), to); break;
         }
     }
 
@@ -735,7 +696,7 @@ void undo_move(board_t *board, move_t move) {
         // Remove piece that was promoted to
         rm_piece(board, from);
         // Add the pawn back in
-        add_piece(board, from, set_colour(PAWN, opp));
+        add_piece(board, set_colour(PAWN, opp), from);
     }
 
     // Update ply counter
@@ -874,7 +835,7 @@ bool check(const board_t *board) {
     if (expected != board->key) {
       std::cout << std::hex << "Expected: " << expected \
                 << "\nGot: " << board->key << std::dec << std::endl;
-      // assert(false);
+      print(board);
       return false;
     }
 
@@ -888,4 +849,31 @@ bool check(const board_t *board) {
 
     return true;
 }
+
+/**
+ * Move generation testing with perft()
+ * TODO: Automate verifying the results
+*/
+void perft_test(board_t *board, const std::string& epd_filename) {
+  std::fstream epdfile;
+  epdfile.open(epd_filename, std::ios::in);
+
+  int time = 100000;
+  if (epdfile.is_open()) {
+    std::string fenline;
+    while (getline(epdfile, fenline)) {
+      std::cout << "Testing position " << fenline << std::endl;
+
+      setup(board, fenline);
+      for (int depth = 0; depth < 6; ++depth) {
+          std::cout << perft(board, depth) << std::endl;
+      }
+    }
+    epdfile.close();
+  } else {
+    std::cout << "File couldn't be opened" << std::endl;
+  }
+  std::cout << "Perft test finished!\n" << std::endl;
+}
+
 #endif // DEBUG
