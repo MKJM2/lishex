@@ -67,23 +67,27 @@ void loop(int argc, char* argv[]) {
             uint64_t node_no;
 
             // Pretty print a table of perft results
+            /*
             std::cout << std::right << "DEPTH\t";
-            std::cout << std::setw(7) << "NODES\t";
-            std::cout << std::setw(12) << "TIME (ms)\t";
-            std::cout << std::setw(7) << "NPS" << std::endl;
-            std::string s (40, '-');
+            std::cout << std::setw(10) << "NODES\t";
+            std::cout << std::setw(2) << "TIME (μs)\t";
+            std::cout << std::setw(2) << "NPS" << std::endl;
+            */
+            std::cout <<
+                "DEPTH	       NODES       TIME (μs)    NPS" << std::endl;
+            std::string s (43, '-');
             std::cout << s << std::endl;
             for (int depth = 1; depth <= depthSet; ++depth) {
                 int NPS = 0; // # Nodes per (mili)second
                 uint64_t start = now();
                 node_no = perft(board, depth);
                 uint64_t elapsed = now() - start;
-                NPS = static_cast<double>(node_no) / elapsed;
-                NPS *= 1000; // nodes per ms -> nodes per s
-                std::cout << std::right << std::setw(7) << depth << '\t';
+                // nodes per microsecond -> nodes per s
+                NPS = node_no * 1'000'000 / elapsed;
+                std::cout << std::right << std::setw(5) << depth << '\t';
                 std::cout << std::right << std::setw(12) << node_no << '\t';
                 std::cout << std::right << std::setw(7) << elapsed << '\t';
-                std::cout << std::right << std::setw(7) << NPS << std::endl;
+                std::cout << std::right << std::setw(11) << NPS << std::endl;
                 /*
                 printf("Depth: %2d Nodes: %10lu Time: %5ld NPS: %7.0d\n",
                                 depth,     node_no,     elapsed,  NPS);

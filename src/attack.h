@@ -34,7 +34,11 @@ typedef struct magic_t {
     uint32_t shift;
     // Function returning the key into lookup table
     inline uint32_t key(bb_t occupied) {
-        return ((occupied & mask) * magic) >> shift;
+        if constexpr(bmi2) {
+            return _pext_u64(occupied, mask);
+        } else {
+            return ((occupied & mask) * magic) >> shift;
+        }
     }
 } magic_t;
 
@@ -165,6 +169,11 @@ void init_magics() {
             blockers[subsets_no] = subset;
             // Generate attacks for the subset the regular (slow) way
             slider_attacks[subsets_no] = generate_attacks<PIECE_T>(sq, subset);
+
+            if constexpr (bmi2) {
+                magic.attack_ptr[magic.key(subset)] =
+                    slider_attacks[subsets_no];
+            }
             subset = (subset - magic.mask) & magic.mask;
             ++subsets_no;
         } while (subset);
@@ -180,37 +189,42 @@ void init_magics() {
         }
         */
 
-        /* Now that we have all the possible subsets stored in blockers[]
-         * and all the attack bitboards generated, we look for magics */
+        // If not using the BMI2 instruction set, the pext function isn't available and we
+        // have to generate magics // TODO: Precompute the magics
+        if constexpr (!bmi2) {
 
-        // We'll break on the first occurance of a valid magic number
-        // for the given square sq
-        bool valid = false;
-        while (!valid) {
-            // Generate a random candidate for the magic number
-            magic.magic = sparse_uint64();
-            valid = true;
+            /* Now that we have all the possible subsets stored in blockers[]
+            * and all the attack bitboards generated, we look for magics */
 
-            // Clear out whatever attacks the previous magic mapped to
-            memset(magic_attacks, 0ULL, sizeof(magic_attacks));
+            // We'll break on the first occurance of a valid magic number
+            // for the given square sq
+            bool valid = false;
+            while (!valid) {
+                // Generate a random candidate for the magic number
+                magic.magic = sparse_uint64();
+                valid = true;
 
-            // For each subset, we verify that the magic index maps to the correct
-            // attacks in the attack table.
-            for (size_t subset_idx = 0; subset_idx < subsets_no; ++subset_idx) {
-                uint32_t key = magic.key(blockers[subset_idx]);
+                // Clear out whatever attacks the previous magic mapped to
+                memset(magic_attacks, 0ULL, sizeof(magic_attacks));
 
-                // Store the mapping if none created so far
-                if (magic_attacks[key] == 0ULL) {
-                    magic_attacks[key] = slider_attacks[subset_idx];
-                    magic.attack_ptr[key] = magic_attacks[key];
-                    continue;
-                }
+                // For each subset, we verify that the magic index maps to the correct
+                // attacks in the attack table.
+                for (size_t subset_idx = 0; subset_idx < subsets_no; ++subset_idx) {
+                    uint32_t key = magic.key(blockers[subset_idx]);
 
-                // Check if the magic maps to the correct attack
-                if (magic_attacks[key] != slider_attacks[subset_idx]) {
-                    // The magic doesn't map to the correct attacks, hence invalid!
-                    valid = false;
-                    break;
+                    // Store the mapping if none created so far
+                    if (magic_attacks[key] == 0ULL) {
+                        magic_attacks[key] = slider_attacks[subset_idx];
+                        magic.attack_ptr[key] = magic_attacks[key];
+                        continue;
+                    }
+
+                    // Check if the magic maps to the correct attack
+                    if (magic_attacks[key] != slider_attacks[subset_idx]) {
+                        // The magic doesn't map to the correct attacks, hence invalid!
+                        valid = false;
+                        break;
+                    }
                 }
             }
         }

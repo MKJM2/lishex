@@ -29,6 +29,16 @@ printf("At Line %d\n",__LINE__); \
 exit(1);}
 #endif
 
+/*  The PEXT instruction is part of the BMI2 instruction set introduced
+ *  in Intel Haswell CPUs. With pext, we have no need for magic numbers */
+#ifdef __BMI2__
+#include <x86intrin.h>
+constexpr bool bmi2 = true;
+#else
+constexpr bool bmi2 = false;
+#endif
+
+
 /***********/
 /* Squares */
 /***********/
@@ -300,6 +310,7 @@ typedef struct searchinfo_t {
     bool quit = false;
 } searchinfo_t;
 
+// Useful test positions
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 const std::string test1_FEN = "r3k2r/p1ppqpb1/Bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPB1PpP/R3K2R b KQkq - 0 1";
