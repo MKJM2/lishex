@@ -34,8 +34,8 @@ typedef struct magic_t {
     uint32_t shift;
     // Function returning the key into lookup table
     inline uint32_t key(bb_t occupied) {
-        if constexpr(bmi2) {
-            return _pext_u64(occupied, mask);
+        if constexpr (bmi2) {
+            return static_cast<uint32_t>(_pext_u64(occupied, mask));
         } else {
             return ((occupied & mask) * magic) >> shift;
         }
@@ -112,10 +112,7 @@ inline bb_t attacks(square_t from, bb_t blockers) {
         return attacks<BISHOP>(from, blockers) | attacks<ROOK>(from, blockers);
     } else {
         magic_t& m = magics<PIECE_T>[from];
-        blockers &= m.mask;
-        blockers *= m.magic;
-        blockers >>= m.shift;
-        return m.attack_ptr[blockers];
+        return m.attack_ptr[m.key(blockers)];
     }
 }
 
@@ -160,8 +157,8 @@ void init_magics() {
         magic.attack_ptr = (sq == A1) ? attack_table<PIECE_T>
             : magics<PIECE_T>[sq - 1].attack_ptr + subsets_no;
 
-        // We use the Carry-Ripler trick
-        // to iterate over all subsets for the given occupancy mask
+        // We use the Carry-Ripler trick to iterate over all subsets
+        // of occupiers for the given occupancy mask
         // (https://www.chessprogramming.org/Traversing_Subsets_of_a_Set)
         subset = 0ULL; subsets_no = 0;
         do {
@@ -171,9 +168,9 @@ void init_magics() {
             slider_attacks[subsets_no] = generate_attacks<PIECE_T>(sq, subset);
 
             if constexpr (bmi2) {
-                magic.attack_ptr[magic.key(subset)] =
-                    slider_attacks[subsets_no];
+                magic.attack_ptr[magic.key(subset)] = slider_attacks[subsets_no];
             }
+
             subset = (subset - magic.mask) & magic.mask;
             ++subsets_no;
         } while (subset);

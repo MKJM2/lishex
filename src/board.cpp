@@ -188,45 +188,6 @@ void setup(board_t *board, const std::string& fen) {
     // Generate the starting position key for this FEN
     board->key = generate_pos_key(board);
 }
-
-// TODO: Pass the istringstream from the UCI loop by reference
-void parse_position(board_t *board, const std::string& pos_str) {
-    size_t start_pos = pos_str.find("startpos");
-    size_t fen_pos = pos_str.find("fen");
-    size_t moves_pos = pos_str.find("moves");
-
-    if (start_pos != std::string::npos) {
-        setup(board, start_FEN);
-    } else if (fen_pos != std::string::npos) {
-        size_t fen_start_pos = pos_str.find_first_not_of(" ", fen_pos + 3);
-        size_t fen_end_pos = pos_str.find(" moves", fen_start_pos);
-        if (moves_pos == std::string::npos) {
-          fen_end_pos = pos_str.size();
-        }
-        std::string fen_string = pos_str.substr(fen_start_pos, fen_end_pos - fen_start_pos);
-        setup(board, fen_string);
-    } else {
-        setup(board, start_FEN);
-    }
-
-    if (moves_pos != std::string::npos) {
-        size_t movesStartPos = pos_str.find_first_not_of(" ", moves_pos + 5);
-        if (movesStartPos == std::string::npos) return;
-        std::string movesString = pos_str.substr(movesStartPos);
-        std::istringstream iss(movesString);
-        std::string move_string;
-
-        while (iss >> move_string) {
-            move_t move = str_to_move(board, move_string);
-            if (move != NULLMV) {
-                make_move(board, move);
-            }
-            board->ply = 0;
-        }
-    }
-    //this->updateMaterial();
-    //this->initPieceList(); // already called by readFEN
-}
 /**
  @brief Returns a FEN representation of the current board
  @param board current position

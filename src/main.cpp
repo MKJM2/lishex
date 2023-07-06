@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
     init_magics<BISHOP>();
     init_magics<ROOK>();
 
-    assert(attack_tbs_valid(4398046519297ULL));
+    assert(attack_tbs_valid(4398046519300ULL));
 
     // Start UCI driver loop
     loop(argc, argv);

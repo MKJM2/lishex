@@ -29,6 +29,13 @@ printf("At Line %d\n",__LINE__); \
 exit(1);}
 #endif
 
+#ifdef DEBUG
+#define LOG(msg) \
+    std::cout << __FILE__ << "(" << __LINE__ << "): " << msg << std::endl
+#else
+#define LOG(msg)
+#endif
+
 /*  The PEXT instruction is part of the BMI2 instruction set introduced
  *  in Intel Haswell CPUs. With pext, we have no need for magic numbers */
 #ifdef __BMI2__
@@ -305,6 +312,9 @@ inline std::string castling_rights_to_str(int castle_rights) {
 }
 
 typedef struct searchinfo_t {
+    int time;
+    int inc;
+    int depth;
     int start;
     int end;
     bool quit = false;
@@ -314,7 +324,7 @@ typedef struct searchinfo_t {
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 const std::string test1_FEN = "r3k2r/p1ppqpb1/Bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPB1PpP/R3K2R b KQkq - 0 1";
-const std::string test2_FEN = "8/8/2k5/8/8/8/5K2/R7 w - - 0 1";
+const std::string test2_FEN = "8/2k5/8/8/8/8/5K2/2R6 w - - 0 1";
 const std::string test3_FEN = "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1";
 
 #endif // TYPES_H_

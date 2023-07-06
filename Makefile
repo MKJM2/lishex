@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17
+CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17 -mpopcnt -m64 -mbmi2
 SRC_DIR = src
 BUILD_DIR = build
 TARGET = lishex
@@ -14,7 +14,7 @@ endif
 optimize ?= yes
 ifeq ($(optimize),yes)
 	ifneq ($(debug),yes)
-		CXXFLAGS += -Ofast -pipe -fno-exceptions -flto -mpopcnt -m64 -mbmi2  # -DNO_TT # -DNO_NMH
+		CXXFLAGS += -Ofast -pipe -fno-exceptions -flto # -DNO_TT # -DNO_NMH
 	endif
 endif
 

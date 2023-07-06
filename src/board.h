@@ -47,8 +47,6 @@ extern void reset(board_t *board);
 
 extern void setup(board_t *board, const std::string& fen);
 
-extern void parse_position(board_t *board, const std::string& pos_str);
-
 extern void print(const board_t *board, bool verbose = true);
 
 extern void test(board_t *board);

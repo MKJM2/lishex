@@ -318,7 +318,6 @@ void init_slider_attacks() {
 // assert(attack_tables_valid());
 bool attack_tbs_valid(const bb_t occupancies) {
 
-
     // Testing magic entries
     bb_t b1, b2;
     for (square_t sq = A1; sq <= H8; ++sq) {
@@ -326,7 +325,7 @@ bool attack_tbs_valid(const bb_t occupancies) {
         b1 = generate_attacks<ROOK>(sq, occupancies);
         b2 = attacks<ROOK>(sq, occupancies);
         if (b1 != b2) {
-            std::cout << "Mismatch at " << square_to_str(sq) + ":" << std::endl;
+            std::cout << "Rook mismatch at " << square_to_str(sq) + ":" << std::endl;
             printBB(b1);
             std::cout << "      vs      \n";
             printBB(b2);
@@ -336,7 +335,7 @@ bool attack_tbs_valid(const bb_t occupancies) {
         b1 = generate_attacks<BISHOP>(sq, occupancies);
         b2 = attacks<BISHOP>(sq, occupancies);
         if (b1 != b2) {
-            std::cout << "Mismatch at " << square_to_str(sq) + ":" << std::endl;
+            std::cout << "Bishop mismatch at " << square_to_str(sq) + ":" << std::endl;
             printBB(b1);
             std::cout << "      vs      \n";
             printBB(b2);

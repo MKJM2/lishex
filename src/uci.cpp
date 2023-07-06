@@ -7,6 +7,112 @@
 #include "board.h"
 #include "time.h" // now()
 
+namespace {
+
+// TODO: Pass the istringstream from the UCI loop by reference
+void parse_position(board_t *board, const std::string& pos_str) {
+    size_t start_pos = pos_str.find("startpos");
+    size_t fen_pos = pos_str.find("fen");
+    size_t moves_pos = pos_str.find("moves");
+
+    if (start_pos != std::string::npos) {
+        setup(board, start_FEN);
+    } else if (fen_pos != std::string::npos) {
+        size_t fen_start_pos = pos_str.find_first_not_of(" ", fen_pos + 3);
+        size_t fen_end_pos = pos_str.find(" moves", fen_start_pos);
+        if (moves_pos == std::string::npos) {
+          fen_end_pos = pos_str.size();
+        }
+        std::string fen_string = pos_str.substr(fen_start_pos, fen_end_pos - fen_start_pos);
+        setup(board, fen_string);
+    } else {
+        setup(board, start_FEN);
+    }
+
+    if (moves_pos != std::string::npos) {
+        size_t movesStartPos = pos_str.find_first_not_of(" ", moves_pos + 5);
+        if (movesStartPos == std::string::npos) return;
+        std::string movesString = pos_str.substr(movesStartPos);
+        std::istringstream iss(movesString);
+        std::string move_string;
+
+        while (iss >> move_string) {
+            move_t move = str_to_move(board, move_string);
+            if (move != NULLMV) {
+                make_move(board, move);
+            }
+            board->ply = 0;
+        }
+    }
+    //this->updateMaterial();
+    //this->initPieceList(); // already called by readFEN
+}
+
+void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
+    std::string token;
+    int movestogo = 30, movetime = -1;
+    int time = -1, inc = 0;
+
+    while (iss >> token) {
+        if (token == "depth") {
+            iss >> info->depth;
+        }
+        else if (token == "wtime") {
+            iss >> time; // Consume the token
+            if (board->turn) info->time = time;
+        }
+        else if (token == "btime") {
+            iss >> time; // Consume the token
+            if (!board->turn) info->time = time;
+        }
+        else if (token == "winc") {
+            iss >> inc;
+            if (board->turn) info->inc = inc;
+        }
+        else if (token == "binc") {
+            iss >> inc;
+            if (!board->turn) info->inc = inc;
+        }
+        else if (token == "movestogo") {
+            iss >> movestogo;
+        }
+        else if (token == "movetime") {
+            iss >> movetime;
+        }
+        else {
+            std::cout << "Unrecognized or unsupported token '"
+                      << token << "'" << std::endl;
+        }
+    }
+
+    // Simple time management based on
+    // E[# halfmoves until end of game | material on board]
+    if (movetime != -1) {
+      time = movetime;
+      movestogo = 1;
+    } else {
+      //movestogo = est_moves_left(*this);
+      movestogo = 25;
+    }
+
+    // Time management
+    if (time != -1) {
+        time /= movestogo;
+
+        // to be safe we don't run out of time
+        time -= 50;
+    }
+
+    if (info->depth == -1) {
+        info->depth = MAX_MOVES;
+    }
+
+    LOG("Starting search with depth " << info->depth << " time " << info->time
+                                      << "inc " << info->inc);
+}
+
+} // namespace
+
 /* UCI driver loop */
 void loop(int argc, char* argv[]) {
     // TODO: Handle command-line args
@@ -15,13 +121,12 @@ void loop(int argc, char* argv[]) {
 
     board_t board[1];
     //setup(board, start_FEN);
-    setup(board, test3_FEN);
+    setup(board, test2_FEN);
 
     searchinfo_t info[1];
 
     std::string input, token;
     while (!info->quit) {
-        //fflush(stdout); // for printf calls (if any)
         if (!std::getline(std::cin, input)) {
             info->quit = true;
         }
@@ -108,6 +213,8 @@ void loop(int argc, char* argv[]) {
             std::string position_str;
             std::getline(iss, position_str);
             parse_position(board, position_str);
+        } else if (token == "go"){
+            parse_go(board, info, iss);
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
