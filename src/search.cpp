@@ -9,6 +9,14 @@ namespace {
 
 move_t move = NULLMV;
 
+/**
+ @brief Alpha-Beta search in negamax fashion.
+ @param alpha the lowerbound
+ @param beta the upperbound
+ @param board the board position to search
+ @param info search info: time, depth to search, etc.
+ @param do_null whether to perform a null move or not
+*/
 int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
     assert(check(board));
 
@@ -69,6 +77,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
 } // namespace
 
+/**
+ @brief Searches the current board state for the best move
+ @param board the board state to search
+ @param info search info: time, depth to search, etc.
+*/
 void search(board_t *board, searchinfo_t *info) {
     assert(check(board));
 
@@ -79,7 +92,7 @@ void search(board_t *board, searchinfo_t *info) {
     info->start = now();
 
     // Iterative deepening
-    for (int depth = 0; depth <= info->depth; ++depth) {
+    for (int depth = 1; depth <= info->depth; ++depth) {
         best_score = negamax(-oo, +oo, depth, board, info, false);
 
         if (info->stopped) {
