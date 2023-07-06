@@ -1,7 +1,8 @@
 #ifndef ORDER_H_
 #define ORDER_H_
 
-// TODO:
+#include "types.h"
 
+void score_and_sort(movelist_t *moves);
 
 #endif // ORDER_H_

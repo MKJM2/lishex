@@ -90,7 +90,7 @@ inline square_t mirror(const square_t sq) {
     return sq ^ 56;
 }
 
-inline std::string square_to_str(square_t sq) {
+inline std::string square_to_str(const square_t sq) {
     return std::string{(char)('a'+SQUARE_FILE(sq)),(char)('1'+SQUARE_RANK(sq))};
 }
 
@@ -116,11 +116,11 @@ constexpr piece_t pieces[] = { P, N, B, R, Q, K, p, n, b, r, q, k };
 // Colors
 enum { BLACK = 0, WHITE = 1, BOTH = 2 };
 
-inline int piece_color(piece_t p) {
+inline int piece_color(const piece_t p) {
     return (p & 0b1000) ? BLACK : WHITE;
 }
 
-inline int piece_type(piece_t p) {
+inline int piece_type(const piece_t p) {
    return p & ~(0b1000);
 }
 
@@ -131,7 +131,7 @@ template<piece_t PIECE_T>
 constexpr bool is_sliding = is_sliding_arr[PIECE_T];
 
 // Set or clear the colour bit depending on specified colour
-inline int set_colour(piece_t p, int colour) {
+inline int set_colour(const piece_t p, const int colour) {
     return colour ? (p & ~0b1000) : (p | 0b1000);
 }
 
@@ -299,7 +299,7 @@ const int castle_spoils[SQUARE_NO] = {
     7,  15, 15, 15, 3,  15, 15, 11
 };
 
-inline std::string castling_rights_to_str(int castle_rights) {
+inline std::string castling_rights_to_str(const int castle_rights) {
     if (!castle_rights) {
         return "-";
     }
@@ -312,12 +312,20 @@ inline std::string castling_rights_to_str(int castle_rights) {
 }
 
 typedef struct searchinfo_t {
-    int time;
-    int inc;
     int depth;
-    int start;
-    int end;
+    uint64_t time;
+    uint64_t inc;
+    uint64_t start;
+    uint64_t end;
+    uint64_t nodes;
     bool quit = false;
+    bool stopped = false;
+    // Helper for clearing necessary struct info before searching
+    inline void clear() {
+        stopped = false;
+        nodes = 0;
+
+    }
 } searchinfo_t;
 
 // Useful test positions

@@ -14,7 +14,7 @@
  * @param moves movelist to append moves to
 */
 template<piece_t PIECE_T>
-void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
+void generate_quiet_moves_for(const board_t *board, movelist_t *moves) {
 
     bb_t pieces = board->bitboards[set_colour(PIECE_T, board->turn)];
     const bb_t occupied = all_pieces(board);
@@ -44,7 +44,7 @@ void generate_quiet_moves_for(board_t *board, movelist_t *moves) {
  * @param moves movelist to append moves to
 */
 template<piece_t PIECE_T>
-void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
+void generate_noisy_moves_for(const board_t *board, movelist_t *moves) {
 
     bb_t pieces = board->bitboards[set_colour(PIECE_T, board->turn)];
     const bb_t opp_pieces = board->sides_pieces[board->turn ^ 1];
@@ -69,11 +69,11 @@ void generate_noisy_moves_for(board_t *board, movelist_t *moves) {
 }
 
 // Returns promotions
-void generate_promotions(board_t *board, movelist_t *moves) {
+void generate_promotions(const board_t *board, movelist_t *moves) {
 
     square_t to;
 
-    int& me = board->turn;
+    const int& me = board->turn;
 
     // Direction of pawn movement
     int dir = (me) ? NORTH : SOUTH;
@@ -153,7 +153,7 @@ void generate_promotions(board_t *board, movelist_t *moves) {
 }
 
 // enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
-void generate_castles(board_t *board, movelist_t *moves) {
+void generate_castles(const board_t *board, movelist_t *moves) {
 
     // Masks to check for obstacles between the king and the rook
     static const bb_t WK_BB = 0x60ULL;
@@ -161,7 +161,7 @@ void generate_castles(board_t *board, movelist_t *moves) {
     static const bb_t BK_BB = 0x6000000000000000ULL;
     static const bb_t BQ_BB = 0x0e00000000000000ULL;
 
-    int& me = board->turn;
+    const int& me = board->turn;
 
     const bb_t occupied = all_pieces(board);
 
@@ -205,12 +205,12 @@ void generate_castles(board_t *board, movelist_t *moves) {
  * @param moves pointer to a move list
  * @return number of quiet moves generated
  */
-int generate_quiet(board_t *board, movelist_t *moves) {
+int generate_quiet(const board_t *board, movelist_t *moves) {
 
     square_t to;
     int move_count = moves->size();
     // We collapse the implementation for both black and white
-    int& me = board->turn;
+    const int& me = board->turn;
 
     /* Pawn pushes & double pushes (we handle promotions in generate_noisy) */
     int dir = (me) ? NORTH : SOUTH;
@@ -261,11 +261,11 @@ int generate_quiet(board_t *board, movelist_t *moves) {
  * @param moves pointer to a move list
  * @return number of noisy (non-quiet) moves generated
  */
-int generate_noisy(board_t *board, movelist_t *moves) {
+int generate_noisy(const board_t *board, movelist_t *moves) {
 
     square_t to;
     int move_count = moves->size();
-    int& me = board->turn;
+    const int& me = board->turn;
     int opp = me ^ 1;
     bb_t opp_pieces = board->sides_pieces[opp];
 
@@ -329,7 +329,7 @@ int generate_noisy(board_t *board, movelist_t *moves) {
  * @param moves pointer to a move list
  * @return number of moves (quiet & noisy) generated
  */
-int generate_moves(board_t *board, movelist_t *moves) {
+int generate_moves(const board_t *board, movelist_t *moves) {
     moves->clear();
     return generate_quiet(board, moves) + generate_noisy(board, moves);
 }
@@ -340,7 +340,7 @@ int generate_moves(board_t *board, movelist_t *moves) {
  * @param sq square to check
  * @return Non-zero bitboard of relevant attackers if attacked, empty otherwise
 */
-bb_t is_attacked(board_t *board, const square_t sq, const int colour) {
+bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
     assert(check(board));
 
     bb_t attackers = 0ULL;

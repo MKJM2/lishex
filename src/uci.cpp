@@ -6,6 +6,7 @@
 
 #include "board.h"
 #include "time.h" // now()
+#include "search.h"
 
 namespace {
 
@@ -44,8 +45,6 @@ void parse_position(board_t *board, const std::string& pos_str) {
             board->ply = 0;
         }
     }
-    //this->updateMaterial();
-    //this->initPieceList(); // already called by readFEN
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
@@ -109,6 +108,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
 
     LOG("Starting search with depth " << info->depth << " time " << info->time
                                       << "inc " << info->inc);
+    search(board, info);
 }
 
 } // namespace
@@ -121,7 +121,7 @@ void loop(int argc, char* argv[]) {
 
     board_t board[1];
     //setup(board, start_FEN);
-    setup(board, test2_FEN);
+    setup(board, start_FEN);
 
     searchinfo_t info[1];
 

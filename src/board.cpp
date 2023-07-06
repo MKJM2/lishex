@@ -826,7 +826,7 @@ void perft_test(board_t *board, const std::string& epd_filename) {
       std::cout << "Testing position " << fenline << std::endl;
 
       setup(board, fenline);
-      for (int depth = 0; depth < 5; ++depth) {
+      for (int depth = 0; depth < 6; ++depth) {
           std::cout << perft(board, depth) << std::endl;
       }
     }
