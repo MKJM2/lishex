@@ -12,7 +12,7 @@
  * @tparam PIECE_T piece type to generate moves for
  * @param board current position to generate quiet moves for
  * @param moves movelist to append moves to
-*/
+ */
 template<piece_t PIECE_T>
 void generate_quiet_moves_for(const board_t *board, movelist_t *moves) {
 
@@ -42,7 +42,7 @@ void generate_quiet_moves_for(const board_t *board, movelist_t *moves) {
  * @tparam PIECE_T piece type to generate moves for
  * @param board current position to generate non-quiet moves for
  * @param moves movelist to append moves to
-*/
+ */
 template<piece_t PIECE_T>
 void generate_noisy_moves_for(const board_t *board, movelist_t *moves) {
 

@@ -38,3 +38,6 @@ lishex
 
 
 .log
+
+# Doxygen
+generated-docs

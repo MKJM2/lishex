@@ -40,6 +40,12 @@ To compile in debug mode
 ```sh
 make debug=yes
 ```
+To generate project documentation with [doxygen](https://www.doxygen.nl/) run 
+
+```sh
+doxygen
+```
+in the project root.
 
 ### TODOs
 - [Principal variation search](https://www.chessprogramming.org/Principal_Variation_Search)
