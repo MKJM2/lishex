@@ -16,7 +16,7 @@ void engine_loop(board_t *board, searchinfo_t *info) {
                 break;
             case ENGINE_PONDERING: /* @TODO: Implement pondering */
                 LOG("Pondering not implemented...");
-                break;
+                continue;
             case ENGINE_STOPPED: /* @TODO: Might want to handle stop/quit separately */
                 LOG("Stopping...");
                 break;

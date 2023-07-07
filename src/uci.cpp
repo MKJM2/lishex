@@ -164,6 +164,9 @@ void loop(int argc, char* argv[]) {
                 make_move(board, m);
             }
             print(board);
+            if (is_repetition(board)) {
+                LOG("Repetition detected!");
+            }
         } else if (token == "undo") {
             undo_move(board);
             print(board);

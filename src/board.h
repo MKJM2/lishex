@@ -57,6 +57,8 @@ extern void test(board_t *board);
 
 extern uint64_t generate_pos_key(const board_t *board);
 
+bool is_repetition(const board_t *board);
+
 bool make_move(board_t *board, move_t move);
 
 void undo_move(board_t *board, move_t move);

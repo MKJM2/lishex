@@ -339,6 +339,22 @@ uint64_t generate_pos_key(const board_t *board) {
     return key;
 }
 
+
+bool is_repetition(const board_t *board) {
+    // We'll search the history backwards starting from last possible
+    // repetition, which is 2 halfmoves ago
+    size_t i = 2;
+    // Since captures & pawn pushes are irreversible,
+    // we don't have to check the entire history for repetitions
+    // but only fifty move counter moves back
+    for (; i <= board->fifty_move; i += 2) {
+        if (board->key == board->history[board->history_ply - i].key) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void test(board_t *board) {
     assert(check(board));
 
