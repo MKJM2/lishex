@@ -312,6 +312,7 @@ inline std::string castling_rights_to_str(const int castle_rights) {
 }
 
 typedef struct searchinfo_t {
+    int state; // see thread.h
     int depth;
     uint64_t time;
     uint64_t inc;
@@ -323,8 +324,7 @@ typedef struct searchinfo_t {
     // Helper for clearing necessary struct info before searching
     inline void clear() {
         stopped = false;
-        nodes = 0;
-
+        nodes = 0ULL;
     }
 } searchinfo_t;
 

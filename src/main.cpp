@@ -1,13 +1,14 @@
 /*
-**
-    /\ \       __/\  _`\ /\ \/\ \         /\ \ /\ \
-    \ \ \     /\_\ \,\L\_\ \ \_\ \     __ \ `\`\/'/'
-     \ \ \  __\/\ \/_\__ \\ \  _  \  /'__`\`\/ > <
-      \ \ \L\ \\ \ \/\ \L\ \ \ \ \ \/\  __/   \/'/\`\
-       \ \____/ \ \_\ `\____\ \_\ \_\ \____\  /\_\\ \_\
-        \/___/   \/_/\/_____/\/_/\/_/\/____/  \/_/ \/_/;
-**
-*/
+ *  /\ \       __/\  _`\ /\ \/\ \         /\ \ /\ \
+ *  \ \ \     /\_\ \,\L\_\ \ \_\ \     __ \ `\`\/'/'
+ *   \ \ \  __\/\ \/_\__ \\ \  _  \  /'__`\`\/ > <
+ *    \ \ \L\ \\ \ \/\ \L\ \ \ \ \ \/\  __/   \/'/\`\
+ *     \ \____/ \ \_\ `\____\ \_\ \_\ \____\  /\_\\ \_\
+ *      \/___/   \/_/\/_____/\/_/\/_/\/____/  \/_/ \/_/
+ *
+ *
+ *       A UCI-compliant chess engine written in C++
+ */
 #include <iostream>
 
 #include "types.h"
@@ -19,8 +20,8 @@
 int main(int argc, char* argv[]) {
 
     // Print engine info
-    // std::cout << NAME << " by " << AUTHOR << std::endl;
-    // std::cout << "Built on " << __TIMESTAMP__ << std::endl;
+    std::cout << NAME << " (c) " << AUTHOR << " 2023" << std::endl;
+    std::cout << "Built on " << __TIMESTAMP__ << std::endl;
 
     // Initialization
     init_eval_masks();

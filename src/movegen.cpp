@@ -3,9 +3,12 @@
 #include "attack.h"
 #include "types.h"
 
-// TODO: Collapse the implementation for quiet and noisy
+// @TODO: Collapse the implementation for quiet and noisy
 // move generation with templates to not do the same work twice
 // (e.g. fetching attack bitboards)
+
+
+namespace {
 
 /**
  * @brief Generate non-captures for the given piece type
@@ -68,7 +71,11 @@ void generate_noisy_moves_for(const board_t *board, movelist_t *moves) {
     }
 }
 
-// Returns promotions
+/**
+ * @brief Generates promotion moves for the current board state
+ * @oaran board current position to generate promotions for
+ * @param moves movelist to append generated moves to
+ */
 void generate_promotions(const board_t *board, movelist_t *moves) {
 
     square_t to;
@@ -105,28 +112,6 @@ void generate_promotions(const board_t *board, movelist_t *moves) {
         }
     }
 
-    /*
-    // No need for an outer for-loop, instead of processing pawns 1-by-1
-    // we can shift the entire bitboard all at once
-
-    // For each pawn that can be promoted
-    while (promotable_bb) {
-        captures  = (me) ? ne_shift(promotable_bb) : se_shift(promotable_bb);
-        captures |= (me) ? nw_shift(promotable_bb) : sw_shift(promotable_bb);
-        captures &= opp_pieces;
-
-        from = POPLSB(promotable_bb);
-        while (captures) {
-            // Add all possible capture promotions to the move list
-            to = POPLSB(captures);
-            for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
-                // We additionally flag the move as a capture
-                moves->push_back(Move(from, to, type | CAPTURE));
-            }
-        }
-    }
-    */
-
     /* Non-captures */
     bb_t empty_squares = ~all_pieces(board);
 
@@ -138,22 +123,17 @@ void generate_promotions(const board_t *board, movelist_t *moves) {
             moves->push_back(Move(to - dir, to, type));
         }
     }
-
-    // while (promotable_bb) {
-    //     pushes = (me) ? n_shift(promotable_bb) : s_shift(promotable_bb);
-    //     pushes &= empty_squares;
-    //     from = POPLSB(promotable_bb);
-    //     while (pushes) {
-    //         to = POPLSB(pushes);
-    //         for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
-    //             moves->push_back(Move(from, to, type));
-    //         }
-    //     }
-    // }
 }
 
-// enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
+/**
+ * @brief Generates castling moves for the current board state
+ * @param board current board state
+ * @param moves movelist to append generated moves to
+ */
 void generate_castles(const board_t *board, movelist_t *moves) {
+
+    // The castling rights are encoded with 4 bits:
+    // enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
 
     // Masks to check for obstacles between the king and the rook
     static const bb_t WK_BB = 0x60ULL;
@@ -199,12 +179,8 @@ void generate_castles(const board_t *board, movelist_t *moves) {
     }
 }
 
-/**
- * generate_quiet
- * @param board board struct representing the current position
- * @param moves pointer to a move list
- * @return number of quiet moves generated
- */
+} // namespace
+
 int generate_quiet(const board_t *board, movelist_t *moves) {
 
     square_t to;
@@ -255,12 +231,7 @@ int generate_quiet(const board_t *board, movelist_t *moves) {
     return moves->size() - move_count;
 }
 
-/**
- * generate_noisy
- * @param board board struct representing the current position
- * @param moves pointer to a move list
- * @return number of noisy (non-quiet) moves generated
- */
+
 int generate_noisy(const board_t *board, movelist_t *moves) {
 
     square_t to;
@@ -322,24 +293,13 @@ int generate_noisy(const board_t *board, movelist_t *moves) {
     return moves->size() - move_count;
 }
 
-/**
- * generate_moves
- * @brief Generates all moves for the current position
- * @param board board struct representing the current position
- * @param moves pointer to a move list
- * @return number of moves (quiet & noisy) generated
- */
+
 int generate_moves(const board_t *board, movelist_t *moves) {
     moves->clear();
     return generate_quiet(board, moves) + generate_noisy(board, moves);
 }
 
-/**
- * @brief Checks if a given square is attacked by the given color
- * @param board current position
- * @param sq square to check
- * @return Non-zero bitboard of relevant attackers if attacked, empty otherwise
-*/
+
 bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
     assert(check(board));
 
@@ -382,6 +342,7 @@ bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
 
     return 0ULL;
 }
+
 
 uint64_t perft(board_t *board, int depth, bool verbose) {
     if (depth == 0) {

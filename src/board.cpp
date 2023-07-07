@@ -15,6 +15,7 @@
 #include "types.h"
 #include "movegen.h"
 #include "rng.h"
+#include "threads.h"
 
 #ifdef DEBUG
 size_t boards = 0;

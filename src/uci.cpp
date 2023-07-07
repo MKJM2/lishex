@@ -7,6 +7,7 @@
 #include "board.h"
 #include "time.h" // now()
 #include "search.h"
+#include "threads.h"
 
 namespace {
 
@@ -55,6 +56,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
     while (iss >> token) {
         if (token == "depth") {
             iss >> info->depth;
+            info->depth = std::min(info->depth, MAX_MOVES);
         }
         else if (token == "wtime") {
             iss >> time; // Consume the token
@@ -77,6 +79,10 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         }
         else if (token == "movetime") {
             iss >> movetime;
+        }
+        else if (token == "infinite") {
+            // search until 'stop' sent from the GUI
+            info->depth = MAX_MOVES;
         }
         else {
             std::cout << "Unrecognized or unsupported token '"
@@ -106,24 +112,27 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         info->depth = MAX_MOVES;
     }
 
-    LOG("Starting search with depth " << info->depth << " time " << info->time
-                                      << "inc " << info->inc);
-    search(board, info);
 }
 
 } // namespace
 
 /* UCI driver loop */
 void loop(int argc, char* argv[]) {
-    // TODO: Handle command-line args
+    // @TODO: Handle command-line args
     (void) argc;
     (void) argv;
 
     board_t board[1];
-    //setup(board, start_FEN);
     setup(board, start_FEN);
 
     searchinfo_t info[1];
+
+    // Thread used for searching, the main thread will handle the UCI loop
+    std::thread search_thread;
+    // Initially the engine isn't searching anything
+    info->state = ENGINE_STOPPED;
+
+    LOG("Starting the UCI loop...");
 
     std::string input, token;
     while (!info->quit) {
@@ -139,8 +148,12 @@ void loop(int argc, char* argv[]) {
             std::cout << "uciok" << std::endl;
         } else if (token == "isready")  {
             std::cout << "readyok" << std::endl;
-        } else if (token == "stop" || token == "quit") { // TODO: no stop?
+        } else if (token == "stop") {
+            search_stop(search_thread, info);
+        } else if (token == "quit") {
             info->quit = true;
+            info->state = ENGINE_QUIT;
+            break;
         } else if (token == "print" || token == "d") {
             print(board);
         } else if (token == "move") {
@@ -214,11 +227,25 @@ void loop(int argc, char* argv[]) {
             std::getline(iss, position_str);
             parse_position(board, position_str);
         } else if (token == "go"){
+            // Stop any ongoing search
+            search_stop(search_thread, info);
+            // Parse the go, populating the info struct with search requirements
             parse_go(board, info, iss);
+            LOG("Starting search with depth " << info->depth << " time " << info->time
+                                            << " inc " << info->inc);
+            // search(board, info);
+            search_start(search_thread, board, info);
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
     };
+
+    // Make sure the search thread was joined before exiting
+    if (search_thread.joinable()) {
+        search_thread.join();
+    }
+
+    LOG("Quitting the UCI loop...");
 }
 
 move_t str_to_move(board_t *board, const std::string& s) {

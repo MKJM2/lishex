@@ -35,6 +35,7 @@ inline void sort(movelist_t *moves) {
 }
 
 // TODO:
-void score_and_sort(movelist_t *moves) {
-    (void) moves;
+inline void score_and_sort(movelist_t *moves) {
+    score(moves);
+    sort(moves);
 }

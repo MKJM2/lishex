@@ -11,6 +11,10 @@
 /************************/
 
 // The Board type
+/**
+ * @brief The board struct
+ * Stores all necessary information about the current board state
+*/
 typedef struct board_t {
     // We store a separate bitboard for each piece (type, color)
     bb_t bitboards[PIECE_NO];
@@ -69,13 +73,6 @@ inline bb_t king_square_bb(const board_t* board, const int colour) {
 inline square_t king_square(const board_t* board, const int colour) {
     return GETLSB(king_square_bb(board, colour));
 }
-
-/* TODO: */
-// Helpers handling bitboard manipulation & hashing:
-// add_piece
-// rm_piece
-// mv_piece
-
 
 #ifdef DEBUG
 extern void history_trace(const board_t *board, size_t n);

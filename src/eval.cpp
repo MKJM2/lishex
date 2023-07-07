@@ -121,7 +121,7 @@ constexpr int king_table_eg[] = {
 
 // Evaluates the position from the side's POV
 int evaluate(const board_t *board) {
-    assert(b.check());
+    assert(check(board));
 
     int score = 0;
 
