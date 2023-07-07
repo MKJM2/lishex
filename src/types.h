@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <unordered_map>
+#include <atomic> // for search
 
 #define NAME "Lishex"
 #define AUTHOR "Michal Kurek"
@@ -12,6 +13,7 @@
 #define SQUARE_FILE(sq) ((sq) & 7)
 #define SQUARE_RANK(sq) ((sq) >> 3)
 #define MAX_MOVES (2048)
+#define MAX_DEPTH (64)
 
 // Assertions for debug mode
 // #define DEBUG
@@ -312,7 +314,7 @@ inline std::string castling_rights_to_str(const int castle_rights) {
 }
 
 typedef struct searchinfo_t {
-    int state; // see thread.h
+    std::atomic_int state; // see src/threads.h
     int depth;
     uint64_t time;
     uint64_t inc;

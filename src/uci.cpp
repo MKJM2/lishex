@@ -56,7 +56,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
     while (iss >> token) {
         if (token == "depth") {
             iss >> info->depth;
-            info->depth = std::min(info->depth, MAX_MOVES);
+            info->depth = std::min(info->depth, MAX_DEPTH);
         }
         else if (token == "wtime") {
             iss >> time; // Consume the token
@@ -82,7 +82,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         }
         else if (token == "infinite") {
             // search until 'stop' sent from the GUI
-            info->depth = MAX_MOVES;
+            info->depth = MAX_DEPTH;
         }
         else {
             std::cout << "Unrecognized or unsupported token '"
@@ -109,7 +109,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
     }
 
     if (info->depth == -1) {
-        info->depth = MAX_MOVES;
+        info->depth = MAX_DEPTH;
     }
 
 }

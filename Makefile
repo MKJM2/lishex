@@ -1,5 +1,9 @@
 CXX = g++
 CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17 -mpopcnt -m64 -mbmi2
+# For faster compilation
+CPUS := $(shell nproc)
+MAKEFLAGS += --jobs=$(CPUS)
+
 SRC_DIR = src
 BUILD_DIR = build
 TARGET = lishex
@@ -8,6 +12,12 @@ TARGET = lishex
 debug ?= no
 ifeq ($(debug),yes)
 	CXXFLAGS += -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+endif
+
+### Sanitizers
+sanitize ?= no
+ifeq ($(sanitize),yes)
+	CXXFLAGS += -fsanitize=thread
 endif
 
 ### Optimizations (on by default)
