@@ -58,6 +58,7 @@ in the project root.
 - Aspiration window
 - Smarter time control logic
 - Engine options
+- Static Exchange Evaluator (SEE) to detect losing captures
 
 ### Acknowledgments
 I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration.

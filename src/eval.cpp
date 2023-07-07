@@ -3,7 +3,15 @@
 
 namespace {
 
-// Piece-square tables
+/* Piece values */
+
+constexpr int value_mg[PIECE_NO] = {0, 100, 325, 330, 550, 1000, 50000,
+                              0, 0, 100, 325, 330, 550, 1000, 50000};
+constexpr int value_eg[PIECE_NO] = {0, 125, 300, 300, 600, 950, 50000,
+                              0, 0, 125, 300, 300, 600, 950, 50000};
+
+/* Piece-square tables */
+
 // We use midgame and endgame tables between which we interpolate
 constexpr int pawn_table_mg[] = {
      0,   0,   0,   0,   0,   0,   0,   0,
@@ -93,6 +101,29 @@ constexpr int rook_table_eg[] = {
      0,   0,   5,  10,  10,   5,   0,   0
 };
 
+// @TODO: tune
+constexpr int queen_table_mg[] = {
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+};
+
+constexpr int queen_table_eg[] = {
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+};
+
 
 constexpr int king_table_mg[] = {
    -50, -10,   0,   0,   0,   0, -10, -50,
@@ -116,32 +147,82 @@ constexpr int king_table_eg[] = {
    -70, -70, -70, -70, -70, -70, -70, -70
 };
 
+// Array of pointers to arrays
+constexpr const int (*psqt_mg[])[64] = {
+    nullptr, // NO_PIECE
+    &pawn_table_mg,
+    &knight_table_mg,
+    &bishop_table_mg,
+    &rook_table_mg,
+    &queen_table_mg,
+    &king_table_mg,
+    nullptr,
+    nullptr,
+    &pawn_table_mg,
+    &knight_table_mg,
+    &bishop_table_mg,
+    &rook_table_mg,
+    &queen_table_mg,
+    &king_table_mg,
+};
+
+constexpr const int (*psqt_eg[])[64] = {
+    nullptr, // NO_PIECE
+    &pawn_table_eg,
+    &knight_table_eg,
+    &bishop_table_eg,
+    &rook_table_eg,
+    &queen_table_eg,
+    &king_table_eg,
+    nullptr,
+    nullptr,
+    &pawn_table_eg,
+    &knight_table_eg,
+    &bishop_table_eg,
+    &rook_table_eg,
+    &queen_table_eg,
+    &king_table_eg,
+};
+
 
 } // namespace
 
 // Evaluates the position from the side's POV
-int evaluate(const board_t *board) {
+int evaluate(const board_t *board, eval_t * eval) {
     assert(check(board));
 
+    eval->middlegame = 0;
+    eval->endgame = 0;
+    eval->set_phase(board);
     int score = 0;
 
-    int ps = CNT(board->bitboards[p]);
-    int Ps = CNT(board->bitboards[P]);
+    square_t sq;
+    bb_t b = 0ULL;
+    for (const piece_t p : pieces) {
+        b = board->bitboards[p];
+        // Sign is +1 if White, -1 if Black, i.e. 2 * piece_color(p) == W - 1;
+        while (b) {
+            sq = POPLSB(b);
+            if (piece_color(p) == WHITE) {
+                // Piece values
+                eval->middlegame += value_mg[p];
+                eval->endgame += value_eg[p];
+                // PSQTs
+                // @TODO: Make the psqt access cleaner, perhaps templates?
+                eval->middlegame += (*psqt_mg[p])[sq];
+                eval->endgame += (*psqt_eg[p])[sq];
+            } else {
+                // Piece values
+                eval->middlegame -= value_mg[p];
+                eval->endgame -= value_eg[p];
+                // Mirrored PSQTs
+                eval->middlegame -= (*psqt_mg[p])[mirror(sq)];
+                eval->endgame -= (*psqt_eg[p])[mirror(sq)];
+            }
+        }
+    }
 
-    int ns = CNT(board->bitboards[n]);
-    int Ns = CNT(board->bitboards[N]);
-
-    int bs = CNT(board->bitboards[b]);
-    int Bs = CNT(board->bitboards[B]);
-
-    int rs = CNT(board->bitboards[r]);
-    int Rs = CNT(board->bitboards[R]);
-
-    int qs = CNT(board->bitboards[q]);
-    int Qs = CNT(board->bitboards[Q]);
-
-    score  = Ps + 3*Ns + 3*Bs + 5*Rs + 9*Qs;
-    score -= ps + 3*ns + 3*bs + 5*rs + 9*qs;
+    score = eval->get_tapered_score();
 
     return board->turn ? score : -score;
 }

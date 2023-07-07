@@ -51,6 +51,9 @@ typedef struct PV {
     int size = 0;
 } PV;
 
+// Global evaluator (for multithreaded, we'll want to have a separate one for
+// each thread)
+eval_t eval;
 
 /**
  @brief Quiescence search
@@ -70,7 +73,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         return 0; // Draw score
     }
 
-    int score = evaluate(board);
+    int score = evaluate(board, &eval);
 
     // @TODO: Should we check up with the UCI?
 
@@ -154,7 +157,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // Are we too deep into the search tree?
     if (board->ply > MAX_DEPTH - 1) {
-        return evaluate(board);
+        return evaluate(board, &eval);
     }
 
     // If not at root of the search, check for repetitions
@@ -249,7 +252,6 @@ void search(board_t *board, searchinfo_t *info) {
 
     info->clear();
     info->start = now();
-    // info->state = ENGINE_SEARCHING;
 
     // Table that will store the principal variation
     PV pv;

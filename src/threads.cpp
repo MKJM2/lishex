@@ -1,6 +1,8 @@
 /* @TODO: This file will hold thread pool code for LazySMP in the future */
 #include "threads.h"
 
+#include "eval.h" // eval_t
+
 // @TODO: volatile vs using std::atomic<int> vs a state variable inside info struct
 // volatile int state = ENGINE_STOPPED;
 

@@ -343,7 +343,7 @@ uint64_t generate_pos_key(const board_t *board) {
 bool is_repetition(const board_t *board) {
     // We'll search the history backwards starting from last possible
     // repetition, which is 2 halfmoves ago
-    size_t i = 2;
+    int i = 2;
     // Since captures & pawn pushes are irreversible,
     // we don't have to check the entire history for repetitions
     // but only fifty move counter moves back
