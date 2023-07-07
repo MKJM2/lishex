@@ -27,7 +27,7 @@ inline bool checkup_needed(const searchinfo_t *info) {
 
 // Checks if the search was stopped
 inline bool search_stopped(const searchinfo_t *info) {
-    return info->state != ENGINE_SEARCHING;
+    return info->state != ENGINE_SEARCHING || (info->time_set && now() >= info->end);
 }
 
 /**

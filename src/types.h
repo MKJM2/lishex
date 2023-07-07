@@ -323,6 +323,7 @@ typedef struct searchinfo_t {
     uint64_t nodes;
     bool quit = false;
     bool stopped = false;
+    bool time_set = false;
     // Helper for clearing necessary struct info before searching
     inline void clear() {
         stopped = false;

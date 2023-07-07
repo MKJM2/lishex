@@ -251,7 +251,6 @@ void search(board_t *board, searchinfo_t *info) {
     int best_score = -oo;
 
     info->clear();
-    info->start = now();
 
     // Table that will store the principal variation
     PV pv;

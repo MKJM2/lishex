@@ -49,10 +49,11 @@ void parse_position(board_t *board, const std::string& pos_str) {
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
-    std::string token;
-    int movestogo = 30, movetime = -1;
+    int movestogo = 25, movetime = -1, depth = -1;
     int time = -1, inc = 0;
+    info->time_set = false;
 
+    std::string token;
     while (iss >> token) {
         if (token == "depth") {
             iss >> info->depth;
@@ -90,7 +91,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         }
     }
 
-    // Simple time management based on
+    // @TODO: Simple time management based on
     // E[# halfmoves until end of game | material on board]
     if (movetime != -1) {
       time = movetime;
@@ -100,18 +101,21 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
       movestogo = 25;
     }
 
+    info->start = now();
+
     // Time management
     if (time != -1) {
+        info->time_set = true;
         time /= movestogo;
 
         // to be safe we don't run out of time
         time -= 50;
+        info->end = info->start + time + inc;
     }
 
     if (info->depth == -1) {
         info->depth = MAX_DEPTH;
     }
-
 }
 
 } // namespace
@@ -191,20 +195,20 @@ void loop(int argc, char* argv[]) {
             /*
             std::cout << std::right << "DEPTH\t";
             std::cout << std::setw(10) << "NODES\t";
-            std::cout << std::setw(2) << "TIME (μs)\t";
+            std::cout << std::setw(2) << "TIME (ms)\t";
             std::cout << std::setw(2) << "NPS" << std::endl;
             */
             std::cout <<
-                "DEPTH	       NODES       TIME (μs)    NPS" << std::endl;
+                "DEPTH	       NODES       TIME (ms)    NPS" << std::endl;
             std::string s (43, '-');
             std::cout << s << std::endl;
             for (int depth = 1; depth <= depthSet; ++depth) {
-                int NPS = 0; // # Nodes per (mili)second
+                unsigned NPS = 0; // # Nodes per (mili)second
                 uint64_t start = now();
                 node_no = perft(board, depth);
-                uint64_t elapsed = now() - start;
-                // nodes per microsecond -> nodes per s
-                NPS = node_no * 1'000'000 / elapsed;
+                uint64_t elapsed = now() - start + 1; // handle div-by-zero
+                // nodes per millisecond -> nodes per s
+                NPS = node_no * 1000 / elapsed;
                 std::cout << std::right << std::setw(5) << depth << '\t';
                 std::cout << std::right << std::setw(12) << node_no << '\t';
                 std::cout << std::right << std::setw(7) << elapsed << '\t';
