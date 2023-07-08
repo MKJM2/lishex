@@ -209,6 +209,42 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         if (search_stopped(info))
             return 0;
 
+        if (score > alpha) { // PV or fail-high node
+
+
+            // Move causes a cutoff, hence update the search history tables
+            // (History heuristic)
+            board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
+
+            if (score >= beta) { // Fail-high node
+                if (legal == 1) {
+                    info->fail_high_first++;
+                }
+                info->fail_high++;
+
+                // Killer moves (cause a beta cutoff but aren't captures)
+                if (!is_capture(move)) {
+                    board->killer2[board->ply] = board->killer1[board->ply];
+                    board->killer1[board->ply] = move;
+                }
+                return beta; // fail hard beta-cutoff (fail-high)
+            }
+
+            /* Otherwise, we are in a PV node */
+
+            // Update the lowerbound
+            alpha = score;
+
+            // Store the move in the principal variation for the current ply
+            pv->table[0] = move;
+
+            // Copy over the rest of the principal variation from the next ply
+            movcpy(pv->table + 1, new_pv.table, new_pv.size);
+            // equivalent to:
+            // memcpy(pv->table + 1, new_pv.table, new_pv.size);
+            pv->size = new_pv.size + 1;
+        }
+        /*
         if (score >= beta) {
             if (legal == 1) {
                 info->fail_high_first++;
@@ -236,13 +272,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
           movcpy(pv->table + 1, new_pv.table, new_pv.size);
           // equivalent to:
           // memcpy(pv->table + 1, new_pv.table, new_pv.size);
-          /*
-          @TODO: Allocate the triangular pv table once
-          movcpy(pv_tb + pv_index[board->ply] + 1,
-                 pv_tb + pv_index[board->ply + 1], MAX_DEPTH - board->ply - 1);
-          */
           pv->size = new_pv.size + 1;
         }
+        */
         /* Fail low: do nothing and simply search the next move */
     }
 

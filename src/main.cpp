@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 
     // Print engine info
     std::cout << NAME << " (c) " << AUTHOR << " 2023" << std::endl;
-    std::cout << "Built on " << __TIMESTAMP__ << std::endl;
+    std::cout << "Built on " << __DATE__ << " " << __TIME__ << std::endl;
 
     // Initialization
     init_eval_masks();

@@ -12,44 +12,6 @@ bb_t bPassedMask[64];
 // Isolated pawn mask
 bb_t isolatedMask[64];
 
-// Taken from https://www.chessprogramming.org/BitScan
-const int lsb_64_table[64] =
-{
-   63, 30,  3, 32, 59, 14, 11, 33,
-   60, 24, 50,  9, 55, 19, 21, 34,
-   61, 29,  2, 53, 51, 23, 41, 18,
-   56, 28,  1, 43, 46, 27,  0, 35,
-   62, 31, 58,  4,  5, 49, 54,  6,
-   15, 52, 12, 40,  7, 42, 45, 16,
-   25, 57, 48, 13, 10, 39,  8, 44,
-   20, 47, 38, 22, 17, 37, 36, 26
-};
-
-/**
- * bit_scan_forward
- * @author Matt Taylor (2003)
- * @param bb bitboard to scan
- * @precondition bb != 0
- * @return index (0..63) of least significant one bit
- */
-square_t bit_scan_forward(bb_t bb) {
-   bb ^= bb - 1;
-   unsigned int folded = (int) bb ^ (bb >> 32);
-   return lsb_64_table[folded * 0x78291ACF >> 26];
-}
-
-/**
- * bit_drop_forward
- * @brief Same as bit_scan_forward but pops the least significant bit
- * @param bb bitboard to scan
- * @precondition bb != 0
- * @return index (0..63) of least significant one bit
- */
-square_t bit_drop_forward(bb_t &bb) {
-    square_t idx = bit_scan_forward(bb);
-    CLRLSB(bb);
-    return idx;
-}
 
 void printBB(const bb_t& bb) {
     square_t sq;

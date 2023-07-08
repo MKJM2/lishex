@@ -112,6 +112,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
 
         // to be safe we don't run out of time
         time -= 5;
+        time = std::max(time, 2);
         info->end = info->start + time + inc;
     }
 

@@ -190,7 +190,7 @@ constexpr int isolated_pawn = -10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 constexpr int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 // Bonus for having two bishops on board
-constexpr int bishop_pair = 30;
+constexpr int bishop_pair = 20;
 // Bonuses for rooks/queens on open/semi-open files
 constexpr int rook_open_file = 10;
 constexpr int rook_semiopen_file = 5;
@@ -214,11 +214,15 @@ int evaluate(const board_t *board, eval_t * eval) {
     square_t sq;
 
     /* Pawn structure */
-    bb_t pawns = board->bitboards[P];
-    bb_t b = pawns;
+
+    bb_t black_pawns = board->bitboards[p];
+    bb_t white_pawns = board->bitboards[P];
+    bb_t pawns = black_pawns | white_pawns;
+    bb_t b = white_pawns;
+
     // Pawn values
-    eval->middlegame += CNT(pawns) * value_mg[P];
-    eval->endgame    += CNT(pawns) * value_eg[P];
+    eval->middlegame += CNT(b) * value_mg[P];
+    eval->endgame    += CNT(b) * value_eg[P];
     // Passed & isolated pawns
     while (b) {
         // Get the square of a white pawn
@@ -229,22 +233,22 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->endgame    += pawn_table_eg[sq];
 
         // Isolated pawns
-        if ((pawns & isolatedMask[sq]) == 0) {
+        if ((white_pawns & isolatedMask[sq]) == 0) {
             eval->middlegame += isolated_pawn;
             eval->endgame    += isolated_pawn;
         }
 
         // Pass pawns  /* black pawns */
-        if ((board->bitboards[p] & wPassedMask[sq]) == 0) {
+        if ((black_pawns & wPassedMask[sq]) == 0) {
             eval->middlegame += passed_pawn[SQUARE_RANK(sq)];
             eval->endgame    += passed_pawn[SQUARE_RANK(sq)];
         }
     }
 
     // Pawn values
-    b = pawns = board->bitboards[p];
-    eval->middlegame -= CNT(pawns) * value_mg[p];
-    eval->endgame    -= CNT(pawns) * value_eg[p];
+    b = black_pawns;
+    eval->middlegame -= CNT(b) * value_mg[p];
+    eval->endgame    -= CNT(b) * value_eg[p];
     while (b) {
         // Get the square of a black pawn
         sq = POPLSB(b);
@@ -254,12 +258,12 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->endgame    -= pawn_table_eg[mirror(sq)];
 
         // Isolated pawns
-        if ((pawns & isolatedMask[sq]) == 0) {
+        if ((black_pawns & isolatedMask[sq]) == 0) {
             eval->middlegame -= isolated_pawn;
             eval->endgame    -= isolated_pawn;
         }
         // Pass pawns  /* white pawns */
-        if ((board->bitboards[P] & bPassedMask[sq]) == 0) {
+        if ((white_pawns & bPassedMask[sq]) == 0) {
             eval->middlegame -= passed_pawn[SQUARE_RANK(mirror(sq))];
             eval->endgame    -= passed_pawn[SQUARE_RANK(mirror(sq))];
         }
@@ -271,7 +275,7 @@ int evaluate(const board_t *board, eval_t * eval) {
 
     // PSQTs + Material value
     b  = board->sides_pieces[WHITE];
-    b ^= board->bitboards[P];
+    b ^= white_pawns;
     b ^= board->bitboards[K];
 
     piece_t pce;
@@ -282,13 +286,40 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame += psqt_mg[pce][sq];
         eval->endgame    += value_eg[pce];
         eval->endgame    += psqt_eg[pce][sq];
+        // In addition to piece values and psqts, we reward pieces on open files
+        switch (piece_type(pce)) {
+            case QUEEN:
+                // Is on open file?
+                if (not (pawns & fileBBMask[SQUARE_FILE(sq)])) {
+                    eval->middlegame += queen_open_file;
+                    eval->endgame += queen_open_file;
+                // Is on semi-open file?
+                } else if (not (black_pawns & fileBBMask[SQUARE_FILE(sq)])) {
+                    eval->middlegame += queen_semiopen_file;
+                    eval->endgame += queen_semiopen_file;
+                }
+                break;
+            case ROOK:
+                // Is on open file?
+                if (not (pawns & fileBBMask[SQUARE_FILE(sq)])) {
+                    eval->middlegame += rook_open_file;
+                    eval->endgame += rook_open_file;
+                // Is on semi-open file?
+                } else if (not (black_pawns & fileBBMask[SQUARE_FILE(sq)])) {
+                    eval->middlegame += rook_semiopen_file;
+                    eval->endgame += rook_semiopen_file;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     // Black
 
     // PSQTs + Material value
     b  = board->sides_pieces[BLACK];
-    b ^= board->bitboards[p];
+    b ^= black_pawns;
     b ^= board->bitboards[k];
 
     while (b) {
@@ -298,6 +329,33 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame -= psqt_mg[pce][mirror(sq)];
         eval->endgame    -= value_eg[pce];
         eval->endgame    -= psqt_eg[pce][mirror(sq)];
+        // In addition to piece values and psqts, we reward pieces on open files
+        switch (piece_type(pce)) {
+            case QUEEN:
+                // Is on open file?
+                if (not (pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+                    eval->middlegame -= queen_open_file;
+                    eval->endgame -= queen_open_file;
+                // Is on semi-open file?
+                } else if (not (white_pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+                    eval->middlegame -= queen_semiopen_file;
+                    eval->endgame -= queen_semiopen_file;
+                }
+                break;
+            case ROOK:
+                // Is on open file?
+                if (not (pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+                    eval->middlegame -= rook_open_file;
+                    eval->endgame -= rook_open_file;
+                // Is on semi-open file?
+                } else if (not (white_pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+                    eval->middlegame -= rook_semiopen_file;
+                    eval->endgame -= rook_semiopen_file;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     /*
