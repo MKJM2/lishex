@@ -40,6 +40,19 @@ int generate_moves(const board_t *board, movelist_t *moves);
  */
 bb_t is_attacked(const board_t *board, const square_t sq, const int colour);
 
+
+/**
+ * @brief Checks if the player is in check
+ * @param board board struct representing the current position
+ * @param colour player to check for
+ * @return Non-zero bitboard of relevant (first detected) attackers if checked,
+ * empty otherwise
+ */
+inline bb_t is_in_check(const board_t *board, const int colour) {
+    return is_attacked(board, king_square(board, colour), colour ^ 1);
+}
+
+
 /**
  * @brief PERFormance Test (perft)
  *

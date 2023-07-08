@@ -348,13 +348,12 @@ uint64_t perft(board_t *board, int depth, bool verbose) {
     if (depth == 0) {
         return 1ULL;
     }
-    int n_moves, i;
     uint64_t curr;
     uint64_t nodes = 0;
 
     movelist_t moves;
-    n_moves = generate_moves(board, &moves);
-    for (const move_t& move : moves) {
+    generate_moves(board, &moves);
+    for (const auto& move : moves) {
         if (!make_move(board, move))
             continue;
         curr = perft(board, depth - 1);

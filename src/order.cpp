@@ -15,10 +15,10 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = 50000;
-constexpr int CAPTURE_BONUS = 45000;
-constexpr int KILLER1_BONUS = 40000;
-constexpr int KILLER2_BONUS = 35000;
+constexpr int PV_BONUS = 10'000'000;
+constexpr int CAPTURE_BONUS = 1'000'000;
+constexpr int KILLER1_BONUS = 900'000;
+constexpr int KILLER2_BONUS = 800'000;
 
 constexpr int PROMO_BONUS = 200;
 constexpr int CASTLE_BONUS = 10;
@@ -57,6 +57,10 @@ void score(const board_t *board, movelist_t *moves, move_t pv_move) {
         scored_move_t& move = moves->movelist[i];
         if (move == pv_move) {
             move.score = PV_BONUS;
+            // Since we want to search the PV move first, we can swap it in
+            scored_move_t tmp = moves->movelist[0];
+            moves->movelist[0] = move;
+            move = tmp;
             continue;
         }
         from = get_from(move);

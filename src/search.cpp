@@ -106,7 +106,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
-    for (const move_t& move : captures) {
+    for (const auto& move : captures) {
 
         // Pseudo-legal move generation
         if (!make_move(board, move)) //
@@ -171,6 +171,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return 0; // Draw score
     }
 
+    // Check search extension
+    bool in_check = is_in_check(board, board->turn);
+    if (in_check) {
+        ++depth;
+    }
+
     // PV for the current depth
     pv_t new_pv;
 
@@ -189,7 +195,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     int legal = 0;
 
     // Iterate over the pseudolegal moves in the current position
-    for (const move_t& move : moves) {
+    for (const auto& move : moves) {
 
         // Pseudo-legal move generation
         if (!make_move(board, move)) //
@@ -214,7 +220,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 board->killer2[board->ply] = board->killer1[board->ply];
                 board->killer1[board->ply] = move;
                 // History heuristic (@TODO: Check for overflows)
-                board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth >> 2;
+                board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
             }
             return beta; // fail hard beta-cutoff (fail-high)
         }
@@ -243,7 +249,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // If no legal moves, then check if we're in check
     // If not, it's a stalemate
     if (legal == 0) {
-        return -oo;
+                            // Mate            // Stalemate
+        return (in_check) ? -oo + board->ply : 0;
     }
 
     assert(check(board));

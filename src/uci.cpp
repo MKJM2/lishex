@@ -51,7 +51,7 @@ void parse_position(board_t *board, const std::string& pos_str) {
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
-    int movestogo = 25, movetime = -1, depth = -1;
+    int movestogo = 25, movetime = -1;
     int time = -1, inc = 0;
     info->time_set = false;
 
@@ -111,7 +111,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         time /= movestogo;
 
         // to be safe we don't run out of time
-        time -= 50;
+        time -= 5;
         info->end = info->start + time + inc;
     }
 
@@ -261,9 +261,9 @@ void loop(int argc, char* argv[]) {
             eval->print();
         } else if (token == "dumphistory") {
             for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
-                std::cout << piece_to_ascii[p] << ": \n";
                 for (square_t sq = A1; sq <= H8; ++sq) {
-                    std::cout << "  " << board->history_h[p][sq] << std::endl;
+                  std::cout << piece_to_ascii[p] << " to " << square_to_str(sq) \
+                            << ": " << board->history_h[p][sq] << std::endl;
                 }
             }
         } else {

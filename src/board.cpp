@@ -575,7 +575,8 @@ bool make_move(board_t *board, move_t move) {
     assert(check(board));
 
     // Finally, undo the move if puts the player in check (pseudolegal move)
-    if (is_attacked(board, king_square(board, me), opp)) {
+    //if (is_attacked(board, king_square(board, me), opp)) {
+    if (is_in_check(board, me)) {
         undo_move(board, move);
         return false;
     }
