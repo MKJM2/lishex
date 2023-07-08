@@ -352,14 +352,14 @@ uint64_t perft(board_t *board, int depth, bool verbose) {
     uint64_t curr;
     uint64_t nodes = 0;
 
-    movelist_t moves[1];
-    n_moves = generate_moves(board, moves);
-    for (i = 0; i < n_moves; i++) {
-        if (!make_move(board, moves->moveList[i]))
+    movelist_t moves;
+    n_moves = generate_moves(board, &moves);
+    for (const move_t& move : moves) {
+        if (!make_move(board, move))
             continue;
         curr = perft(board, depth - 1);
         if (verbose) {
-            std::cout << move_to_str(moves->moveList[i]) << " " \
+            std::cout << move_to_str(move) << " " \
                       << curr << std::endl;
         }
         nodes += curr;

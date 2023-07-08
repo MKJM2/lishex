@@ -82,8 +82,8 @@ void init_eval_masks() {
 
     // Passing pawn masks initialization
     for (sq = 0; sq < 64; ++sq) {
-        wPassedMask[sq] = 0ULL;
-        bPassedMask[sq] = 0ULL;
+        wPassedMask[sq]  = 0ULL;
+        bPassedMask[sq]  = 0ULL;
         isolatedMask[sq] = 0ULL;
     }
 
@@ -133,8 +133,7 @@ void init_eval_masks() {
 
         }
     }
-
-    /* Debug:
+   /* DEBUG
     // print the 16 bitboards
     for (int i = 0; i < 8; ++i) {
         std::cout << "File " << (char)('a' + i) << ": \n";
@@ -145,5 +144,23 @@ void init_eval_masks() {
         std::cout << "Rank " << (i + 1) << ": \n";
         printBB(rankBBMask[i]);
     }
-    */
+
+    // print isolated masks
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        std::cout << "Isolated " << square_to_str(sq) << ": \n";
+        printBB(isolatedMask[sq]);
+    }
+
+    // print white passed masks
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        std::cout << "White passed " << square_to_str(sq) << ": \n";
+        printBB(wPassedMask[sq]);
+    }
+
+    // print black passed masks
+    for (square_t sq = A1; sq <= H8; ++sq) {
+        std::cout << "Black passed " << square_to_str(sq) << ": \n";
+        printBB(bPassedMask[sq]);
+    }
+   */
 }

@@ -3,6 +3,7 @@
 
 #include "eval.h"
 #include "threads.h"
+#include "order.h"
 
 constexpr int oo = 1'000'000; // INF
 
@@ -46,10 +47,10 @@ We reserve space for the PV on the stack
 inside the recursive search routine and pass a reference
 to child nodes
 */
-typedef struct PV {
+typedef struct pv_t {
     move_t table[MAX_DEPTH] = {};
     int size = 0;
-} PV;
+} pv_t;
 
 // Global evaluator (for multithreaded, we'll want to have a separate one for
 // each thread)
@@ -99,27 +100,32 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
     movelist_t captures;
     generate_noisy(board, &captures);
+    score_and_sort(board, &captures, NULLMV);
 
     int legal = 0;
     score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
-    for (const move_t* it = captures.begin(); it != captures.end(); ++it) {
+    for (const move_t& move : captures) {
 
         // Pseudo-legal move generation
-        if (!make_move(board, *it)) //
+        if (!make_move(board, move)) //
             continue;
 
         ++legal;
         score = -quiescence(-beta, -alpha, board, info);
 
-        undo_move(board, *it);
+        undo_move(board, move);
 
         if (search_stopped(info)) {
             return 0;
         }
 
         if (score >= beta) { // fail-high
+            if (legal == 1) {
+                info->fail_high_first++;
+            }
+            info->fail_high++;
             return beta;
         }
 
@@ -139,7 +145,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
  @param do_null whether to perform a null move or not
  @param pv reference to a table storing the (depth - 1) principal variation
 */
-int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null, PV *pv) {
+int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null, pv_t *pv) {
     assert(check(board));
     assert(alpha < beta);
 
@@ -166,40 +172,59 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     }
 
     // PV for the current depth
-    PV new_pv;
+    pv_t new_pv;
 
     int score = -oo;
+
+    // Generate pseudolegal moves
     movelist_t moves;
     generate_moves(board, &moves);
 
-    // TODO: Move ordering
+    // If following the principal variation (from a previous search at a smaller
+    // depth), order the PV move higher
+
+    // Move ordering              // PV move, if any
+    score_and_sort(board, &moves, pv->table[0]);
 
     int legal = 0;
 
     // Iterate over the pseudolegal moves in the current position
-    for (const move_t* it = moves.begin(); it != moves.end(); ++it) {
+    for (const move_t& move : moves) {
 
         // Pseudo-legal move generation
-        if (!make_move(board, *it)) //
+        if (!make_move(board, move)) //
             continue;
 
         ++legal;
         score = -negamax(-beta, -alpha, depth - 1, board, info, do_null, &new_pv);
 
-        undo_move(board, *it);
+        undo_move(board, move);
 
         if (search_stopped(info))
             return 0;
 
-        if (score >= beta)
+        if (score >= beta) {
+            if (legal == 1) {
+                info->fail_high_first++;
+            }
+            info->fail_high++;
+
+            // Killer moves (cause a beta cutoff but aren=t captures)
+            if (!is_capture(move)) {
+                board->killer2[board->ply] = board->killer1[board->ply];
+                board->killer1[board->ply] = move;
+                // History heuristic (@TODO: Check for overflows)
+                board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth >> 2;
+            }
             return beta; // fail hard beta-cutoff (fail-high)
+        }
 
         if (score > alpha) { // PV Node
           // Update the lower-bound
           alpha = score;
 
           // Store the move in the principal variation for the current ply
-          pv->table[0] = *it;
+          pv->table[0] = move;
 
           // Copy over the rest of the principal variation from the next ply
           movcpy(pv->table + 1, new_pv.table, new_pv.size);
@@ -212,8 +237,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
           */
           pv->size = new_pv.size + 1;
         }
-
-        // @TODO: Fail low
+        /* Fail low: do nothing and simply search the next move */
     }
 
     // If no legal moves, then check if we're in check
@@ -228,7 +252,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 }
 
 inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
-                              const PV *pv) {
+                              const pv_t *pv) {
 
   // Print the info line
   std::cout << "info score cp " << s << " depth " << d << " nodes "
@@ -241,7 +265,28 @@ inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
   std::cout << std::endl;
 }
 
+
+void init_search(board_t *board, searchinfo_t *info) {
+
+    // Clear tables used for the history heuristic
+    for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
+        for (square_t sq = A1; sq <= H8; ++sq) {
+            board->history_h[p][sq] = 0;
+        }
+    }
+
+    // Clear tables used for the killer move heuristic
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        board->killer1[i] = board->killer2[i] = NULLMV;
+    }
+
+    // Clear search info, like # nodes searched
+    info->clear();
+}
+
+
 } // namespace
+
 
 /* Search the tree starting from the root node (current board state) */
 void search(board_t *board, searchinfo_t *info) {
@@ -250,10 +295,11 @@ void search(board_t *board, searchinfo_t *info) {
     move_t best_move = NULLMV;
     int best_score = -oo;
 
-    info->clear();
+    // Clear for search
+    init_search(board, info);
 
     // Table that will store the principal variation
-    PV pv;
+    pv_t pv;
 
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {
@@ -272,6 +318,10 @@ void search(board_t *board, searchinfo_t *info) {
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;
+
+    std::cout << "Ordering: "
+              << (static_cast<double>(info->fail_high_first) / info->fail_high)
+              << std::endl;
 
     assert(check(board));
 }

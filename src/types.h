@@ -168,10 +168,9 @@ using move_t = uint32_t;
  *  4 bits for flags
  *  6 bits for the source square
  *  6 bits for the destination square
- * 16 bits for the score in move ordering (optional)
 
    0b  0000000000000000 0000  000000  000000
-       score            flag  from    to
+                        flag  from    to
 
  * In this implementation we use only the last 16 bits, with
  * move scores stored separately in the move list. We
@@ -210,6 +209,10 @@ enum {
 
 #define get_flags(move) (((move) >> 12) & 0xf)
 
+// #define get_score(move) (((move) >> 16) & 0xffff)
+
+#define scored(move, score) (({ (move), (score) }))
+
 #define is_capture(move) (((move) >> 12) & 0b0100)
 
 #define is_promotion(move) (((move) >> 12) & 0b1000)
@@ -232,20 +235,30 @@ typedef struct undo_t {
     piece_t captured = NO_PIECE;
 } undo_t;
 
-// Move list structure (TODO: Add scores for move ordering?)
+// Struct containing a move and its corresponding score for move ordering
+typedef struct scored_move_t {
+    move_t move;
+    uint32_t score;
+
+    void operator=(move_t m) { move = m; }
+    // Conversion operator, returning the move as a move_t
+    operator move_t() const { return move; }
+} scored_move_t;
+
+// Move list structure
 typedef struct movelist_t {
-    const move_t* begin() const { return moveList; }
-    const move_t* end() const { return last; }
-    size_t size() const { return static_cast<size_t>(last - moveList); }
+    const scored_move_t* begin() const { return movelist; }
+    const scored_move_t* end() const { return last; }
+    size_t size() const { return static_cast<size_t>(last - movelist); }
     void push_back(const move_t& m) {
         assert(size() < MAX_MOVES);
         *last++ = m;
     }
     void clear() {
-        last = moveList;
+        last = movelist;
     }
-    move_t moveList[MAX_MOVES];
-    move_t* last = moveList;
+    scored_move_t movelist[MAX_MOVES];
+    scored_move_t* last = movelist;
 } movelist_t;
 
 inline std::string move_to_str(const move_t m) {
@@ -315,12 +328,15 @@ inline std::string castling_rights_to_str(const int castle_rights) {
 
 typedef struct searchinfo_t {
     std::atomic_int state; // see src/threads.h
-    int depth;
+    int depth = MAX_DEPTH;
     uint64_t time;
     uint64_t inc;
     uint64_t start;
     uint64_t end;
-    uint64_t nodes;
+    uint64_t nodes = 0ULL;
+    // For testing move ordering
+    uint64_t fail_high_first = 0ULL;
+    uint64_t fail_high = 0ULL;
     bool quit = false;
     bool stopped = false;
     bool time_set = false;
@@ -328,6 +344,8 @@ typedef struct searchinfo_t {
     inline void clear() {
         stopped = false;
         nodes = 0ULL;
+        fail_high_first = 0ULL;
+        fail_high = 0ULL;
     }
 } searchinfo_t;
 

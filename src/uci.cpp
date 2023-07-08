@@ -5,9 +5,11 @@
 #include <sstream>
 
 #include "board.h"
-#include "time.h" // now()
+#include "time.h"
 #include "search.h"
 #include "threads.h"
+#include "order.h"
+#include "eval.h"
 
 namespace {
 
@@ -152,6 +154,8 @@ void loop(int argc, char* argv[]) {
             std::cout << "uciok" << std::endl;
         } else if (token == "isready")  {
             std::cout << "readyok" << std::endl;
+        } else if (token == "ucinewgame") {
+            parse_position(board, "position startpos\n");
         } else if (token == "stop") {
             search_stop(search_thread, info);
         } else if (token == "quit") {
@@ -174,13 +178,22 @@ void loop(int argc, char* argv[]) {
         } else if (token == "undo") {
             undo_move(board);
             print(board);
-        } else if (token == "moves") {
+        } else if (token == "moves") { // Print pseudo-legal move
             movelist_t moves;
             generate_moves(board, &moves);
-            for (const move_t* it = moves.begin(); it != moves.end(); ++it) {
-                std::cout << move_to_str(*it) << " ";
+            for (const move_t move : moves) {
+                std::cout << move_to_str(move) << " ";
             }
             std::cout << std::endl;
+        } else if (token == "movescore") { // Move-ordering scores
+            movelist_t moves;
+            generate_moves(board, &moves);
+            score_and_sort(board, &moves, NULLMV);
+            for (const scored_move_t move : moves) {
+                std::cout << move_to_str(move) << ": " << move.score << std::endl;
+            }
+            std::cout << std::endl;
+
         } else if (token == "test") {
             test(board);
         } else if (token == "perft") {
@@ -242,6 +255,17 @@ void loop(int argc, char* argv[]) {
                                             << " inc " << info->inc);
             // search(board, info);
             search_start(search_thread, board, info);
+        } else if (token == "eval") {
+            eval_t eval[1];
+            evaluate(board, eval);
+            eval->print();
+        } else if (token == "dumphistory") {
+            for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
+                std::cout << piece_to_ascii[p] << ": \n";
+                for (square_t sq = A1; sq <= H8; ++sq) {
+                    std::cout << "  " << board->history_h[p][sq] << std::endl;
+                }
+            }
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
@@ -259,9 +283,9 @@ move_t str_to_move(board_t *board, const std::string& s) {
     // TODO: Implement with a move generator to only convert to *legal* moves
     movelist_t moves;
     generate_moves(board, &moves);
-    for (const move_t *it = moves.begin(); it != moves.end(); ++it) {
-        if (move_to_str(*it) == s) {
-            return *it;
+    for (const move_t move : moves) {
+        if (move_to_str(move) == s) {
+            return move;
         }
     }
     std::cout << "Move '" << s << "' is invalid!" << std::endl;

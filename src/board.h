@@ -25,8 +25,6 @@ typedef struct board_t {
     bb_t sides_pieces[BOTH];
     // Side to play (Black = 0, White = 1)
     int turn = 1;
-    // Material for each side (TODO: might not be necessary)
-    // int material[BOTH];
     // Ply of the game in the current search
     int ply = 0;
     // How many halfmoves have been made until current position
@@ -37,12 +35,15 @@ typedef struct board_t {
     int fifty_move = 0;
     // En passant square (if any)
     square_t ep_square = NO_SQ;
-    // Kings' squares
-    // square_t king_square[BOTH] = {E8, E1};
     // Zobrist hash key for the current position
     uint64_t key = 0ULL;
     // History of previous positions
     undo_t history[MAX_MOVES];
+    // Killer moves for move ordering (cause a beta cutoff but aren't captures)
+    move_t killer1[MAX_DEPTH] = {};
+    move_t killer2[MAX_DEPTH] = {};
+    // History heuristic, table indexed by [piece][to square]
+    unsigned history_h[PIECE_NO][SQUARE_NO] = {};
 } board_t;
 
 extern void init_keys();

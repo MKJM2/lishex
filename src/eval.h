@@ -30,7 +30,7 @@ typedef struct eval_t {
     @param eval eval_t struct to store the game phase in
     */
     inline void set_phase(const board_t *board) {
-        phase = CNT(board->bitboards[p] | board->bitboards[P]) << 2;
+        phase = CNT(board->bitboards[p] | board->bitboards[P]) << 1;
         phase += 6 * CNT(board->bitboards[k] | board->bitboards[K]);
         phase += 12 * CNT(board->bitboards[b] | board->bitboards[B]);
         phase += 18 * CNT(board->bitboards[r] | board->bitboards[R]);
@@ -64,5 +64,7 @@ typedef struct eval_t {
  among others
  */
 int evaluate(const board_t *board, eval_t *eval);
+
+void mirror_test(board_t *board);
 
 #endif // EVAL_H_

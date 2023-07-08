@@ -16,6 +16,7 @@
 #include "movegen.h"
 #include "rng.h"
 #include "threads.h"
+#include "eval.h"
 
 #ifdef DEBUG
 size_t boards = 0;
@@ -358,9 +359,7 @@ bool is_repetition(const board_t *board) {
 void test(board_t *board) {
     assert(check(board));
 
-    #ifdef DEBUG
-    perft_test(board, "./tests/perftsuite.epd");
-    #endif
+    mirror_test(board);
 
     assert(check(board));
 }
