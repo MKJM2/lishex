@@ -112,7 +112,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
 
         // to be safe we don't run out of time
         time -= 5;
-        time = std::max(time, 2);
+        time = std::max(time, 0);
         info->end = info->start + time + inc;
     }
 
@@ -197,6 +197,7 @@ void loop(int argc, char* argv[]) {
 
         } else if (token == "test") {
             test(board);
+            //perft_test(board, "/home/mkjm/Downloads/Arena/kaufman.epd");
         } else if (token == "perft") {
             // Get user argument
             std::string depth_str;

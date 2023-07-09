@@ -343,11 +343,12 @@ void search(board_t *board, searchinfo_t *info) {
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {
         best_score = negamax(-oo, +oo, depth, board, info, false, &pv);
-        best_move = pv.table[0];
 
         if (search_stopped(info)) {
             break;
         }
+
+        best_move = pv.table[0];
 
         print_search_info(best_score,
                           depth,
@@ -358,9 +359,11 @@ void search(board_t *board, searchinfo_t *info) {
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;
 
+    /*
     std::cout << "Ordering: "
               << (static_cast<double>(info->fail_high_first) / info->fail_high)
               << std::endl;
+    */
 
     assert(check(board));
 }

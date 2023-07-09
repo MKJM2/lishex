@@ -446,6 +446,7 @@ void mirror_test(board_t *board) {
     eval->print();
     if (ev1 != ev2) {
         std::cout << "Test failed!" << std::endl;
+        assert(ev1 == ev2);
     }
 
     assert(check(board));

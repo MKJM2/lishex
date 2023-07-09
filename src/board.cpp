@@ -359,6 +359,28 @@ bool is_repetition(const board_t *board) {
 void test(board_t *board) {
     assert(check(board));
 
+    setup(board, kiwipete_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test1_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test2_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test3_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test4_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test5_FEN);
+    mirror_test(board);
     mirror_test(board);
 
     assert(check(board));
@@ -844,7 +866,8 @@ void perft_test(board_t *board, const std::string& epd_filename) {
 
       setup(board, fenline);
       for (int depth = 0; depth < 6; ++depth) {
-          std::cout << perft(board, depth) << std::endl;
+          // std::cout << perft(board, depth) << std::endl;
+          mirror_test(board);
       }
     }
     epdfile.close();
