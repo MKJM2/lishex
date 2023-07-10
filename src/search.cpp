@@ -1,6 +1,8 @@
 /* Iterative deepening alpha-beta in negamax fashion */
 #include "search.h"
 
+#include <cmath>
+
 #include "eval.h"
 #include "threads.h"
 #include "order.h"
@@ -76,8 +78,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
     int score = evaluate(board, &eval);
 
-    // @TODO: Should we check up with the UCI?
-
     // Has search been stopped?
     if (search_stopped(info)) {
         return score;
@@ -100,6 +100,11 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
     movelist_t captures;
     generate_noisy(board, &captures);
+
+    // If following the principal variation (from a previous search at a smaller
+    // depth), order the PV move higher
+
+    // Move ordering                 // PV move, if any
     score_and_sort(board, &captures, NULLMV);
 
     int legal = 0;
@@ -129,7 +134,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
             return beta;
         }
 
-        if (score > alpha) {
+        if (score > alpha) { // PV-node
             alpha = score;
         }
     }
@@ -150,7 +155,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(alpha < beta);
 
     if (depth <= 0) {
-        pv->size = 0;
+        // TODO: pv->size = 0;
         return quiescence(alpha, beta, board, info);
     }
 
@@ -190,7 +195,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // depth), order the PV move higher
 
     // Move ordering              // PV move, if any
-    score_and_sort(board, &moves, pv->table[0]);
+    //score_and_sort(board, &moves, pv->table[board->ply]);
+    score_and_sort(board, &moves, pv->table[0]); // pv move from the previous iter is the first move in the parent pv
+
+    // movescore(board, &moves, pv->table[board->ply]);
 
     int legal = 0;
 
@@ -208,6 +216,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         if (search_stopped(info))
             return 0;
+
+        assert(info->state == ENGINE_SEARCHING);
 
         if (score > alpha) { // PV or fail-high node
 
@@ -340,13 +350,21 @@ void search(board_t *board, searchinfo_t *info) {
     // Table that will store the principal variation
     pv_t pv;
 
+    int curr_depth_nodes = 0;
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {
+        // For calculating the branching factor
+        curr_depth_nodes = info->nodes;
+
         best_score = negamax(-oo, +oo, depth, board, info, false, &pv);
+
+        curr_depth_nodes = info->nodes - curr_depth_nodes;
 
         if (search_stopped(info)) {
             break;
         }
+
+        assert(info->state == ENGINE_SEARCHING);
 
         best_move = pv.table[0];
 
@@ -355,6 +373,9 @@ void search(board_t *board, searchinfo_t *info) {
                           info->nodes,
                           now() - info->start,
                           &pv);
+
+        std::cout << "Branching factor at depth " << depth << " is: " \
+            << std::pow(curr_depth_nodes, 1.0 / depth) << std::endl;
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;

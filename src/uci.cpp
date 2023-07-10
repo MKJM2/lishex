@@ -112,7 +112,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
 
         // to be safe we don't run out of time
         time -= 5;
-        time = std::max(time, 0);
+        time = std::abs(time);
         info->end = info->start + time + inc;
     }
 
@@ -186,15 +186,10 @@ void loop(int argc, char* argv[]) {
                 std::cout << move_to_str(move) << " ";
             }
             std::cout << std::endl;
-        } else if (token == "movescore") { // Move-ordering scores
+        } else if (token == "movescore") { // Printing move-ordering scores
             movelist_t moves;
             generate_moves(board, &moves);
-            score_and_sort(board, &moves, NULLMV);
-            for (const scored_move_t move : moves) {
-                std::cout << move_to_str(move) << ": " << move.score << std::endl;
-            }
-            std::cout << std::endl;
-
+            movescore(board, &moves, NULLMV);
         } else if (token == "test") {
             test(board);
             //perft_test(board, "/home/mkjm/Downloads/Arena/kaufman.epd");

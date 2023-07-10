@@ -1,16 +1,13 @@
 /**
  * Implementation of move ordering logic
- *
- * the most significant 16 bits of a given 32bit move store the (unsigned) score
 */
 #include "order.h"
 
 #include <cstring> // memmove
 
 #include "eval.h"
+#include "movegen.h"
 
-// TODO: Move ordering (MVV-LVA, killer, history)
-//
 namespace {
 
 // Bonuses for moves
@@ -20,7 +17,8 @@ constexpr int CAPTURE_BONUS = 1'000'000;
 constexpr int KILLER1_BONUS = 900'000;
 constexpr int KILLER2_BONUS = 800'000;
 
-constexpr int PROMO_BONUS = 200;
+// Small bonuses for promoting & castling
+constexpr int PROMO_BONUS = 100;
 constexpr int CASTLE_BONUS = 10;
 
 /* MVV-LVA heuristic setup */
@@ -52,10 +50,11 @@ void score(const board_t *board, movelist_t *moves, move_t pv_move) {
     // Higher scoring moves will be explored first
     int n = moves->size();
     square_t from, to;
-    int bonus = 0;
+    int flags = 0;
     for (int i = 0; i < n; ++i) {
         scored_move_t& move = moves->movelist[i];
         if (move == pv_move) {
+            assert(move.move == pv_move);
             move.score = PV_BONUS;
             // Since we want to search the PV move first, we can swap it in
             scored_move_t tmp = moves->movelist[0];
@@ -63,35 +62,44 @@ void score(const board_t *board, movelist_t *moves, move_t pv_move) {
             move = tmp;
             continue;
         }
+        move.score = 0;
+
         from = get_from(move);
         to = get_to(move);
-        switch (get_flags(move)) {
-            case EPCAPTURE:
-            case CAPTURE:
-                bonus = CAPTURE_BONUS;
+        flags = get_flags(move);
+        if (flags & CAPTURE) {
+            move.score += CAPTURE_BONUS;
+            if (flags == EPCAPTURE)
+                move.score += 105; // MVV_LVA[PAWN][PAWN]
+            else
+                move.score += MVV_LVA[board->pieces[to]][board->pieces[from]];
+            continue;
+        }
+
+        /* Check if killer move */
+        if (board->killer1[board->ply] == move) {
+            move.score += KILLER1_BONUS;
+        } else if (board->killer2[board->ply] == move) {
+            move.score += KILLER2_BONUS;
+        } else {
+            move.score += board->history_h[board->pieces[from]][to];
+        }
+
+        /* Additional small bonuses */
+        switch (flags & ~CAPTURE) { // clear CAPTURE bit
+            case KINGCASTLE:
+            case QUEENCASTLE:
+                move.score += CASTLE_BONUS;
                 break;
             case QUEENPROMO:
             case ROOKPROMO:
             case BISHOPPROMO:
             case KNIGHTPROMO:
-                bonus = PROMO_BONUS;
-                break;
-            case KINGCASTLE:
-            case QUEENCASTLE:
-                bonus = CASTLE_BONUS;
+                move.score += PROMO_BONUS;
                 break;
             default:
-                /* Non-capture, check if killer move */
-                if (board->killer1[board->ply] == move) {
-                    bonus = KILLER1_BONUS;
-                } else if (board->killer2[board->ply] == move) {
-                    bonus = KILLER2_BONUS;
-                } else {
-                    bonus = board->history_h[board->pieces[from]][to];
-                }
                 break;
         }
-        move.score = MVV_LVA[board->pieces[to]][board->pieces[from]] + bonus;
     }
 }
 
@@ -139,4 +147,17 @@ inline void sort(movelist_t *moves) {
 void score_and_sort(const board_t *board, movelist_t *moves, move_t pv_move) {
     score(board, moves, pv_move);
     movesort(moves->movelist, moves->size());
+}
+
+// Prints out the n (default = 5) best scoring moves
+void movescore(const board_t *board, movelist_t *moves, move_t pv_move, int n) {
+
+    generate_moves(board, moves);
+    score_and_sort(board, moves, pv_move);
+    int count = 0;
+    for (const scored_move_t move : *moves) {
+        if (count++ == n)
+            break;
+        std::cout << move_to_str(move) << ": " << move.score << std::endl;
+    }
 }
