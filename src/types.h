@@ -88,6 +88,12 @@ enum : int {
     NORTH_WEST = -SOUTH_EAST
 };
 
+inline square_t is_white(const square_t sq) {
+    int f = SQUARE_FILE(sq), r = SQUARE_RANK(sq);
+    return ((f & 1) != (r & 1));
+    // == (f % 2 == 0 && r % 2 == 0) || (f % 2 != 0 && r % 2 != 0);
+}
+
 inline square_t mirror(const square_t sq) {
     return sq ^ 56;
 }

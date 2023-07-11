@@ -217,15 +217,15 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb_t black_pawns = board->bitboards[p];
     bb_t white_pawns = board->bitboards[P];
     bb_t pawns = black_pawns | white_pawns;
-    bb_t b = white_pawns;
+    bb_t bb = white_pawns;
 
     // Pawn values
-    eval->middlegame += CNT(b) * value_mg[P];
-    eval->endgame    += CNT(b) * value_eg[P];
+    eval->middlegame += CNT(bb) * value_mg[P];
+    eval->endgame    += CNT(bb) * value_eg[P];
     // Passed & isolated pawns
-    while (b) {
+    while (bb) {
         // Get the square of a white pawn
-        sq = POPLSB(b);
+        sq = POPLSB(bb);
 
         // PSQTs
         eval->middlegame += pawn_table_mg[sq];
@@ -245,12 +245,12 @@ int evaluate(const board_t *board, eval_t * eval) {
     }
 
     // Pawn values
-    b = black_pawns;
-    eval->middlegame -= CNT(b) * value_mg[p];
-    eval->endgame    -= CNT(b) * value_eg[p];
-    while (b) {
+    bb = black_pawns;
+    eval->middlegame -= CNT(bb) * value_mg[p];
+    eval->endgame    -= CNT(bb) * value_eg[p];
+    while (bb) {
         // Get the square of a black pawn
-        sq = POPLSB(b);
+        sq = POPLSB(bb);
 
         // PSQTs
         eval->middlegame -= pawn_table_mg[mirror(sq)];
@@ -273,13 +273,13 @@ int evaluate(const board_t *board, eval_t * eval) {
     // White
 
     // PSQTs + Material value
-    b  = board->sides_pieces[WHITE];
-    b ^= white_pawns;
-    b ^= board->bitboards[K];
+    bb  = board->sides_pieces[WHITE];
+    bb ^= white_pawns;
+    bb ^= board->bitboards[K];
 
     piece_t pce;
-    while (b) {
-        sq = POPLSB(b);
+    while (bb) {
+        sq = POPLSB(bb);
         pce = board->pieces[sq];
         eval->middlegame += value_mg[pce];
         eval->middlegame += psqt_mg[pce][sq];
@@ -317,12 +317,12 @@ int evaluate(const board_t *board, eval_t * eval) {
     // Black
 
     // PSQTs + Material value
-    b  = board->sides_pieces[BLACK];
-    b ^= black_pawns;
-    b ^= board->bitboards[k];
+    bb  = board->sides_pieces[BLACK];
+    bb ^= black_pawns;
+    bb ^= board->bitboards[k];
 
-    while (b) {
-        sq = POPLSB(b);
+    while (bb) {
+        sq = POPLSB(bb);
         pce = board->pieces[sq];
         eval->middlegame -= value_mg[pce];
         eval->middlegame -= psqt_mg[pce][mirror(sq)];
@@ -357,35 +357,46 @@ int evaluate(const board_t *board, eval_t * eval) {
         }
     }
 
-    /*
-    // TODO:
-    for (const piece_t p : pieces) {
-        b = board->bitboards[p];
-        // Sign is +1 if White, -1 if Black, i.e. 2 * piece_color(p) == W - 1;
-        while (b) {
-            sq = POPLSB(b);
-            if (piece_color(p) == WHITE) {
-                // Piece values
-                eval->middlegame += value_mg[p];
-                eval->endgame += value_eg[p];
-                // PSQTs
-                // @TODO: Make the psqt access cleaner, perhaps templates?
-                eval->middlegame += (*psqt_mg[p])[sq];
-                eval->endgame += (*psqt_eg[p])[sq];
+    /* Bishop pair bonus */
+
+    // White
+    bb = board->bitboards[B];
+    int on_white = 0, on_black = 0;
+    if (CNT(bb) >= 2) { // If two bishops on board
+        while (bb) {
+            if (is_white(POPLSB(bb))) {
+                on_white += 1;
             } else {
-                // Piece values
-                eval->middlegame -= value_mg[p];
-                eval->endgame -= value_eg[p];
-                // Mirrored PSQTs
-                eval->middlegame -= (*psqt_mg[p])[mirror(sq)];
-                eval->endgame -= (*psqt_eg[p])[mirror(sq)];
+                on_black += 1;
             }
         }
+        if (on_white >= 1 && on_black >= 1) {
+            eval->middlegame += bishop_pair;
+            eval->endgame    += bishop_pair;
+        }
     }
-    */
 
+    // Black
+    bb = board->bitboards[b];
+    on_white = on_black = 0;
+    if (CNT(bb) >= 2) { // If two bishops on board
+        while (bb) {
+            if (is_white(POPLSB(bb))) {
+                on_white += 1;
+            } else {
+                on_black += 1;
+            }
+        }
+        if (on_white >= 1 && on_black >= 1) {
+            eval->middlegame -= bishop_pair;
+            eval->endgame    -= bishop_pair;
+        }
+    }
+
+    /* Tapered evaluation */
     score = eval->get_tapered_score();
 
+    // We return the score relative to the side playing
     return board->turn ? score : -score;
 }
 

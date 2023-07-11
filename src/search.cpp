@@ -45,12 +45,12 @@ N-1 |1|
 */
 typedef struct pv_line {
     move_t moves[MAX_DEPTH] = {};
-    size_t size;
-    void push_back(const move_t &m) {
+    size_t size = 0;
+    void push_back(const move_t m) {
         assert(size < MAX_DEPTH);
         *last++ = m;
     }
-    void clear() { last = moves; }
+    void clear() { last = moves; size = 0; }
 
     move_t operator[](int i) const { return moves[i]; }
     move_t& operator[](int i) { return moves[i]; }
@@ -126,7 +126,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     score_and_sort(board, &captures, NULLMV);
 
     int legal = 0;
-    score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
     for (const auto& move : captures) {
@@ -172,12 +171,25 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(check(board));
     assert(alpha < beta);
 
+    // PV for the current search ply
+    pv_line &pv = pv_tb[board->ply];
+    // PV for the next search ply
+    pv_line &new_pv = pv_tb[board->ply + 1];
+
+    // Set principal variation line size for the current search ply
+    pv.size = board->ply;
+
     if (depth <= 0) {
         // TODO: pv->size = 0;
         return quiescence(alpha, beta, board, info);
     }
 
     ++info->nodes;
+
+    // If not at root of the search, check for repetitions
+    if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
+        return 0; // Draw score
+    }
 
     // Has search been stopped?
     if (search_stopped(info)) {
@@ -189,24 +201,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return evaluate(board, &eval);
     }
 
-    // If not at root of the search, check for repetitions
-    if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
-        return 0; // Draw score
-    }
-
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
     if (in_check) {
         ++depth;
     }
-
-    // PV for the current depth
-    // pv_t new_pv;
-    pv_line &pv = pv_tb[board->ply];
-    pv_line &new_pv = pv_tb[board->ply + 1];
-
-    // Set size for the current ply
-    pv.size = board->ply;
 
     int score = -oo;
 
@@ -242,7 +241,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         if (score > alpha) { // PV or fail-high node
 
-
             // Move causes a cutoff, hence update the search history tables
             // (History heuristic)
             board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
@@ -270,9 +268,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             pv[board->ply] = move;
 
             // Copy over the rest of the principal variation from the next ply
-            for (int j = board->ply + 1; j < new_pv.size; ++j) {
-                pv[j] = new_pv[j];
-            }
+            //for (int j = board->ply + 1; j < new_pv.size; ++j) {
+                //pv[j] = new_pv[j];
+            //}
+            movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
             pv.size = new_pv.size;
         }
         /*
@@ -346,7 +345,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     }
 
     // Clear the global pv table
-    memset(pv_tb, 0, sizeof(pv_tb));
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        pv_tb[i].clear();
+    }
 
     // Clear search info, like # nodes searched
     info->clear();
@@ -390,7 +391,7 @@ void search(board_t *board, searchinfo_t *info) {
                           now() - info->start,
                           pv_tb[0]);
 
-        std::cout << "Branching factor at depth " << depth << " is: " \
+        std::cout << "info string branching factor at depth " << depth << " is: " \
             << std::pow(curr_depth_nodes, 1.0 / depth) << std::endl;
     }
 
