@@ -18,8 +18,6 @@ void movcpy(move_t *p_tgt, move_t *p_src, int n) {
     while (n-- && (*p_tgt++ = *p_src++));
 }
 
-
-
 /* Principal Variation
 
 Triangular table layout:
@@ -44,15 +42,35 @@ N-2 |2  |
     +-+-+
 N-1 |1|
     +-+
-
-We reserve space for the PV on the stack
-inside the recursive search routine and pass a reference
-to child nodes
 */
-typedef struct pv_t {
-    move_t table[MAX_DEPTH] = {};
-    int size = 0;
-} pv_t;
+typedef struct pv_line {
+    move_t moves[MAX_DEPTH] = {};
+    size_t size;
+    void push_back(const move_t &m) {
+        assert(size < MAX_DEPTH);
+        *last++ = m;
+    }
+    void clear() { last = moves; }
+
+    move_t operator[](int i) const { return moves[i]; }
+    move_t& operator[](int i) { return moves[i]; }
+
+    // Print the principal variation line
+    void print() const {
+        for (size_t i = 0; i < size; ++i) {
+            std::cout << move_to_str(moves[i]) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    private:
+        move_t *last = moves;
+} pv_line;
+
+// Global PV table (quadratic approach)
+// - indexed by [ply]
+// - pv[ply] is the principal variation line for the search at depth 'ply'
+pv_line pv_tb[MAX_DEPTH];
 
 // Global evaluator (for multithreaded, we'll want to have a separate one for
 // each thread)
@@ -150,7 +168,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
  @param do_null whether to perform a null move or not
  @param pv reference to a table storing the (depth - 1) principal variation
 */
-int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null, pv_t *pv) {
+int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
     assert(check(board));
     assert(alpha < beta);
 
@@ -183,7 +201,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     }
 
     // PV for the current depth
-    pv_t new_pv;
+    // pv_t new_pv;
+    pv_line &pv = pv_tb[board->ply];
+    pv_line &new_pv = pv_tb[board->ply + 1];
+
+    // Set size for the current ply
+    pv.size = board->ply;
 
     int score = -oo;
 
@@ -194,11 +217,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // If following the principal variation (from a previous search at a smaller
     // depth), order the PV move higher
 
-    // Move ordering              // PV move, if any
-    //score_and_sort(board, &moves, pv->table[board->ply]);
-    score_and_sort(board, &moves, pv->table[0]); // pv move from the previous iter is the first move in the parent pv
-
-    // movescore(board, &moves, pv->table[board->ply]);
+    // pv move from the previous iter is the first move in the parent pv
+    // Move ordering              // PV move, if any // TODO: test against 0
+    score_and_sort(board, &moves, pv_tb[0][board->ply]);
 
     int legal = 0;
 
@@ -210,7 +231,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             continue;
 
         ++legal;
-        score = -negamax(-beta, -alpha, depth - 1, board, info, do_null, &new_pv);
+        score = -negamax(-beta, -alpha, depth - 1, board, info, do_null);
 
         undo_move(board, move);
 
@@ -246,13 +267,13 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             alpha = score;
 
             // Store the move in the principal variation for the current ply
-            pv->table[0] = move;
+            pv[board->ply] = move;
 
             // Copy over the rest of the principal variation from the next ply
-            movcpy(pv->table + 1, new_pv.table, new_pv.size);
-            // equivalent to:
-            // memcpy(pv->table + 1, new_pv.table, new_pv.size);
-            pv->size = new_pv.size + 1;
+            for (int j = board->ply + 1; j < new_pv.size; ++j) {
+                pv[j] = new_pv[j];
+            }
+            pv.size = new_pv.size;
         }
         /*
         if (score >= beta) {
@@ -290,7 +311,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // If no legal moves, then check if we're in check
     // If not, it's a stalemate
-    if (legal == 0) {
+    if (!legal) {
                             // Mate            // Stalemate
         return (in_check) ? -oo + board->ply : 0;
     }
@@ -301,17 +322,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 }
 
 inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
-                              const pv_t *pv) {
+                              const pv_line &pv) {
 
   // Print the info line
   std::cout << "info score cp " << s << " depth " << d << " nodes "
             << n << " time " << t << " pv ";
-
-  // Print the principal variation for the current depth
-  for (int i = 0; i < d; ++i) {
-    std::cout << move_to_str(pv->table[i]) << " ";
-  }
-  std::cout << std::endl;
+  pv.print();
 }
 
 
@@ -328,6 +344,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     for (int i = 0; i < MAX_DEPTH; ++i) {
         board->killer1[i] = board->killer2[i] = NULLMV;
     }
+
+    // Clear the global pv table
+    memset(pv_tb, 0, sizeof(pv_tb));
 
     // Clear search info, like # nodes searched
     info->clear();
@@ -347,16 +366,13 @@ void search(board_t *board, searchinfo_t *info) {
     // Clear for search
     init_search(board, info);
 
-    // Table that will store the principal variation
-    pv_t pv;
-
     int curr_depth_nodes = 0;
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {
         // For calculating the branching factor
         curr_depth_nodes = info->nodes;
 
-        best_score = negamax(-oo, +oo, depth, board, info, false, &pv);
+        best_score = negamax(-oo, +oo, depth, board, info, false);
 
         curr_depth_nodes = info->nodes - curr_depth_nodes;
 
@@ -366,13 +382,13 @@ void search(board_t *board, searchinfo_t *info) {
 
         assert(info->state == ENGINE_SEARCHING);
 
-        best_move = pv.table[0];
+        best_move = pv_tb[0][0];
 
         print_search_info(best_score,
                           depth,
                           info->nodes,
                           now() - info->start,
-                          &pv);
+                          pv_tb[0]);
 
         std::cout << "Branching factor at depth " << depth << " is: " \
             << std::pow(curr_depth_nodes, 1.0 / depth) << std::endl;
