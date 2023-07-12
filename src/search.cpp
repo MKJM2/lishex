@@ -51,9 +51,9 @@ typedef struct pv_line {
         assert(size < MAX_DEPTH);
         *last++ = m;
     }
-    void clear() { last = moves; size = 0; }
+    void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
 
-    move_t operator[](int i) const { return moves[i]; }
+    move_t operator[](int i) const { assert(i < size); return moves[i]; }
     move_t& operator[](int i) { return moves[i]; }
 
     // Print the principal variation line
@@ -127,7 +127,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
     // Iterate over the pseudolegal moves in the current position
     move_t move;
-    while ((move = next_best(&captures)) != NULLMV) {
+    while ((move = next_best(&captures, board->ply)) != NULLMV) {
     // for (const auto& move : captures) {
 
         /* We perform a couple quick checks to see if the move can be
@@ -293,14 +293,14 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // pv move from the previous iter is the first move in the parent pv
     // Move ordering              // PV move, if any // TODO: test against 0
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
-    score_moves(board, &moves, pv_tb[0][board->ply]);
+    score_moves(board, &moves, NULLMV); //pv_tb[0][board->ply]);
 
     int legal = 0;
 
     // Iterate over the pseudolegal moves in the current position
     // for (const auto& move : moves) {
     move_t move;
-    while ((move = next_best(&moves)) != NULLMV) {
+    while ((move = next_best(&moves, board->ply)) != NULLMV) {
 
         // Pseudo-legal move generation
         if (!make_move(board, move)) {
@@ -327,6 +327,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                 // Killer moves (cause a beta cutoff but aren't captures)
                 if (!is_capture(move)) {
+                    #ifdef DEBUG
+                    std::cout << "Updating killers on ply " << board->ply \
+                        << " with " << move_to_str(move)                  \
+                        << std::endl;
+                    #endif
                     board->killer2[board->ply] = board->killer1[board->ply];
                     board->killer1[board->ply] = move;
                 }

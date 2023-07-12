@@ -4,6 +4,7 @@
 #include "order.h"
 
 #include <cstring> // memmove
+#include <string>
 
 #include "eval.h"
 #include "movegen.h"
@@ -127,9 +128,9 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         }
 
         /* Check if killer move */
-        if (board->killer1[board->ply] == move) {
+        if (board->killer1[board->ply] == move.move) {
             move.score = KILLER1_BONUS;
-        } else if (board->killer2[board->ply] == move) {
+        } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
         } else {
             move.score = board->history_h[board->pieces[from]][to];
@@ -155,7 +156,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
 }
 
 // Assumes moves were scored already, moves the best move to the movelist[moves->used] position
-move_t next_best(movelist_t *moves) {
+move_t next_best(movelist_t *moves, int ply) {
 
     if (moves->used >= moves->size()) {
         return NULLMV;
@@ -177,6 +178,12 @@ move_t next_best(movelist_t *moves) {
     scored_move_t tmp = moves->movelist[moves->used];
     moves->movelist[moves->used] = moves->movelist[best_idx];
     moves->movelist[best_idx] = tmp;
+#ifdef DEBUG
+    std::cout << std::string(2 * ply, ' ') \
+        << "Selected move " << move_to_str(moves->movelist[moves->used]) \
+        << " with score " << moves->movelist[moves->used].score \
+        << std::endl;
+#endif
                            // Move used, hence increase the counter
     return moves->movelist[moves->used++];
 }

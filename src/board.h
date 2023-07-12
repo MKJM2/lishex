@@ -85,6 +85,14 @@ inline bb_t rooks(const board_t *board) {
     return board->bitboards[r] | board->bitboards[R];
 }
 
+inline bb_t knights(const board_t *board) {
+    return board->bitboards[n] | board->bitboards[N];
+}
+
+inline bb_t pawns(const board_t *board) {
+    return board->bitboards[p] | board->bitboards[P];
+}
+
 inline bb_t king_square_bb(const board_t* board, const int colour) {
     return colour ? board->bitboards[K] : board->bitboards[k];
 }
