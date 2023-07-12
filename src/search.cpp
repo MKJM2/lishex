@@ -418,8 +418,9 @@ void search(board_t *board, searchinfo_t *info) {
                           pv_tb[0]);
 
         std::cout << "info string depth " << depth \
+            << std::setprecision(4) \
+            << " branch factor " << std::pow(curr_depth_nodes, 1.0/depth) \
             << std::setprecision(2) \
-            << " branch factor " << std::pow(curr_depth_nodes, 1.0f/depth) \
             << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
             << std::endl;
     }

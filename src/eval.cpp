@@ -189,7 +189,7 @@ constexpr int isolated_pawn = -10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 constexpr int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 // Bonus for having two bishops on board
-constexpr int bishop_pair = 20;
+constexpr int bishop_pair = 30;
 // Bonuses for rooks/queens on open/semi-open files
 constexpr int rook_open_file = 10;
 constexpr int rook_semiopen_file = 5;

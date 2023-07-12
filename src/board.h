@@ -65,6 +65,10 @@ bool make_move(board_t *board, move_t move);
 void undo_move(board_t *board, move_t move);
 void undo_move(board_t *board); // Undo last move
 
+/* Null move pruning */
+void make_null(board_t *board);
+void undo_null(board_t *board);
+
 inline bb_t all_pieces(const board_t *board) {
     return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
 }

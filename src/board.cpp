@@ -702,6 +702,95 @@ void undo_move(board_t *board) {
     undo_move(board, board->history[board->history_ply - 1].move);
 }
 
+/* Null move pruning */
+
+/**
+ @brief Performs a null move, mutating the current board position
+ Essentialy, we give the opponent a free move
+ @param board current position
+*/
+void make_null(board_t *board) {
+    assert(check(board));
+
+    int me = board->turn;
+    int opp = me ^ 1;
+
+    // Store the pre-move state
+    /* In C++20 we can do:
+    undo_t undo = {
+        .move = move,
+        .castle_rights = board->castle_rights,
+        .ep_square = board->ep_square,
+        .fifty_move = board->fifty_move,
+        .key = board->key
+    };
+    */
+    undo_t undo = {
+        NULLMV,
+        board->castle_rights,
+        board->ep_square,
+        board->fifty_move,
+        board->key,
+        NO_PIECE
+    };
+
+    /* Update board state */
+
+    // Handle counters
+    ++board->ply;
+
+    // Save previous board state
+    board->history[board->history_ply++] = undo;
+
+    /* Handle en passant */
+    // Hash out old en passant square (if was set)
+    if (board->ep_square != NO_SQ) {
+        board->key ^= ep_keys[board->ep_square];
+    }
+    board->ep_square = NO_SQ;
+
+    // Miscellaneous bookkeeping
+    board->turn = opp;
+    board->key ^= turn_key;
+
+    assert(check(board));
+}
+
+void undo_null(board_t *board) {
+    assert(check(board));
+
+    undo_t last = board->history[--board->history_ply];
+
+    // Flip sides
+    int me = board->turn;
+    int opp = me ^ 1; // The side that performed the move
+
+    board->turn = opp;
+    board->key ^= turn_key;
+
+    // Restore the en passant square from pre-move state
+    board->ep_square = last.ep_square;
+
+    // Hash in old en passant square (if any)
+    if (board->ep_square != NO_SQ) {
+        board->key ^= ep_keys[board->ep_square];
+    }
+
+    // Restore old castle rights
+    board->castle_rights = last.castle_rights;
+
+    // (TODO: unnecessary? same in make_null()) Restore 50move counter
+    board->fifty_move = last.fifty_move;
+
+    // Update ply counter
+    --board->ply;
+
+    /* DEBUG only */
+    assert(check(board));
+}
+
+
+
 
 #ifdef DEBUG
 
