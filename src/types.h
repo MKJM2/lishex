@@ -47,6 +47,9 @@ constexpr bool bmi2 = true;
 constexpr bool bmi2 = false;
 #endif
 
+// Whether to use the null move heuristic
+constexpr bool USE_NULL = true;
+
 
 /***********/
 /* Squares */

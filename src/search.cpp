@@ -195,6 +195,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(check(board));
     assert(alpha < beta);
 
+    // Check if in pv node
+
     // PV for the current search ply
     pv_line &pv = pv_tb[board->ply];
     // PV for the next search ply
@@ -232,6 +234,37 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     }
 
     int score = -oo;
+
+    /* Null move pruning
+     Requirements:
+     - can do null move (we only want to do one, and not do them repeatedly)
+     - not in check
+     - we are at least one search in (ply > 0)
+     - we are not in a zugzwag (at least one big piece on board)
+     - TODO: Not in a PV node
+     depth - 1 - R (for R = 3) is allowed
+    */
+
+    // Are we in a PV node? (credit: Pedro Castro)
+    int pv_node = beta - alpha > 1;
+
+    // Adaptive null move pruning: size of reduction depends on depth
+    int R = (depth > 6) ? 3 : 2;
+
+    if (do_null && !in_check && // && board->ply > 2 && !pv_node && depth >= R + 1 &&
+        CNT(board->sides_pieces[board->turn] ^ board->bitboards[P] ^
+            board->bitboards[p]) >= 2 ) {
+
+        make_null(board);
+        // do_null is now set to false, since we don't want to do two null moves
+        // in a row
+        score = -negamax(-beta, -beta + 1, depth - 1 - R, board, info, false);
+        undo_null(board);
+
+        if (search_stopped(info)) return 0;
+
+        if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) return beta;
+    }
 
     // Generate pseudolegal moves
     movelist_t moves;
@@ -399,7 +432,7 @@ void search(board_t *board, searchinfo_t *info) {
         // For calculating the branching factor
         curr_depth_nodes = info->nodes;
 
-        best_score = negamax(-oo, +oo, depth, board, info, false);
+        best_score = negamax(-oo, +oo, depth, board, info, USE_NULL);
 
         curr_depth_nodes = info->nodes - curr_depth_nodes;
 
