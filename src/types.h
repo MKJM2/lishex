@@ -12,8 +12,8 @@
 
 #define SQUARE_FILE(sq) ((sq) & 7)
 #define SQUARE_RANK(sq) ((sq) >> 3)
-#define MAX_MOVES (2048)
-#define MAX_DEPTH (64)
+#define MAX_MOVES (1024)
+#define MAX_DEPTH (128)
 
 // Assertions for debug mode
 // #define DEBUG
@@ -265,10 +265,12 @@ typedef struct movelist_t {
         *last++ = m;
     }
     void clear() {
+        used = 0;
         last = movelist;
     }
     scored_move_t movelist[MAX_MOVES];
     scored_move_t* last = movelist;
+    size_t used = 0;
 } movelist_t;
 
 inline std::string move_to_str(const move_t m) {
@@ -347,6 +349,11 @@ typedef struct searchinfo_t {
     // For testing move ordering
     uint64_t fail_high_first = 0ULL;
     uint64_t fail_high = 0ULL;
+    // For debugging
+    uint64_t nullcut = 0;
+    uint64_t deltacut = 0;
+    uint64_t seecut = 0;
+    // For stopping the search
     bool quit = false;
     bool stopped = false;
     bool time_set = false;
@@ -356,6 +363,9 @@ typedef struct searchinfo_t {
         nodes = 0ULL;
         fail_high_first = 0ULL;
         fail_high = 0ULL;
+        nullcut = 0ULL;
+        deltacut = 0ULL;
+        seecut = 0ULL;
     }
 } searchinfo_t;
 

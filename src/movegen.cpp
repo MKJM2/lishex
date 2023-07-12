@@ -296,7 +296,7 @@ int generate_noisy(const board_t *board, movelist_t *moves) {
 
 int generate_moves(const board_t *board, movelist_t *moves) {
     moves->clear();
-    return generate_quiet(board, moves) + generate_noisy(board, moves);
+    return generate_noisy(board, moves) + generate_quiet(board, moves);
 }
 
 

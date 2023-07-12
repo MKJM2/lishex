@@ -195,7 +195,7 @@ inline bb_t xray_attacks(piece_t pce, square_t from, bb_t occ, bb_t blockers) {
     } else if (PIECE_T == BISHOP) {
         return xray_attacks<BISHOP>(from, occ, blockers);
     } else {
-        assert(PIECE_T == QUEEN);
+        assert(PIECE_T == QUEEN || PIECE_T == PAWN);
         return xray_attacks<BISHOP>(from, occ, blockers) |
                xray_attacks<ROOK>  (from, occ, blockers);
     }

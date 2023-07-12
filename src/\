@@ -98,6 +98,11 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     /* Stand-pat score */
     int score = evaluate(board, &eval);
 
+    // Has search been stopped?
+    if (search_stopped(info)) {
+        return score;
+    }
+
     // Are we too deep into the search tree?
     if (board->ply > MAX_DEPTH - 1) {
         return score;
@@ -127,7 +132,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
     // Iterate over the pseudolegal moves in the current position
     move_t move;
-    while ((move = next_best(&captures)) != NULLMV) {
+    while ((move = next_best(&captures, board)) != NULLMV) {
     // for (const auto& move : captures) {
 
         /* We perform a couple quick checks to see if the move can be
@@ -196,7 +201,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
     assert(check(board));
     assert(alpha < beta);
-    assert(depth <= 0);
 
     // Check if in pv node
 
@@ -209,6 +213,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     pv.size = board->ply;
 
     if (depth <= 0) {
+        // TODO: pv->size = 0;
         return quiescence(alpha, beta, board, info);
     }
 
@@ -217,6 +222,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // If not at root of the search, check for repetitions
     if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
         return 0; // Draw score
+    }
+
+    // Has search been stopped?
+    if (search_stopped(info)) {
+        return 0;
     }
 
     // Check search extension
@@ -295,12 +305,22 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
     score_moves(board, &moves, pv_tb[0][board->ply]);
 
+    if (board->ply == 0) {
+        std::cout << "PV move is " << move_to_str(pv_tb[0][board->ply]) << std::endl;
+        std::cout << "Selecting from " << moves.size() << " moves: ";
+        for (int i = 0; i < moves.size(); ++i) {
+            std::cout << move_to_str(moves.movelist[i]) << "(" \
+                << moves.movelist[i].score << ") "
+        }
+        std::cout << std::endl;
+    }
+
     int legal = 0;
 
     // Iterate over the pseudolegal moves in the current position
     // for (const auto& move : moves) {
     move_t move;
-    while ((move = next_best(&moves)) != NULLMV) {
+    while ((move = next_best(&moves, board)) != NULLMV) {
 
         // Pseudo-legal move generation
         if (!make_move(board, move)) {

@@ -51,7 +51,7 @@ void parse_position(board_t *board, const std::string& pos_str) {
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
-    int movestogo = 25, movetime = -1;
+    int movestogo = 30, movetime = -1;
     int time = -1, inc = 0;
     info->time_set = false;
 
@@ -100,7 +100,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
       movestogo = 1;
     } else {
       //movestogo = est_moves_left(*this);
-      movestogo = 25;
+      movestogo = 30;
     }
 
     info->start = now();

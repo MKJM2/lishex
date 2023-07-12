@@ -181,10 +181,12 @@ void setup(board_t *board, const std::string& fen) {
         board->ep_square = NO_SQ;
     }
 
-    // Set the halfmove clock since last capture/pawn push
-    if (fen_parts[4].size()) {
-        board->ply = stoi(fen_parts[4]);
-    }
+    // TODO: Set the halfmove clock since last capture/pawn push
+    // Currently, we're using the ply as the search depth ply
+    // if (fen_parts[4].size()) {
+        // board->ply = stoi(fen_parts[4]);
+    // }
+    board->ply = 0;
 
     // TODO: Set the fullmove clock (currently not being used!)
 
@@ -358,6 +360,10 @@ bool is_repetition(const board_t *board) {
 }
 
 void test(board_t *board) {
+
+}
+
+void test_see(board_t *board) {
     setup(board, "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -");
     print(board);
     std::cout << see(board, Move(E1, E5, CAPTURE)) << std::endl;
@@ -372,6 +378,7 @@ void test(board_t *board) {
     std::cout << see(board, Move(F6, F4, CAPTURE)) << std::endl;
     std::cout << see(board, Move(F6, F8, CAPTURE)) << std::endl;
 }
+
 /* Helpers for manipulating pieces on the board */
 
 // Adds a piece pce to board on square sq
@@ -763,7 +770,7 @@ void undo_null(board_t *board) {
 
     // Flip sides
     int me = board->turn;
-    int opp = me ^ 1; // The side that performed the move
+    int opp = me ^ 1; // The side that performed the null move
 
     board->turn = opp;
     board->key ^= turn_key;

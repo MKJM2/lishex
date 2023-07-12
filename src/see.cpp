@@ -3,6 +3,12 @@
 
 #include <algorithm> // std::min, std::max
 
+#ifdef TRACE_SEE_ENABLE
+#define TRACE_SEE(str) LOG(str)
+#else
+#define TRACE_SEE(str)
+#endif
+
 namespace {
 
 /**
@@ -16,7 +22,7 @@ namespace {
  @param to the square the piece was moved to
 */
 inline bb_t consider_xrays(const board_t *board, bb_t occ, square_t from, square_t to) {
-    LOG("Checking xray attacks for " \
+    TRACE_SEE("Checking xray attacks for " \
         << square_to_str(from) << square_to_str(to));
 
     // Type of xray attacks to check depends on the type of the moved piece
@@ -65,7 +71,7 @@ inline bb_t consider_xrays(const board_t *board, bb_t occ, square_t from, square
 
 bb_t get_least_valuable_pce(const board_t *board, bb_t attadef, int colour,
                             piece_t &piece) {
-    LOG("Getting least valuable pce for " \
+    TRACE_SEE("Getting least valuable pce for " \
         << (colour ? "White" : "Black") << ": ");
     int incr = colour ? 0 : 8;
     bb_t subset = 0ULL;
@@ -86,7 +92,7 @@ bb_t get_least_valuable_pce(const board_t *board, bb_t attadef, int colour,
 // Adapted from: https://www.chessprogramming.org/SEE_-_The_Swap_Algorithm
 int see(const board_t *board, const move_t m) {
 
-    LOG("see(): Checking move " << move_to_str(m));
+    TRACE_SEE("see(): Checking move " << move_to_str(m));
 
     // Extract move data
     square_t from = get_from(m);
@@ -113,8 +119,8 @@ int see(const board_t *board, const move_t m) {
     do {
         d++; // Next depth and side
         gain[d] = value_mg[att_pce] - gain[d-1]; // Speculative store, if defended
-        LOG("gain[" << d << ']' << " = " << gain[d]);
-        // if (std::max(-gain[d-1], gain[d]) < 0) break; // Pruning does not influence the result
+        TRACE_SEE("gain[" << d << ']' << " = " << gain[d]);
+        if (std::max(-gain[d-1], gain[d]) < 0) break; // Pruning does not influence the result
         attadef ^= from_bb; // Reset bit in set to traverse
         occ     ^= from_bb; // Reset bit in temporary occupancy (for x-Rays)
         if (from_bb & may_xray)
