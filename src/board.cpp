@@ -17,6 +17,7 @@
 #include "rng.h"
 #include "threads.h"
 #include "eval.h"
+#include "see.h"
 
 #ifdef DEBUG
 size_t boards = 0;
@@ -357,35 +358,20 @@ bool is_repetition(const board_t *board) {
 }
 
 void test(board_t *board) {
-    assert(check(board));
+    setup(board, "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -");
+    print(board);
+    std::cout << see(board, Move(E1, E5, CAPTURE)) << std::endl;
 
-    setup(board, kiwipete_FEN);
-    mirror_test(board);
-    mirror_test(board);
+    setup(board, "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -");
+    print(board);
+    std::cout << see(board, Move(D3, E5, CAPTURE)) << std::endl;
 
-    setup(board, test1_FEN);
-    mirror_test(board);
-    mirror_test(board);
-
-    setup(board, test2_FEN);
-    mirror_test(board);
-    mirror_test(board);
-
-    setup(board, test3_FEN);
-    mirror_test(board);
-    mirror_test(board);
-
-    setup(board, test4_FEN);
-    mirror_test(board);
-    mirror_test(board);
-
-    setup(board, test5_FEN);
-    mirror_test(board);
-    mirror_test(board);
-
-    assert(check(board));
+    setup(board, "K4R2/8/5q2/8/5P2/8/4n3/k7 b - - 0 1");
+    print(board);
+    std::cout << see(board, Move(E2, F4, CAPTURE)) << std::endl;
+    std::cout << see(board, Move(F6, F4, CAPTURE)) << std::endl;
+    std::cout << see(board, Move(F6, F8, CAPTURE)) << std::endl;
 }
-
 /* Helpers for manipulating pieces on the board */
 
 // Adds a piece pce to board on square sq
@@ -876,5 +862,37 @@ void perft_test(board_t *board, const std::string& epd_filename) {
   }
   std::cout << "Perft test finished!\n" << std::endl;
 }
+
+
+void mirror_suite(board_t *board) {
+    assert(check(board));
+
+    setup(board, kiwipete_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test1_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test2_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test3_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test4_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    setup(board, test5_FEN);
+    mirror_test(board);
+    mirror_test(board);
+
+    assert(check(board));
+}
+
 
 #endif // DEBUG

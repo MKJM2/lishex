@@ -5,7 +5,7 @@
 
 //extern rng_state;
 
-void seed_rng(uint64_t rng_seed = 69420ULL);
+void seed_rng(uint64_t rng_seed = 42069ULL);
 
 uint64_t rand_uint64();
 

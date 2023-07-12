@@ -1,14 +1,14 @@
 /* Evaluation */
 #include "eval.h"
 
-namespace {
-
 /* Piece values */
 
 constexpr int value_mg[PIECE_NO] = {0, 100, 325, 330, 550, 1000, 50000,
                               0, 0, 100, 325, 330, 550, 1000, 50000};
 constexpr int value_eg[PIECE_NO] = {0, 125, 300, 300, 600, 950, 50000,
                               0, 0, 125, 300, 300, 600, 950, 50000};
+
+namespace {
 
 /* Piece-square tables */
 
@@ -460,4 +460,25 @@ void mirror_test(board_t *board) {
     }
 
     assert(check(board));
+}
+
+// Inspired by https://www.chessprogramming.org/CPW-Engine_quiescence
+int losing_capture(const board_t *board, move_t m) {
+    square_t from = get_from(m), to = get_to(m);
+    const piece_t& capturing = board->pieces[from];
+    const piece_t& captured = board->pieces[to];
+    // Capturing with a pawn can't immediately lose material
+    // (TODO: What if the capture uncovers a pin?)
+    if (piece_t(captured) == PAWN) return 0;
+
+    // A lower valued piece capturing a higher valued piece is good
+    // by definition
+    if (value_mg[capturing] < value_mg[captured]) return 0;
+
+    // From Crafty: If opponent has only one piece left, we search this kind of
+    // move since it can be the move that allows a passed pawn to promote
+    if (CNT(board->sides_pieces[board->turn ^ 1]) <= 2) return 0;
+
+    // Finally, check if Static Exchange Evaluation deems the capture as losing
+    return see(board, m) < 0;
 }

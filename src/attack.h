@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "types.h"
+#include "board.h"
 #include "bitboard.h"
 #include "rng.h"
 
@@ -158,10 +159,79 @@ inline bb_t attacks(square_t from, bb_t blockers) {
     if constexpr (PIECE_T == QUEEN) {
         return attacks<BISHOP>(from, blockers) | attacks<ROOK>(from, blockers);
     } else {
+        static_assert(PIECE_T == ROOK || PIECE_T == BISHOP, "Unsupported piece type");
         magic_t& m = magics<PIECE_T>[from];
         return m.attack_ptr[m.key(blockers)];
     }
 }
+
+// Adapted from: https://www.chessprogramming.org/X-ray_Attacks_(Bitboards)
+//
+// "The idea is to intersect the sliding attacks with the desired blockers,
+// which are subset of occupied. In a second run, those blockers are removed
+// from the occupancy, to get the x-ray attacks as the symmetric difference of
+// both attacks."
+
+/**
+ * @brief Get X-ray attacks for the given piece_t on square 'from'
+ * @tparam PIECE_T piece type to get the X-ray attacks for (BISHOP or ROOK)
+ * @param square the piece is on
+ * @param occ occupancy bitboard
+ * @param blockers blocker bitboard (subset of the occupancy bitboard)
+ * */
+template<piece_t PIECE_T> // BISHOP or ROOK
+inline bb_t xray_attacks(square_t from, bb_t occ, bb_t blockers) {
+    static_assert(PIECE_T == ROOK || PIECE_T == BISHOP, "Unsupported piece type");
+    bb_t attackers = attacks<PIECE_T>(from, occ);
+    blockers &= attackers;
+    return attackers ^ (attacks<PIECE_T>(from, occ ^ blockers));
+}
+
+// Helper that allows us to call xray_attacks for a given piece_t at runtime
+inline bb_t xray_attacks(piece_t pce, square_t from, bb_t occ, bb_t blockers) {
+    piece_t PIECE_T = piece_type(pce);
+    if (PIECE_T == ROOK) {
+        return xray_attacks<ROOK>(from, occ, blockers);
+    } else if (PIECE_T == BISHOP) {
+        return xray_attacks<BISHOP>(from, occ, blockers);
+    } else {
+        assert(PIECE_T == QUEEN);
+        return xray_attacks<BISHOP>(from, occ, blockers) |
+               xray_attacks<ROOK>  (from, occ, blockers);
+    }
+}
+
+
+/**
+ * @brief Checks if a given square is attacked by the player (colour)
+ * @param board board struct representing the current position
+ * @param sq square to check attacks for
+ * @param colour colour to check attacks for
+ * @return Non-zero bitboard of relevant (first detected) attackers if attacked,
+ * empty otherwise
+ */
+bb_t is_attacked(const board_t *board, const square_t sq, const int colour);
+
+
+/**
+ * @brief Checks if the player is in check
+ * @param board board struct representing the current position
+ * @param colour player to check for
+ * @return Non-zero bitboard of relevant (first detected) attackers if checked,
+ * empty otherwise
+ */
+inline bb_t is_in_check(const board_t *board, const int colour) {
+    return is_attacked(board, king_square(board, colour), colour ^ 1);
+}
+
+
+/**
+   @brief Computes a bitboard of all attackers attacking the square
+   Inspired by https://www.chessprogramming.org/Square_Attacked_By
+   @param board current board state
+   @param sq square to check the attacks for
+ */
+bb_t attacks_to(const board_t *board, const square_t sq);
 
 
 // When using template functions, the definitions need to be visible at the
@@ -169,9 +239,8 @@ inline bb_t attacks(square_t from, bb_t blockers) {
 
 // Heavily inspired by:
 // https://github.com/official-stockfish/Stockfish/blob/master/src/bitboard.cpp
-
 /**
- * @brief Initializing magic bitboards at startup
+ * @brief Initializing magic bitboards at startup (will use PEXT if available)
  * @tparam PIECE_T piece type to initialize magics for (BISHOP or ROOK)
 */
 template<piece_t PIECE_T>

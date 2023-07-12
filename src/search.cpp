@@ -2,6 +2,7 @@
 #include "search.h"
 
 #include <cmath>
+#include <iomanip>
 
 #include "eval.h"
 #include "threads.h"
@@ -130,6 +131,11 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     // Iterate over the pseudolegal moves in the current position
     for (const auto& move : captures) {
 
+        // Before making the move, check if it can be (rel safely) discarded
+        if (!is_promotion(move) && losing_capture(board, move)) {
+            continue;
+        }
+
         // Pseudo-legal move generation
         if (!make_move(board, move)) //
             continue;
@@ -219,6 +225,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // pv move from the previous iter is the first move in the parent pv
     // Move ordering              // PV move, if any // TODO: test against 0
     score_and_sort(board, &moves, pv_tb[0][board->ply]);
+
+    // movescore(board, &moves, pv_tb[0][board->ply], 3);
 
     int legal = 0;
 
@@ -391,8 +399,11 @@ void search(board_t *board, searchinfo_t *info) {
                           now() - info->start,
                           pv_tb[0]);
 
-        std::cout << "info string branching factor at depth " << depth << " is: " \
-            << std::pow(curr_depth_nodes, 1.0 / depth) << std::endl;
+        std::cout << "info string depth " << depth \
+            << std::setprecision(2) \
+            << " branch factor " << std::pow(curr_depth_nodes, 1.0f/depth) \
+            << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
+            << std::endl;
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;

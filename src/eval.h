@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "board.h"
+#include "see.h"
 
 /**
  @brief This struct scores all relevant data for the evaluation of given board position
@@ -65,6 +66,20 @@ typedef struct eval_t {
  */
 int evaluate(const board_t *board, eval_t *eval);
 
+
+/**
+ * @brief Determines whether a capture is losing based on static
+ * exchange evaluation and piece values
+ * @param board current board state (for access to pieces involved)
+ * @param m the capture to consider
+ * @returns non-zero integer if the capture is losing, zero otherwise
+ * */
+int losing_capture(const board_t *board, move_t m);
+
 void mirror_test(board_t *board);
+
+
+extern const int value_mg[PIECE_NO];
+extern const int value_eg[PIECE_NO];
 
 #endif // EVAL_H_

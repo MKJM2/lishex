@@ -14,6 +14,7 @@
 #define CNT(bb) (__builtin_popcountll(bb))
 #define GETLSB(bb) (bit_scan_forward(bb))
 #define POPLSB(bb) (bit_drop_forward(bb))
+#define LSB_BB(bb) ((bb) & -(bb)) // a bitboard with only the LSB bit of bb set
 
 // Useful bitboards/bitmasks
 

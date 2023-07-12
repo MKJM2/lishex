@@ -5,8 +5,10 @@
 
 #include <cstring> // memset
 
-#include "rng.h"
 #include "types.h"
+#include "board.h"
+#include "rng.h"
+
 
 // For pawns, we index the attack table by [side to move] and [origin square].
 // We get a bitboard back, representing the squares being attacked by pawn of
@@ -170,9 +172,10 @@ void init_rook_occupancies() {
     }
 }
 
-
+/*
 template<>
 bb_t attacks<BISHOP>(square_t sq, bb_t blockers);
+*/
 
 template<>
 bb_t generate_attacks<BISHOP>(const square_t sq, const bb_t blockers) {
@@ -251,6 +254,76 @@ bb_t generate_attacks<ROOK>(const square_t sq, const bb_t blockers) {
     }
 
     return attacks;
+}
+
+// Early return if any attacker found to save on time
+bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
+    assert(check(board));
+
+    bb_t attackers = 0ULL;
+
+    // Check if attacked by pawns
+    piece_t pce = set_colour(p, colour);
+    bb_t curr = board->bitboards[pce];
+    if (colour) {
+        attackers |= ne_shift(curr);
+        attackers |= nw_shift(curr);
+    } else {
+        attackers |= se_shift(curr);
+        attackers |= sw_shift(curr);
+    }
+    if (attackers & SQ_TO_BB(sq))
+        return attackers;
+
+    pce = set_colour(KNIGHT, colour);
+    if ((attackers = attacks<KNIGHT>(sq) & board->bitboards[pce]))
+        return attackers;
+
+    pce = set_colour(KING, colour);
+    if ((attackers = attacks<KING>(sq) & board->bitboards[pce]))
+        return attackers;
+
+    // For sliding pieces, we need the occupancy board
+    bb_t occupied = all_pieces(board);
+    pce = set_colour(BISHOP, colour);
+    if ((attackers = attacks<BISHOP>(sq, occupied) & board->bitboards[pce]))
+        return attackers;
+
+    pce = set_colour(ROOK, colour);
+    if ((attackers = attacks<ROOK>(sq, occupied) & board->bitboards[pce]))
+        return attackers;
+
+    pce = set_colour(QUEEN, colour);
+    if ((attackers = attacks<QUEEN>(sq, occupied) & board->bitboards[pce]))
+        return attackers;
+
+    return 0ULL;
+}
+
+
+bb_t attacks_to(const board_t *board, const square_t sq) {
+    bb_t attackers = 0ULL;
+    bb_t target = SQ_TO_BB(sq);
+    bb_t occupied = all_pieces(board);
+
+    bb_t knights, kings, bishops_queens, rooks_queens;
+    knights         = board->bitboards[n] | board->bitboards[N];
+    kings           = board->bitboards[k] | board->bitboards[K];
+    rooks_queens    =
+    bishops_queens  = board->bitboards[q] | board->bitboards[Q];
+    rooks_queens   |= board->bitboards[r] | board->bitboards[R];
+    bishops_queens |= board->bitboards[b] | board->bitboards[B];
+
+    // Pawns
+    attackers |= ((ne_shift(target) | nw_shift(target)) & board->bitboards[p]);
+    attackers |= ((se_shift(target) | sw_shift(target)) & board->bitboards[P]);
+    // Major pieces
+    attackers |= (attacks<KNIGHT>(sq))           & knights;
+    attackers |= (attacks<KING>(sq))             & kings;
+    attackers |= (attacks<ROOK>(sq, occupied))   & rooks_queens;
+    attackers |= (attacks<BISHOP>(sq, occupied)) & bishops_queens;
+
+    return attackers;
 }
 
 

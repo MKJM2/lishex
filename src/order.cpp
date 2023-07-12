@@ -158,6 +158,7 @@ void movescore(const board_t *board, movelist_t *moves, move_t pv_move, int n) {
     for (const scored_move_t move : *moves) {
         if (count++ == n)
             break;
-        std::cout << move_to_str(move) << ": " << move.score << std::endl;
+        std::string indent(board->ply, ' ');
+        std::cout << indent << move_to_str(move) << ": " << move.score << std::endl;
     }
 }

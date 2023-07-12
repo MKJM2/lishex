@@ -247,6 +247,7 @@ typedef struct scored_move_t {
     uint32_t score;
 
     void operator=(move_t m) { move = m; }
+    bool operator==(const move_t& m) { return move == m; }
     // Conversion operator, returning the move as a move_t
     operator move_t() const { return move; }
 } scored_move_t;

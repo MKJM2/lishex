@@ -300,50 +300,6 @@ int generate_moves(const board_t *board, movelist_t *moves) {
 }
 
 
-bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
-    assert(check(board));
-
-    bb_t attackers = 0ULL;
-
-    // Check if attacked by pawns
-    piece_t pce = set_colour(p, colour);
-    bb_t curr = board->bitboards[pce];
-    if (colour) {
-        attackers |= ne_shift(curr);
-        attackers |= nw_shift(curr);
-    } else {
-        attackers |= se_shift(curr);
-        attackers |= sw_shift(curr);
-    }
-    if (attackers & SQ_TO_BB(sq))
-        return attackers;
-
-    pce = set_colour(KNIGHT, colour);
-    if ((attackers = attacks<KNIGHT>(sq) & board->bitboards[pce]))
-        return attackers;
-
-    pce = set_colour(KING, colour);
-    if ((attackers = attacks<KING>(sq) & board->bitboards[pce]))
-        return attackers;
-
-    // For sliding pieces, we need the occupancy board
-    bb_t occupied = all_pieces(board);
-    pce = set_colour(BISHOP, colour);
-    if ((attackers = attacks<BISHOP>(sq, occupied) & board->bitboards[pce]))
-        return attackers;
-
-    pce = set_colour(ROOK, colour);
-    if ((attackers = attacks<ROOK>(sq, occupied) & board->bitboards[pce]))
-        return attackers;
-
-    pce = set_colour(QUEEN, colour);
-    if ((attackers = attacks<QUEEN>(sq, occupied) & board->bitboards[pce]))
-        return attackers;
-
-    return 0ULL;
-}
-
-
 uint64_t perft(board_t *board, int depth, bool verbose) {
     if (depth == 0) {
         return 1ULL;
