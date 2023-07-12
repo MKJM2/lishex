@@ -12,10 +12,10 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = 10'000'000;
-constexpr int CAPTURE_BONUS = 2'000'000;
-constexpr int KILLER1_BONUS = 1'900'000;
-constexpr int KILLER2_BONUS = 1'800'000;
+constexpr int PV_BONUS = 2'000'000;
+constexpr int CAPTURE_BONUS = 1'000'000;
+constexpr int KILLER1_BONUS = 900'000;
+constexpr int KILLER2_BONUS = 800'000;
 
 // Small bonuses for promoting & castling
 constexpr int PROMO_BONUS = 100;
@@ -118,9 +118,9 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
             // if (losing_capture(board, move)) {
                 // continue;
             // }
-            move.score += CAPTURE_BONUS;
+            move.score = CAPTURE_BONUS;
             if (flags == EPCAPTURE)
-                move.score += 105; // MVV_LVA[PAWN][PAWN]
+                move.score += MVV_LVA[PAWN][PAWN];
             else
                 move.score += MVV_LVA[board->pieces[to]][board->pieces[from]];
             continue;
@@ -128,11 +128,11 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
 
         /* Check if killer move */
         if (board->killer1[board->ply] == move) {
-            move.score += KILLER1_BONUS;
+            move.score = KILLER1_BONUS;
         } else if (board->killer2[board->ply] == move) {
-            move.score += KILLER2_BONUS;
+            move.score = KILLER2_BONUS;
         } else {
-            move.score += board->history_h[board->pieces[from]][to];
+            move.score = board->history_h[board->pieces[from]][to];
         }
 
         /* TODO: Additional small bonuses

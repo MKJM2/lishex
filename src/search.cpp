@@ -196,7 +196,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
     assert(check(board));
     assert(alpha < beta);
-    assert(depth <= 0);
+    assert(depth >= 0);
 
     // Check if in pv node
 

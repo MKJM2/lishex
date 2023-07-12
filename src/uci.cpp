@@ -123,11 +123,9 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
 
 } // namespace
 
-/* UCI driver loop */
+/* UCI driver loop (Stockfish inspired) */
 void loop(int argc, char* argv[]) {
     // @TODO: Handle command-line args
-    (void) argc;
-    (void) argv;
 
     board_t board[1];
     setup(board, start_FEN);
@@ -142,9 +140,15 @@ void loop(int argc, char* argv[]) {
     LOG("Starting the UCI loop...");
 
     std::string input, token;
-    while (!info->quit) {
-        if (!std::getline(std::cin, input)) {
-            info->quit = true;
+
+    // Parse the command-line args as UCI engine commands
+    for (int i = 1; i < argc; ++i) {
+        input += std::string(argv[i]) + " ";
+    }
+
+    do {
+        if (argc == 1 && !std::getline(std::cin, input)) {
+            input = "quit";
         }
         std::istringstream iss(input);
         token.clear();
@@ -266,7 +270,7 @@ void loop(int argc, char* argv[]) {
         } else {
             std::cout << "Unknown command: '" << token << "'" << std::endl;
         }
-    };
+    } while (!info->quit && argc == 1);
 
     // Make sure the search thread was joined before exiting
     if (search_thread.joinable()) {
