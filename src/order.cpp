@@ -68,6 +68,11 @@ void score(const board_t *board, movelist_t *moves, move_t pv_move) {
         to = get_to(move);
         flags = get_flags(move);
         if (flags & CAPTURE) {
+            // TODO: Speed up SEE, since the following is slow
+            // If the capture is losing, we leave its score as 0
+            // if (losing_capture(board, move)) {
+                // continue;
+            // }
             move.score += CAPTURE_BONUS;
             if (flags == EPCAPTURE)
                 move.score += 105; // MVV_LVA[PAWN][PAWN]

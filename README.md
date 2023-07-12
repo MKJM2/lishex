@@ -15,6 +15,7 @@ A UCI chess-engine built in C++.
   - [Transposition tables](https://www.chessprogramming.org/Transposition_Table) to store results of previously performed searches (based on [Zobrist](https://www.chessprogramming.org/Zobrist_Hashing) hashes)
   - Check extension
 - Tapered [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages
+- Static Exchange Evaluation (SEE) to detect losing captures
 
 ### How to 
 Lishex does not come with its own grapical user interface (GUI).  Instead, it implements the [UCI](https://www.chessprogramming.org/UCI) protocol making it compatible with most popular chess GUIs such as:
@@ -58,7 +59,6 @@ in the project root.
 - Aspiration window
 - Smarter time control logic
 - Engine options
-- Static Exchange Evaluator (SEE) to detect losing captures
 
 ### Acknowledgments
 I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration.

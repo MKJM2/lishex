@@ -469,7 +469,7 @@ int losing_capture(const board_t *board, move_t m) {
     const piece_t& captured = board->pieces[to];
     // Capturing with a pawn can't immediately lose material
     // (TODO: What if the capture uncovers a pin?)
-    if (piece_t(captured) == PAWN) return 0;
+    if (piece_type(captured) == PAWN) return 0;
 
     // A lower valued piece capturing a higher valued piece is good
     // by definition

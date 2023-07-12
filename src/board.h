@@ -69,6 +69,18 @@ inline bb_t all_pieces(const board_t *board) {
     return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
 }
 
+inline bb_t queens(const board_t *board) {
+    return board->bitboards[q] | board->bitboards[Q];
+}
+
+inline bb_t bishops(const board_t *board) {
+    return board->bitboards[b] | board->bitboards[B];
+}
+
+inline bb_t rooks(const board_t *board) {
+    return board->bitboards[r] | board->bitboards[R];
+}
+
 inline bb_t king_square_bb(const board_t* board, const int colour) {
     return colour ? board->bitboards[K] : board->bitboards[k];
 }

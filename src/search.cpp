@@ -95,6 +95,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         return 0; // Draw score
     }
 
+    /* Stand-pat score */
     int score = evaluate(board, &eval);
 
     // Has search been stopped?
@@ -131,10 +132,27 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     // Iterate over the pseudolegal moves in the current position
     for (const auto& move : captures) {
 
-        // Before making the move, check if it can be (rel safely) discarded
-        if (!is_promotion(move) && losing_capture(board, move)) {
-            continue;
+        /* We perform a couple quick checks to see if the move can be
+         * safely discarded */
+
+        // If the move captures the king (TODO: Debug this)
+        piece_t& captured = board->pieces[get_to(move)];
+        if (piece_type(captured) == KING) {
+            return +oo - board->ply;
         }
+
+        if (!is_promotion(move)) {
+            // Try Delta pruning (TODO: insufficient material issues in the endgame)
+            if (score + value_mg[captured] + 2 * value_mg[PAWN] < alpha) {
+              continue;
+            }
+
+            if (losing_capture(board, move)) {
+                continue;
+            }
+        }
+
+        /* All checks failed, hence the move is promising and we try making it */
 
         // Pseudo-legal move generation
         if (!make_move(board, move)) //

@@ -19,17 +19,6 @@ inline bb_t consider_xrays(const board_t *board, bb_t occ, square_t from, square
     LOG("Checking xray attacks for " \
         << square_to_str(from) << square_to_str(to));
 
-    // Get all sliders currently on the board
-    bb_t bishops_queens, rooks_queens;
-    rooks_queens    =
-    bishops_queens  = board->bitboards[q] | board->bitboards[Q];
-    rooks_queens   |= board->bitboards[r] | board->bitboards[R];
-    bishops_queens |= board->bitboards[b] | board->bitboards[B];
-
-    // Clear all pieces already removed from the board witin see()
-    rooks_queens &= occ;
-    bishops_queens &= occ;
-
     // Type of xray attacks to check depends on the type of the moved piece
     piece_t PIECE_T = piece_type(board->pieces[from]);
 
@@ -39,19 +28,23 @@ inline bb_t consider_xrays(const board_t *board, bb_t occ, square_t from, square
     bb_t uncovered = 0ULL;
     switch (PIECE_T) {
     case ROOK:
-      uncovered = attacks<ROOK>(from, occ) & rooks_queens;
+      uncovered = attacks<ROOK>(from, occ);
+      uncovered &= (queens(board) | rooks(board));
       break;
     case PAWN:
     case BISHOP:
-      uncovered = attacks<BISHOP>(from, occ) & bishops_queens;
+      uncovered = attacks<BISHOP>(from, occ);
+      uncovered &= (queens(board) | bishops(board));
       break;
     case QUEEN:
-      uncovered = attacks<QUEEN>(from, occ) & (rooks_queens | bishops_queens);
+      uncovered = attacks<QUEEN>(from, occ);
+      uncovered &= queens(board) | rooks(board) | bishops(board);
       break;
     default: // should never happen
        assert(false);
        uncovered = 0ULL;
     }
+    uncovered &= occ;
 
     // For each uncovered piece, we generate xray attacks, treating
     // the from square as blocked (it is now unblocked)
