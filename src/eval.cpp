@@ -616,9 +616,8 @@ void mirror_test(board_t *board) {
 
 // Inspired by https://www.chessprogramming.org/CPW-Engine_quiescence
 int losing_capture(const board_t *board, move_t m) {
-    square_t from = get_from(m), to = get_to(m);
-    const piece_t& capturing = board->pieces[from];
-    const piece_t& captured = board->pieces[to];
+    const piece_t& capturing = board->pieces[get_from(m)];
+    const piece_t& captured = board->pieces[get_to(m)];
     // Capturing with a pawn can't immediately lose material
     // (TODO: What if the capture uncovers a pin?)
     if (piece_type(captured) == PAWN) return 0;

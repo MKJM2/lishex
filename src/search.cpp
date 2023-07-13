@@ -133,7 +133,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         /* We perform a couple quick checks to see if the move can be
          * safely discarded */
 
-        /*
         // If the move captures the king (TODO: Debug this)
         piece_t& captured = board->pieces[get_to(move)];
         if (piece_type(captured) == KING) {
@@ -152,7 +151,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 continue;
             }
         }
-        */
 
         /* All checks failed, hence the move is promising and we try making it */
 
@@ -251,7 +249,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     constexpr int R = 3;
 
     if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
-        board->ply && depth >= R + 1 &&
+        board->ply && depth >= R + 1 && score >= beta &&
         CNT(board->sides_pieces[board->turn] ^
             board->bitboards[board->turn ? P : p]) > 1) {
 
@@ -293,7 +291,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // pv move from the previous iter is the first move in the parent pv
     // Move ordering              // PV move, if any // TODO: test against 0
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
-    score_moves(board, &moves, NULLMV); //pv_tb[0][board->ply]);
+    score_moves(board, &moves, pv_tb[0][board->ply]);
 
     int legal = 0;
 
