@@ -309,6 +309,8 @@ using bb_t = uint64_t;
 /* Miscellaneous */
 /*****************/
 
+constexpr int oo = 1'000'000; // INF
+
 // Castling rights encoding (4 bits)
 enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
 
@@ -352,6 +354,7 @@ typedef struct searchinfo_t {
     uint64_t fail_high = 0ULL;
     // For debugging
     uint64_t nullcut = 0;
+    uint64_t hashcut = 0;
     uint64_t deltacut = 0;
     uint64_t seecut = 0;
     // For stopping the search
@@ -365,6 +368,7 @@ typedef struct searchinfo_t {
         fail_high_first = 0ULL;
         fail_high = 0ULL;
         nullcut = 0ULL;
+        hashcut = 0ULL;
         deltacut = 0ULL;
         seecut = 0ULL;
     }

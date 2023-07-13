@@ -4,7 +4,7 @@
 # against opponents of similar strength
 
 ROUNDS=1
-CORES=$(($(nproc) < 4 ? $(nproc) : 4))
+CORES=$(($(nproc) < 3 ? $(nproc) : 3))
 
 CUTECHESS="cutechess-cli"
 CUTECHESS_FLAGS=" "
@@ -23,14 +23,17 @@ done
 CUTECHESS_FLAGS+=" -tournament gauntlet"
 CUTECHESS_FLAGS+=" -concurrency ${CORES}"
 
+# Number of games to play against each opponent
+GAMES=30
+CUTECHESS_FLAGS+=" -games ${GAMES}"
+
 # Debug output?
 # CUTECHESS_FLAGS+=" -debug"
-
 
 ### Engine settings
 
 # Time controls
-CUTECHESS_FLAGS+=" -each tc=inf/10+0.1 timemargin=10"
+CUTECHESS_FLAGS+=" -each tc=40/2:00+1 timemargin=10"
 
 ### Run the tournament
 ${CUTECHESS} ${CUTECHESS_FLAGS}

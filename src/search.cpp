@@ -7,8 +7,12 @@
 #include "eval.h"
 #include "threads.h"
 #include "order.h"
+#include "transposition.h"
 
-constexpr int oo = 1'000'000; // INF
+
+// Global transposition table
+constexpr int TTSIZEMB = 64;
+TT tt(TTSIZEMB);
 
 namespace {
 
@@ -223,15 +227,27 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         ++depth;
     }
 
-    int score = evaluate(board, &eval);
-
     // Are we too deep into the search tree?
     if (board->ply > MAX_DEPTH - 1) {
-        return score;
+        return evaluate(board, &eval);
     }
 
-    /* Null move pruning
-     Requirements:
+    int score = -oo;
+    move_t ttmove = NULLMV;
+
+    /* Transposition table probing */
+
+    // Check if can get a cutoff
+    if (tt.probe(board, &ttmove, &score, alpha, beta, depth) == TTHIT) {
+       ++info->hashcut;
+       return score;
+    }
+
+    // Otherwise, we keep searching
+
+    /* Null move pruning */
+
+    /* Requirements:
      - can do null move (we only want to do one, and not do them repeatedly)
      - not in check
      - we are at least 2 plies into the search
@@ -242,14 +258,14 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     */
 
     // Are we in a PV node? (credit: Pedro Castro)
-    int pv_node = beta - alpha > 1;
+    // int pv_node = beta - alpha > 1;
 
     // TODO: Adaptive null move pruning: size of reduction depends on depth
     // int R = (depth > 6) ? 3 : 2;
     constexpr int R = 3;
 
     if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
-        board->ply && depth >= R + 1 && score >= beta &&
+        board->ply && depth >= R + 1 && evaluate(board, &eval) >= beta &&
         CNT(board->sides_pieces[board->turn] ^
             board->bitboards[board->turn ? P : p]) > 1) {
 
@@ -281,6 +297,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     */
     }
 
+
+    // Bruce Moreland's trick for storing entries in the TT
+    // - unless we get a cut-off, the score is a lowerbound of
+    //   the actual score
+    int type = LOWER;
+
     // Generate pseudolegal moves
     movelist_t moves;
     generate_moves(board, &moves);
@@ -291,13 +313,15 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // pv move from the previous iter is the first move in the parent pv
     // Move ordering              // PV move, if any // TODO: test against 0
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
-    score_moves(board, &moves, pv_tb[0][board->ply]);
+    // TODO: test with ttmove, separate ttmove and pvmove?
+    // score_moves(board, &moves, pv_tb[0][board->ply]);
+    score_moves(board, &moves, ttmove);
 
     int legal = 0;
 
     // Iterate over the pseudolegal moves in the current position
     // for (const auto& move : moves) {
-    move_t move;
+    move_t move, bestmove = NULLMV;
     while ((move = next_best(&moves, board->ply)) != NULLMV) {
 
         // Pseudo-legal move generation
@@ -333,8 +357,15 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                     board->killer2[board->ply] = board->killer1[board->ply];
                     board->killer1[board->ply] = move;
                 }
-                return beta; // fail hard beta-cutoff (fail-high)
+
+                /* The move caused a beta cutoff, hence we get a lowerbound score */
+                tt.store(board, move, beta, LOWER, depth);
+
+                // fail hard beta-cutoff (fail-high)
+                return beta;
             }
+
+            /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
 
             // Move causes a cutoff, hence update the search history tables
             // (History heuristic)
@@ -342,10 +373,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
             }
 
-
-            /* Otherwise, we are in a PV node */
-
-            // Update the lowerbound
+            // Update the search window lowerbound
             alpha = score;
 
             // Store the move in the principal variation for the current ply
@@ -357,8 +385,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             //}
             movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
             pv.size = new_pv.size;
+
+            // /* Store the move in the transposition table */
+            bestmove = move;
+            type = EXACT;
         }
-        /* Fail low: do nothing and simply search the next move */
+        /* Fail low: simply search the next move */
     }
 
     // If no legal moves, then check if we're in check
@@ -367,6 +399,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                             // Mate score      // Stalemate
         return (in_check) ? -oo + board->ply : 0;
     }
+
+    assert(type == EXACT || type == LOWER);
+
+    /* Store the best move (& corresponding score &  type, either EXACT or
+     * LOWER) in the transposition table */
+    tt.store(board, bestmove, alpha, type, depth);
 
     assert(check(board));
 
@@ -398,12 +436,15 @@ void init_search(board_t *board, searchinfo_t *info) {
     }
 
     // Clear the global pv table
-    for (int i = 0; i < MAX_DEPTH; ++i) {
-        pv_tb[i].clear();
-    }
+    //for (int i = 0; i < MAX_DEPTH; ++i) {
+        //pv_tb[i].clear();
+    //}
 
     // Clear search info, like # nodes searched
     info->clear();
+
+    // Reset statistics for the transposition table
+    tt.reset_stats();
 }
 
 
@@ -450,6 +491,7 @@ void search(board_t *board, searchinfo_t *info) {
             << std::setprecision(2) \
             << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
             << " nullcut " << info->nullcut \
+            << " hashcut " << info->hashcut \
             << " deltacut " << info->deltacut \
             << " seecut " << info->seecut \
             << std::endl;
