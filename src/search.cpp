@@ -10,10 +10,6 @@
 #include "transposition.h"
 
 
-// Global transposition table
-constexpr int TTSIZEMB = 64;
-TT tt(TTSIZEMB);
-
 namespace {
 
 // For maintaining the principal variation in the triangular array (debug)
@@ -142,7 +138,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         if (piece_type(captured) == KING) {
             return +oo - board->ply;
         }
-
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
             if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
@@ -150,7 +145,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 continue;
             }
 
-            if (losing_capture(board, move)) {
+            if (losing_capture(board, move, -value_eg[KNIGHT])) {
                 ++info->seecut;
                 continue;
             }
@@ -238,7 +233,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     /* Transposition table probing */
 
     // Check if can get a cutoff
-    if (tt.probe(board, &ttmove, &score, alpha, beta, depth) == TTHIT) {
+    if (board->ply && tt.probe(board, ttmove, score, alpha, beta, depth) == TTHIT) {
        ++info->hashcut;
        return score;
     }
@@ -262,10 +257,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // TODO: Adaptive null move pruning: size of reduction depends on depth
     // int R = (depth > 6) ? 3 : 2;
-    constexpr int R = 3;
+    int R = 3 + depth / 6;
 
     if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
-        board->ply && depth >= R + 1 && evaluate(board, &eval) >= beta &&
+        board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
         CNT(board->sides_pieces[board->turn] ^
             board->bitboards[board->turn ? P : p]) > 1) {
 
@@ -281,7 +276,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
       // TODO: Handle mate scores
       if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
           ++info->nullcut;
-          return beta;
+          // fail-soft beta cutoff
+          return score;
       }
 
       /* // TODO: Null move reduction
@@ -315,9 +311,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
     // TODO: test with ttmove, separate ttmove and pvmove?
     // score_moves(board, &moves, pv_tb[0][board->ply]);
+    if (ttmove == NULLMV) ttmove = pv_tb[0][board->ply];
     score_moves(board, &moves, ttmove);
 
     int legal = 0;
+    int bestscore = -oo;
+    score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
     // for (const auto& move : moves) {
@@ -339,6 +338,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         assert(info->state == ENGINE_SEARCHING);
 
+        bestscore = MAX(score, bestscore);
+
         if (score > alpha) { // PV or fail-high node
 
             if (score >= beta) { // Fail-high node
@@ -349,13 +350,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                 // Killer moves (cause a beta cutoff but aren't captures)
                 if (!is_capture(move)) {
-                    #ifdef DEBUG
-                    std::cout << "Updating killers on ply " << board->ply \
-                        << " with " << move_to_str(move)                  \
-                        << std::endl;
-                    #endif
-                    board->killer2[board->ply] = board->killer1[board->ply];
-                    board->killer1[board->ply] = move;
+                    // Don't update killer moves if this would result in duplicating the move
+                    if (board->killer1[board->ply] != move) {
+                        board->killer2[board->ply] = board->killer1[board->ply];
+                        board->killer1[board->ply] = move;
+                    }
                 }
 
                 /* The move caused a beta cutoff, hence we get a lowerbound score */
@@ -402,9 +401,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     assert(type == EXACT || type == UPPER);
 
-    /* Store the best move (+ corresponding score & type, either EXACT or LOWER)
-     * in the transposition table */
-    tt.store(board, bestmove, alpha, type, depth);
+    /* Store the best move (+ corresponding score & type, either EXACT or UPPER)
+     * in the transposition table. If we couldn't beat alpha, the move stored is
+     * an empty move with the flag UPPER */
+    tt.store(board, bestmove, bestscore, type, depth);
 
     assert(check(board));
 
@@ -437,7 +437,7 @@ void init_search(board_t *board, searchinfo_t *info) {
 
     // Clear the global pv table
     for (int i = 0; i < MAX_DEPTH; ++i) {
-        pv_tb[i].clear();
+        //pv_tb[i].clear();
     }
 
     // Clear search info, like # nodes searched
@@ -506,4 +506,6 @@ void search(board_t *board, searchinfo_t *info) {
     */
 
     assert(check(board));
+
+    info->state = ENGINE_STOPPED;
 }

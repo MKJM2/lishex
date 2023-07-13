@@ -1,0 +1,536 @@
+<LiSHeX v2(0): Allocated TT of size 64MB with 1048574 entries
+<LiSHeX v2(0): Lishex (c) Michal Kurek 2023
+<LiSHeX v2(0): Built on Jul 13 2023 15:31:14
+<LiSHeX v2(0): src/uci.cpp(141): Starting the UCI loop...
+<LiSHeX v2(0): id name Lishex
+<LiSHeX v2(0): id author Michal Kurek
+<LiSHeX v2(0): uciok
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): ucinewgame
+>LiSHeX v2(0): position startpos
+>Tscp 1.82(1): new
+>Tscp 1.82(1): force
+>Tscp 1.82(1): level 0 2 1
+>Tscp 1.82(1): post
+>Tscp 1.82(1): easy
+>LiSHeX v2(0): isready
+<Tscp 1.82(1): Error (unknown command): level
+<Tscp 1.82(1): Error (unknown command): easy
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 121000 btime 121000 winc 1000 binc 1000
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 121000 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 36 depth 1 nodes 21 time 6 hashfull 0 pv g1f3
+<LiSHeX v2(0): info string depth 1 branchf 21 ordering -nan nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 0 depth 2 nodes 81 time 8 hashfull 0 pv g1f3 g8f6
+<LiSHeX v2(0): info string depth 2 branchf 7.746 ordering 1 nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 35 depth 3 nodes 619 time 20 hashfull 0 pv g1f3 g8f6 d2d4
+<LiSHeX v2(0): info string depth 3 branchf 8.133 ordering 0.92 nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 0 depth 4 nodes 2464 time 43 hashfull 0 pv g1f3 g8f6 d2d4 d7d5
+<LiSHeX v2(0): info string depth 4 branchf 6.554 ordering 0.97 nullcut 0 hashcut 65 deltacut 11 seecut 8
+<LiSHeX v2(0): info score cp 33 depth 5 nodes 5405 time 60 hashfull 0 pv g1f3 g8f6 d2d4 d7d5 b1c3
+<LiSHeX v2(0): info string depth 5 branchf 4.94 ordering 0.91 nullcut 18 hashcut 98 deltacut 11 seecut 12
+<LiSHeX v2(0): info score cp 0 depth 6 nodes 40450 time 254 hashfull 7 pv g1f3 g8f6 d2d4 d7d5 b1c3 b8c6
+<LiSHeX v2(0): info string depth 6 branchf 5.721 ordering 0.91 nullcut 37 hashcut 2305 deltacut 1388 seecut 481
+<LiSHeX v2(0): info score cp 28 depth 7 nodes 79111 time 477 hashfull 14 pv g1f3 g8f6 d2d4 d7d5 b1c3 b8c6 c1e3
+<LiSHeX v2(0): info string depth 7 branchf 4.522 ordering 0.86 nullcut 76 hashcut 4102 deltacut 2219 seecut 832
+<LiSHeX v2(0): bestmove g1f3
+>Tscp 1.82(1): g1f3
+>Tscp 1.82(1): time 12100
+otim 11697
+>Tscp 1.82(1): go
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 13 0 21 d7d5
+<Tscp 1.82(1): 2 -35 0 116 d7d5 d2d4
+<Tscp 1.82(1): 3 0 0 1575 d7d5 d2d4 g8f6
+<Tscp 1.82(1): 4 -35 0 7418 d7d5 d2d4 g8f6 b1c3
+<Tscp 1.82(1): 5 0 6 62001 d7d5 d2d4 g8f6 b1c3 b8c6
+<Tscp 1.82(1): 6 -30 36 331959 d7d5 d2d4 g8f6 b1c3 b8c6 e2e3
+<Tscp 1.82(1): 7 0 194 2056468 d7d5 d2d4 g8f6 b1c3 b8c6 e2e3 e7e6
+<Tscp 1.82(1): move d7d5
+>LiSHeX v2(0): position startpos moves g1f3 d7d5
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 116973 btime 117967 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 116973 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 36 depth 1 nodes 23 time 0 hashfull 0 pv d2d4
+<LiSHeX v2(0): info string depth 1 branchf 23 ordering -nan nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 28 depth 2 nodes 73 time 1 hashfull 0 pv d2d4
+<LiSHeX v2(0): info string depth 2 branchf 7.071 ordering 1 nullcut 0 hashcut 4 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 28 depth 3 nodes 558 time 5 hashfull 0 pv d2d4
+<LiSHeX v2(0): info string depth 3 branchf 7.857 ordering 1 nullcut 0 hashcut 8 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 28 depth 4 nodes 1233 time 10 hashfull 0 pv d2d4
+<LiSHeX v2(0): info string depth 4 branchf 5.097 ordering 0.98 nullcut 0 hashcut 367 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 28 depth 5 nodes 2806 time 20 hashfull 0 pv d2d4
+<LiSHeX v2(0): info string depth 5 branchf 4.359 ordering 0.98 nullcut 16 hashcut 430 deltacut 46 seecut 3
+<LiSHeX v2(0): info score cp 0 depth 6 nodes 67159 time 387 hashfull 9 pv d2d4 g8f6
+<LiSHeX v2(0): info string depth 6 branchf 6.33 ordering 0.87 nullcut 43 hashcut 3324 deltacut 4548 seecut 362
+<LiSHeX v2(0): info score cp 20 depth 7 nodes 176979 time 999 hashfull 23 pv d2d4 g8f6 b1c3 b8c6 c1e3 c8e6 a1c1
+<LiSHeX v2(0): info string depth 7 branchf 5.249 ordering 0.84 nullcut 114 hashcut 8063 deltacut 11097 seecut 2036
+<LiSHeX v2(0): bestmove d2d4
+>Tscp 1.82(1): time 11796
+otim 11304
+>Tscp 1.82(1): d2d4
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 0 0 29 b8c6
+<Tscp 1.82(1): 2 -35 0 216 b8c6 b1c3
+<Tscp 1.82(1): 3 0 0 2722 b8c6 b1c3 g8f6
+<Tscp 1.82(1): 4 -30 2 16421 b8c6 b1c3 g8f6 e2e3
+<Tscp 1.82(1): 5 0 12 128553 b8c6 b1c3 g8f6 e2e3 e7e6
+<Tscp 1.82(1): 6 -25 86 810812 g8f6 e2e3 e7e6 b1c3 b8c6 f1d3
+<Tscp 1.82(1): move g8f6
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 113047 btime 115035 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 113047 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 33 depth 1 nodes 31 time 0 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 1 branchf 31 ordering 1 nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 2 depth 2 nodes 66 time 1 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 2 branchf 5.916 ordering 0.75 nullcut 0 hashcut 26 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 2 depth 3 nodes 376 time 2 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 3 branchf 6.768 ordering 0.82 nullcut 0 hashcut 54 deltacut 4 seecut 0
+<LiSHeX v2(0): info score cp 2 depth 4 nodes 495 time 3 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 4 branchf 3.303 ordering 0.88 nullcut 0 hashcut 82 deltacut 6 seecut 1
+<LiSHeX v2(0): info score cp 2 depth 5 nodes 823 time 5 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 5 branchf 3.185 ordering 0.91 nullcut 3 hashcut 123 deltacut 9 seecut 1
+<LiSHeX v2(0): info score cp 2 depth 6 nodes 9390 time 59 hashfull 0 pv b1c3
+<LiSHeX v2(0): info string depth 6 branchf 4.523 ordering 0.85 nullcut 5 hashcut 394 deltacut 917 seecut 132
+<LiSHeX v2(0): info score cp 23 depth 7 nodes 344269 time 1975 hashfull 29 pv b1c3 b8c6 c1f4 c8e6 e2e3 a8c8 f1d3
+<LiSHeX v2(0): info string depth 7 branchf 6.156 ordering 0.83 nullcut 93 hashcut 8454 deltacut 37218 seecut 6965
+<LiSHeX v2(0): bestmove b1c3
+>Tscp 1.82(1): time 11503
+otim 10921
+>Tscp 1.82(1): b1c3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 0 0 35 b8c6
+<Tscp 1.82(1): 2 -30 0 287 b8c6 e2e3
+<Tscp 1.82(1): 3 0 0 2658 b8c6 e2e3 e7e6
+<Tscp 1.82(1): 4 -25 2 21161 b8c6 e2e3 e7e6 f1d3
+<Tscp 1.82(1): 5 0 14 138834 b8c6 e2e3 e7e6 f1d3 f8d6
+<Tscp 1.82(1): 6 -20 110 1065724 e7e6 e2e3 f8b4 c1d2 e8g8 f1d3
+<Tscp 1.82(1): move e7e6
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 109219 btime 112201 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 109219 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 43 depth 1 nodes 39 time 1 hashfull 0 pv c1e3
+<LiSHeX v2(0): info string depth 1 branchf 39 ordering 1 nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 31 depth 2 nodes 93 time 1 hashfull 0 pv c1h6
+<LiSHeX v2(0): info string depth 2 branchf 7.348 ordering 1 nullcut 0 hashcut 23 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 31 depth 3 nodes 161 time 1 hashfull 0 pv c1h6
+<LiSHeX v2(0): info string depth 3 branchf 4.082 ordering 0.96 nullcut 0 hashcut 53 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 18 depth 4 nodes 5502 time 33 hashfull 0 pv c3d5
+<LiSHeX v2(0): info string depth 4 branchf 8.549 ordering 0.86 nullcut 0 hashcut 289 deltacut 495 seecut 19
+<LiSHeX v2(0): info score cp 20 depth 5 nodes 32473 time 184 hashfull 1 pv c1d2 f8d6 c3b5 b8c6 b5d6
+<LiSHeX v2(0): info string depth 5 branchf 7.694 ordering 0.8 nullcut 15 hashcut 536 deltacut 1742 seecut 132
+<LiSHeX v2(0): info score cp 9 depth 6 nodes 310104 time 1792 hashfull 23 pv c1e3 b8c6 e3f4
+<LiSHeX v2(0): info string depth 6 branchf 8.077 ordering 0.87 nullcut 71 hashcut 7580 deltacut 48697 seecut 4157
+<LiSHeX v2(0): bestmove c1e3
+>Tscp 1.82(1): time 11220
+otim 10548
+>Tscp 1.82(1): c1e3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 5 0 36 b8c6
+<Tscp 1.82(1): 2 3 0 322 b8c6 a2a4
+<Tscp 1.82(1): 3 30 0 3408 f8d6 f3e5 e8g8
+<Tscp 1.82(1): 4 5 4 35392 f8b4 e3d2 e8g8 e2e3
+<Tscp 1.82(1): 5 30 17 168546 b8c6 f3e5 f8b4 e5c6 b4c3
+<Tscp 1.82(1): 6 20 128 1219407 b8c6 e3d2 f8d6 e2e3 e8g8 f1d3
+<Tscp 1.82(1): move b8c6
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 105485 btime 109461 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 105485 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 30 depth 1 nodes 49 time 1 hashfull 0 pv a1c1
+<LiSHeX v2(0): info string depth 1 branchf 49 ordering 1 nullcut 0 hashcut 0 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 11 depth 2 nodes 93 time 1 hashfull 0 pv a1c1
+<LiSHeX v2(0): info string depth 2 branchf 6.633 ordering 0.89 nullcut 0 hashcut 30 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 11 depth 3 nodes 126 time 1 hashfull 0 pv a1c1
+<LiSHeX v2(0): info string depth 3 branchf 3.208 ordering 0.9 nullcut 0 hashcut 61 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 11 depth 4 nodes 159 time 1 hashfull 0 pv a1c1
+<LiSHeX v2(0): info string depth 4 branchf 2.397 ordering 0.91 nullcut 0 hashcut 92 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 11 depth 5 nodes 271 time 2 hashfull 0 pv a1c1
+<LiSHeX v2(0): info string depth 5 branchf 2.569 ordering 0.97 nullcut 20 hashcut 103 deltacut 4 seecut 0
+<LiSHeX v2(0): info score cp 7 depth 6 nodes 388732 time 2276 hashfull 27 pv a1c1 f6g4 e3d2 f8e7 h2h3 g4f6
+<LiSHeX v2(0): info string depth 6 branchf 8.542 ordering 0.85 nullcut 48 hashcut 9220 deltacut 70807 seecut 2921
+<LiSHeX v2(0): bestmove a1c1
+>Tscp 1.82(1): time 10946
+otim 10184
+>Tscp 1.82(1): a1c1
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 30 0 44 f8d6
+<Tscp 1.82(1): 2 30 0 639 f8b4 e3d2
+<Tscp 1.82(1): 3 66 0 3470 f8d6 c3b5 e8g8 b5d6 d8d6
+<Tscp 1.82(1): 4 40 3 33604 f8b4 e3d2 e8g8 e2e3
+<Tscp 1.82(1): 5 66 16 167286 f8b4 e3d2 b4c3 d2c3 e8g8
+<Tscp 1.82(1): 6 40 149 1434280 c8d7 e3d2 f8d6 e2e3 e8g8 f1d3
+<Tscp 1.82(1): move c8d7
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 101843 btime 106813 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 101843 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 26 depth 1 nodes 43 time 0 hashfull 0 pv h2h3
+<LiSHeX v2(0): info string depth 1 branchf 43 ordering 1 nullcut 0 hashcut 0 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 16 depth 2 nodes 98 time 1 hashfull 0 pv f3e5
+<LiSHeX v2(0): info string depth 2 branchf 7.416 ordering 0.83 nullcut 0 hashcut 26 deltacut 3 seecut 0
+<LiSHeX v2(0): info score cp 16 depth 3 nodes 195 time 1 hashfull 0 pv f3e5
+<LiSHeX v2(0): info string depth 3 branchf 4.595 ordering 0.9 nullcut 0 hashcut 52 deltacut 3 seecut 0
+<LiSHeX v2(0): info score cp 16 depth 4 nodes 844 time 5 hashfull 0 pv f3e5
+<LiSHeX v2(0): info string depth 4 branchf 5.047 ordering 0.73 nullcut 0 hashcut 83 deltacut 36 seecut 4
+<LiSHeX v2(0): info score cp 7 depth 5 nodes 53895 time 307 hashfull 2 pv a2a4 a8c8 f3e5 c6e5 d4e5
+<LiSHeX v2(0): info string depth 5 branchf 8.809 ordering 0.83 nullcut 12 hashcut 463 deltacut 6375 seecut 537
+<LiSHeX v2(0): info score cp 6 depth 6 nodes 471738 time 2662 hashfull 24 pv f3e5 f8d6 e5d7 d6a3
+<LiSHeX v2(0): info string depth 6 branchf 8.646 ordering 0.85 nullcut 67 hashcut 8227 deltacut 64729 seecut 4157
+<LiSHeX v2(0): info score cp 14 depth 7 nodes 637848 time 3562 hashfull 33 pv f3e5 f8d6 e5d7 e8d7 c3b5 h8e8 b5d6
+<LiSHeX v2(0): info string depth 7 branchf 5.569 ordering 0.87 nullcut 225 hashcut 11196 deltacut 105782 seecut 5390
+<LiSHeX v2(0): bestmove f3e5
+>Tscp 1.82(1): time 10681
+otim 9828
+>Tscp 1.82(1): f3e5
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 45 0 81 f8d6
+<Tscp 1.82(1): 2 50 0 385 f8d6 e5d3
+<Tscp 1.82(1): 3 55 0 2010 f8d6 e5d7 d8d7
+<Tscp 1.82(1): 4 81 1 12228 f8b4 d1d2 e8g8 e3f4 b4c3 d2c3
+<Tscp 1.82(1): 5 85 6 60509 f8b4 d1d2 e8g8 e3f4 f6e4
+<Tscp 1.82(1): 6 86 35 345485 f8b4 e3g5 b4c3 b2c3 h7h5 e5d7 e8d7 g5f6 d8f6
+<Tscp 1.82(1): 7 85 166 1901638 f8b4 e3g5 b4c3 b2c3 h7h6 g5f6 d8f6 e5d7 e8d7
+<Tscp 1.82(1): move f8b4
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 98289 btime 104253 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 98289 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 40 depth 1 nodes 43 time 0 hashfull 0 pv e5d7
+<LiSHeX v2(0): info string depth 1 branchf 43 ordering 1 nullcut 0 hashcut 0 deltacut 1 seecut 0
+<LiSHeX v2(0): info score cp 29 depth 2 nodes 354 time 2 hashfull 0 pv a2a3 b4c3
+<LiSHeX v2(0): info string depth 2 branchf 17.64 ordering 0.93 nullcut 0 hashcut 6 deltacut 8 seecut 0
+<LiSHeX v2(0): info score cp 14 depth 3 nodes 1171 time 9 hashfull 0 pv e5d7
+<LiSHeX v2(0): info string depth 3 branchf 9.348 ordering 0.95 nullcut 0 hashcut 30 deltacut 103 seecut 0
+<LiSHeX v2(0): info score cp 15 depth 4 nodes 7137 time 52 hashfull 0 pv a2a3 h7h6
+<LiSHeX v2(0): info string depth 4 branchf 8.789 ordering 0.91 nullcut 0 hashcut 91 deltacut 1050 seecut 23
+<LiSHeX v2(0): info score cp 14 depth 5 nodes 59376 time 361 hashfull 2 pv a2a3 b4c3 b2c3 f6e4 e5d7
+<LiSHeX v2(0): info string depth 5 branchf 8.782 ordering 0.86 nullcut 4 hashcut 756 deltacut 9870 seecut 441
+<LiSHeX v2(0): info score cp 16 depth 6 nodes 193447 time 1128 hashfull 8 pv a2a3 b4e7 h2h3 c6e5 d4e5 f6e4
+<LiSHeX v2(0): info string depth 6 branchf 7.154 ordering 0.88 nullcut 38 hashcut 2547 deltacut 35764 seecut 1599
+<LiSHeX v2(0): info score cp 5 depth 7 nodes 734228 time 4262 hashfull 43 pv a2a3 b4c3 b2c3 f6e4 c3c4 e4c3 e5c6 d7c6
+<LiSHeX v2(0): info string depth 7 branchf 6.592 ordering 0.9 nullcut 604 hashcut 12379 deltacut 178446 seecut 3983
+<LiSHeX v2(0): bestmove a2a3
+>Tscp 1.82(1): time 10425
+otim 9481
+>Tscp 1.82(1): a2a3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 122 0 60 b4c3 b2c3 c6e5 d4e5
+<Tscp 1.82(1): 2 123 0 289 b4c3 b2c3 e8g8
+<Tscp 1.82(1): 3 123 0 1641 b4c3 b2c3 e8g8 e3f4
+<Tscp 1.82(1): 4 128 1 9555 b4c3 b2c3 e8g8 e3f4 f6e4
+<Tscp 1.82(1): 5 122 4 51880 b4c3 b2c3 c6e5 d4e5 f6e4 e3d4
+<Tscp 1.82(1): 6 154 24 268849 b4c3 b2c3 c6e5 d4e5 f6e4 e3d4 e8g8
+<Tscp 1.82(1): 7 138 126 1484163 b4c3 b2c3 c6e5 d4e5 f6e4 e3d2 d8h4 g2g3
+<Tscp 1.82(1): move b4c3
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 94819 btime 101778 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 94819 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 5 depth 1 nodes 4 time 1 hashfull 0 pv b2c3
+<LiSHeX v2(0): info string depth 1 branchf 4 ordering -nan nullcut 0 hashcut 3 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 5 depth 2 nodes 8 time 1 hashfull 0 pv b2c3
+<LiSHeX v2(0): info string depth 2 branchf 2 ordering -nan nullcut 0 hashcut 6 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 5 depth 3 nodes 12 time 1 hashfull 0 pv b2c3
+<LiSHeX v2(0): info string depth 3 branchf 1.587 ordering -nan nullcut 0 hashcut 9 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 5 depth 4 nodes 16 time 1 hashfull 0 pv b2c3
+<LiSHeX v2(0): info string depth 4 branchf 1.414 ordering -nan nullcut 0 hashcut 12 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 5 depth 5 nodes 20 time 1 hashfull 0 pv b2c3
+<LiSHeX v2(0): info string depth 5 branchf 1.32 ordering -nan nullcut 0 hashcut 15 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp -20 depth 6 nodes 14197 time 91 hashfull 1 pv b2c3 c6e5 d4e5
+<LiSHeX v2(0): info string depth 6 branchf 4.92 ordering 0.98 nullcut 32 hashcut 527 deltacut 3579 seecut 28
+<LiSHeX v2(0): info score cp -1 depth 7 nodes 254285 time 1346 hashfull 13 pv b2c3 c6e5 d4e5 f6e4 c3c4 d5c4 d1d4 d7c6
+<LiSHeX v2(0): info string depth 7 branchf 5.87 ordering 0.92 nullcut 973 hashcut 3739 deltacut 44731 seecut 2001
+<LiSHeX v2(0): info score cp -1 depth 8 nodes 709485 time 3880 hashfull 53 pv b2c3 c6e5 d4e5 f6e4 c3c4 d5c4 d1d4 d7c6 d4c4
+<LiSHeX v2(0): info string depth 8 branchf 5.097 ordering 0.93 nullcut 1970 hashcut 23203 deltacut 289949 seecut 6772
+<LiSHeX v2(0): bestmove b2c3
+>Tscp 1.82(1): time 10177
+otim 9143
+>Tscp 1.82(1): b2c3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 123 0 47 e8g8
+<Tscp 1.82(1): 2 123 0 269 e8g8 e3f4
+<Tscp 1.82(1): 3 128 0 1387 e8g8 e3f4 f6e4
+<Tscp 1.82(1): 4 122 0 8220 c6e5 d4e5 f6e4 e3d4
+<Tscp 1.82(1): 5 154 4 38596 c6e5 d4e5 f6e4 e3d4 e8g8
+<Tscp 1.82(1): 6 138 19 206030 c6e5 d4e5 f6e4 e3d2 d8h4 g2g3
+<Tscp 1.82(1): 7 118 139 1640715 c6e5 d4e5 f6g4 e3d4 d8h4 g2g3 h4d8
+<Tscp 1.82(1): move c6e5
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 91433 btime 99386 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 91433 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 29 depth 1 nodes 20 time 1 hashfull 0 pv d4e5
+<LiSHeX v2(0): info string depth 1 branchf 20 ordering -nan nullcut 0 hashcut 0 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 21 depth 2 nodes 91 time 1 hashfull 0 pv g2g4
+<LiSHeX v2(0): info string depth 2 branchf 8.426 ordering 0.33 nullcut 0 hashcut 17 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp 21 depth 3 nodes 155 time 2 hashfull 0 pv g2g4
+<LiSHeX v2(0): info string depth 3 branchf 4 ordering 0.41 nullcut 0 hashcut 34 deltacut 0 seecut 0
+<LiSHeX v2(0): info score cp -1 depth 4 nodes 2395 time 14 hashfull 0 pv d4e5
+<LiSHeX v2(0): info string depth 4 branchf 6.88 ordering 0.86 nullcut 0 hashcut 63 deltacut 355 seecut 11
+<LiSHeX v2(0): info score cp -1 depth 5 nodes 3342 time 20 hashfull 0 pv d4e5
+<LiSHeX v2(0): info string depth 5 branchf 3.938 ordering 0.88 nullcut 2 hashcut 79 deltacut 356 seecut 11
+<LiSHeX v2(0): info score cp -1 depth 6 nodes 5076 time 33 hashfull 0 pv d4e5
+<LiSHeX v2(0): info string depth 6 branchf 3.466 ordering 0.93 nullcut 4 hashcut 386 deltacut 1075 seecut 11
+<LiSHeX v2(0): info score cp -1 depth 7 nodes 5191 time 34 hashfull 0 pv d4e5
+<LiSHeX v2(0): info string depth 7 branchf 1.97 ordering 0.93 nullcut 45 hashcut 405 deltacut 1105 seecut 13
+<LiSHeX v2(0): info score cp -29 depth 8 nodes 224008 time 1224 hashfull 14 pv d4e5 f6e4 f2f3 e4c3 d1d2 h7h6 d2c3
+<LiSHeX v2(0): info string depth 8 branchf 4.651 ordering 0.91 nullcut 347 hashcut 8255 deltacut 66517 seecut 2290
+<LiSHeX v2(0): bestmove d4e5
+>Tscp 1.82(1): time 9938
+otim 8812
+>Tscp 1.82(1): d4e5
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 127 0 167 f6e4
+<Tscp 1.82(1): 2 122 0 356 f6e4 e3d4
+<Tscp 1.82(1): 3 154 0 1647 f6e4 e3d4 e8g8
+<Tscp 1.82(1): 4 138 1 9215 f6e4 e3d2 d8h4 g2g3
+<Tscp 1.82(1): 5 118 5 57720 f6g4 e3d4 d8h4 g2g3 h4e7
+<Tscp 1.82(1): 6 132 26 280093 f6e4 c3c4 e8g8 c4d5 e4c3 d1d2 c3d5
+<Tscp 1.82(1): 7 137 132 1506919 f6e4 c3c4 d5c4 d1d4 d7c6 d4c4 e8g8
+<Tscp 1.82(1): move f6e4
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5 d4e5 f6e4
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 88127 btime 97074 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 88127 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp 21 depth 1 nodes 110 time 0 hashfull 0 pv e3d4
+<LiSHeX v2(0): info string depth 1 branchf 110 ordering 0.85 nullcut 0 hashcut 0 deltacut 23 seecut 2
+<LiSHeX v2(0): info score cp -1 depth 2 nodes 138 time 1 hashfull 0 pv d1d4
+<LiSHeX v2(0): info string depth 2 branchf 5.292 ordering 0.85 nullcut 0 hashcut 22 deltacut 24 seecut 2
+<LiSHeX v2(0): info score cp -1 depth 3 nodes 163 time 1 hashfull 0 pv d1d4
+<LiSHeX v2(0): info string depth 3 branchf 2.924 ordering 0.86 nullcut 0 hashcut 45 deltacut 24 seecut 2
+<LiSHeX v2(0): info score cp -1 depth 4 nodes 188 time 1 hashfull 0 pv d1d4
+<LiSHeX v2(0): info string depth 4 branchf 2.236 ordering 0.86 nullcut 0 hashcut 68 deltacut 24 seecut 2
+<LiSHeX v2(0): info score cp -8 depth 5 nodes 27870 time 161 hashfull 1 pv c3c4
+<LiSHeX v2(0): info string depth 5 branchf 7.735 ordering 0.86 nullcut 0 hashcut 587 deltacut 7259 seecut 517
+<LiSHeX v2(0): info score cp -8 depth 6 nodes 27903 time 161 hashfull 1 pv c3c4
+<LiSHeX v2(0): info string depth 6 branchf 1.791 ordering 0.86 nullcut 1 hashcut 610 deltacut 7261 seecut 517
+<LiSHeX v2(0): info score cp -8 depth 7 nodes 27947 time 161 hashfull 1 pv c3c4
+<LiSHeX v2(0): info string depth 7 branchf 1.717 ordering 0.86 nullcut 19 hashcut 634 deltacut 7261 seecut 517
+<LiSHeX v2(0): bestmove c3c4
+>Tscp 1.82(1): time 9707
+otim 8489
+>Tscp 1.82(1): c3c4
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 191 0 49 d5c4
+<Tscp 1.82(1): 2 181 0 424 d5c4 c1b1
+<Tscp 1.82(1): 3 115 0 3770 d7c6 c4d5 e6d5
+<Tscp 1.82(1): 4 132 2 19534 e8g8 c4d5 e4c3 d1d4 c3d5
+<Tscp 1.82(1): 5 137 9 106729 d5c4 d1d4 d7c6 d4c4 e8g8
+<Tscp 1.82(1): 6 122 49 522724 d5c4 d1d4 d7c6 d4c4 e8g8 c1d1
+<Tscp 1.82(1): 7 127 256 2923226 d5c4 d1d4 d7c6 d4c4 e8g8 c1d1 c6d5
+<Tscp 1.82(1): move d5c4
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5 d4e5 f6e4 c3c4 d5c4
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 84897 btime 94839 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 84897 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp -34 depth 1 nodes 34 time 1 hashfull 0 pv c2c3
+<LiSHeX v2(0): info string depth 1 branchf 34 ordering 1 nullcut 0 hashcut 0 deltacut 1 seecut 2
+<LiSHeX v2(0): info score cp -19 depth 2 nodes 92 time 1 hashfull 0 pv d1d7
+<LiSHeX v2(0): info string depth 2 branchf 7.616 ordering 0.88 nullcut 0 hashcut 20 deltacut 8 seecut 10
+<LiSHeX v2(0): info score cp -19 depth 3 nodes 183 time 1 hashfull 0 pv d1d7
+<LiSHeX v2(0): info string depth 3 branchf 4.498 ordering 0.92 nullcut 0 hashcut 43 deltacut 13 seecut 12
+<LiSHeX v2(0): info score cp -19 depth 4 nodes 1276 time 8 hashfull 0 pv d1d7
+<LiSHeX v2(0): info string depth 4 branchf 5.75 ordering 0.92 nullcut 0 hashcut 69 deltacut 190 seecut 44
+<LiSHeX v2(0): info score cp -19 depth 5 nodes 2094 time 16 hashfull 0 pv d1d7
+<LiSHeX v2(0): info string depth 5 branchf 3.824 ordering 0.93 nullcut 16 hashcut 85 deltacut 284 seecut 58
+<LiSHeX v2(0): info score cp -19 depth 6 nodes 6020 time 42 hashfull 0 pv d1d7
+<LiSHeX v2(0): info string depth 6 branchf 3.972 ordering 0.93 nullcut 32 hashcut 130 deltacut 764 seecut 126
+<LiSHeX v2(0): bestmove d1d7
+>Tscp 1.82(1): time 9483
+otim 8174
+>Tscp 1.82(1): d1d7
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 778 0 67 d8d7 c1d1
+<Tscp 1.82(1): 2 778 0 407 d8d7 c1d1 d7c8
+<Tscp 1.82(1): 3 783 0 3047 d8d7 c1d1 d7a4 d1b1
+<Tscp 1.82(1): 4 788 2 20557 d8d7 c1b1 d7d5 f2f3 d5a5
+<Tscp 1.82(1): 5 773 11 115724 d8d7 f2f3 e4c3 e3f4 c3b5 c1d1
+<Tscp 1.82(1): 6 783 46 507965 d8d7 f2f3 e4c3 e3f4 c3b5 c1d1 b5d4
+<Tscp 1.82(1): 7 780 224 2597814 d8d7 f2f3 e4c3 e3d2 c3b5 d2b4 a7a5 c1d1
+<Tscp 1.82(1): move d8d7
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5 d4e5 f6e4 c3c4 d5c4 d1d7 d8d7
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 81742 btime 92678 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 81742 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp -694 depth 1 nodes 29 time 0 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 1 branchf 29 ordering 1 nullcut 0 hashcut 0 deltacut 2 seecut 1
+<LiSHeX v2(0): info score cp -732 depth 2 nodes 72 time 1 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 2 branchf 6.557 ordering 0.77 nullcut 0 hashcut 17 deltacut 2 seecut 1
+<LiSHeX v2(0): info score cp -732 depth 3 nodes 552 time 3 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 3 branchf 7.83 ordering 0.8 nullcut 0 hashcut 40 deltacut 40 seecut 9
+<LiSHeX v2(0): info score cp -732 depth 4 nodes 662 time 4 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 4 branchf 3.239 ordering 0.82 nullcut 0 hashcut 70 deltacut 42 seecut 10
+<LiSHeX v2(0): info score cp -732 depth 5 nodes 1193 time 6 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 5 branchf 3.508 ordering 0.84 nullcut 0 hashcut 102 deltacut 47 seecut 10
+<LiSHeX v2(0): info score cp -732 depth 6 nodes 2867 time 17 hashfull 0 pv c1d1
+<LiSHeX v2(0): info string depth 6 branchf 3.446 ordering 0.88 nullcut 0 hashcut 237 deltacut 238 seecut 36
+<LiSHeX v2(0): info score cp -731 depth 7 nodes 518537 time 2713 hashfull 23 pv c2c3 d7e7 g2g3 e7a3 f1g2 e4c3 g2b7
+<LiSHeX v2(0): info string depth 7 branchf 6.547 ordering 0.88 nullcut 391 hashcut 20495 deltacut 88030 seecut 25757
+<LiSHeX v2(0): bestmove c2c3
+>Tscp 1.82(1): time 9267
+otim 7865
+>Tscp 1.82(1): c2c3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 815 0 68 e8g8
+<Tscp 1.82(1): 2 800 0 719 e8g8 c1d1
+<Tscp 1.82(1): 3 795 0 7191 d7e7 f2f3 e7h4
+<Tscp 1.82(1): 4 841 2 24127 d7e7 f2f3 e7h4 e1d1 e8c8
+<Tscp 1.82(1): 5 852 11 143022 d7e7 f2f3 e7h4 e1d1 e8c8 d1c2 e4g3
+<Tscp 1.82(1): 6 857 66 778413 d7e7 f2f3 e7h4 e1d1 e8c8 d1c2 e4g3 e3f2
+<Tscp 1.82(1): move d7e7
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5 d4e5 f6e4 c3c4 d5c4 d1d7 d8d7 c2c3 d7e7
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 78659 btime 90589 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 78659 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp -704 depth 1 nodes 84 time 0 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 1 branchf 84 ordering 0.75 nullcut 0 hashcut 0 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 2 nodes 133 time 1 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 2 branchf 7 ordering 0.76 nullcut 0 hashcut 19 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 3 nodes 157 time 1 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 3 branchf 2.884 ordering 0.78 nullcut 0 hashcut 40 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 4 nodes 181 time 1 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 4 branchf 2.213 ordering 0.79 nullcut 0 hashcut 61 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 5 nodes 207 time 1 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 5 branchf 1.919 ordering 0.8 nullcut 0 hashcut 82 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 6 nodes 234 time 1 hashfull 0 pv a3a4
+<LiSHeX v2(0): info string depth 6 branchf 1.732 ordering 0.81 nullcut 1 hashcut 105 deltacut 1 seecut 1
+<LiSHeX v2(0): info score cp -725 depth 7 nodes 489448 time 2575 hashfull 19 pv g2g3 e7a3 f1g2 e4c3 e3d2 c3d5 c1c4
+<LiSHeX v2(0): info string depth 7 branchf 6.498 ordering 0.9 nullcut 281 hashcut 18070 deltacut 122320 seecut 19683
+<LiSHeX v2(0): bestmove g2g3
+>Tscp 1.82(1): time 9058
+otim 7564
+>Tscp 1.82(1): g2g3
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 897 0 68 e7a3
+<Tscp 1.82(1): 2 885 0 941 e7a3 f1g2 e4c3 g2b7
+<Tscp 1.82(1): 3 885 0 4280 e7a3 f1g2 e4c3 g2b7
+<Tscp 1.82(1): 4 885 2 21890 e7a3 f1g2 e4c3 g2b7
+<Tscp 1.82(1): 5 896 9 121152 e7a3 f1g2 e4c3 e3d2 c3d5 c1c4
+<Tscp 1.82(1): 6 895 50 568656 e7a3 f1g2 e4c3 g2b7 a8b8 b7c6
+<Tscp 1.82(1): 7 880 280 3604330 e7a3 f1g2 e4c3 g2b7 a8b8 b7c6 e8f8 h2h4
+<Tscp 1.82(1): move e7a3
+>LiSHeX v2(0): position startpos moves g1f3 d7d5 d2d4 g8f6 b1c3 e7e6 c1e3 b8c6 a1c1 c8d7 f3e5 f8b4 a2a3 b4c3 b2c3 c6e5 d4e5 f6e4 c3c4 d5c4 d1d7 d8d7 c2c3 d7e7 g2g3 e7a3
+>LiSHeX v2(0): isready
+<LiSHeX v2(0): readyok
+>LiSHeX v2(0): go wtime 75645 btime 88570 winc 1000 binc 1000
+<LiSHeX v2(0): src/threads.h(66): Blocking until thread stops the search...
+<LiSHeX v2(0): src/threads.h(68): Done!
+<LiSHeX v2(0): src/uci.cpp(256): Starting search with depth 128 time 75645 inc 1000
+<LiSHeX v2(0): src/threads.h(52): Starting search
+<LiSHeX v2(0): src/threads.cpp(11): Search thread started!
+<LiSHeX v2(0): src/threads.cpp(15): Searching...
+<LiSHeX v2(0): info score cp -731 depth 1 nodes 146 time 1 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 1 branchf 146 ordering 0.73 nullcut 0 hashcut 0 deltacut 14 seecut 16
+<LiSHeX v2(0): info score cp -718 depth 2 nodes 168 time 1 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 2 branchf 4.69 ordering 0.73 nullcut 0 hashcut 21 deltacut 14 seecut 16
+<LiSHeX v2(0): info score cp -718 depth 3 nodes 190 time 1 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 3 branchf 2.802 ordering 0.73 nullcut 0 hashcut 42 deltacut 14 seecut 16
+<LiSHeX v2(0): info score cp -718 depth 4 nodes 212 time 2 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 4 branchf 2.166 ordering 0.73 nullcut 0 hashcut 63 deltacut 14 seecut 16
+<LiSHeX v2(0): info score cp -718 depth 5 nodes 282 time 2 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 5 branchf 2.339 ordering 0.74 nullcut 16 hashcut 68 deltacut 17 seecut 16
+<LiSHeX v2(0): info score cp -718 depth 6 nodes 322 time 2 hashfull 0 pv f1g2
+<LiSHeX v2(0): info string depth 6 branchf 1.849 ordering 0.74 nullcut 34 hashcut 89 deltacut 17 seecut 16
+<LiSHeX v2(0): info score cp -744 depth 7 nodes 155439 time 839 hashfull 5 pv f1g2 e4c3 g2b7 e8g8 b7c6 a8d8 h1f1
+<LiSHeX v2(0): info string depth 7 branchf 5.515 ordering 0.89 nullcut 288 hashcut 7415 deltacut 19265 seecut 6424
+<LiSHeX v2(0): info score cp -744 depth 8 nodes 439149 time 2338 hashfull 16 pv f1g2 e4c3 g2b7 a8b8 b7c6 e8f8 h1f1 b8b2 c6f3
+<LiSHeX v2(0): info string depth 8 branchf 4.804 ordering 0.89 nullcut 1307 hashcut 20539 deltacut 71738 seecut 14018
+<LiSHeX v2(0): bestmove f1g2
+>Tscp 1.82(1): time 8857
+otim 7269
+>Tscp 1.82(1): f1g2
+<LiSHeX v2(0): src/threads.cpp(32): Search thread done!
+<Tscp 1.82(1): 1 885 0 112 e4c3 g2b7
+<Tscp 1.82(1): 2 885 0 455 e4c3 g2b7
+<Tscp 1.82(1): 3 896 0 3446 e4c3 e3d2 c3d5 c1c4
+<Tscp 1.82(1): 4 895 1 16906 e4c3 g2b7 a8b8 b7c6
+<Tscp 1.82(1): 5 880 10 113552 e4c3 g2b7 a8b8 b7c6 e8f8 h2h4
+<Tscp 1.82(1): 6 895 47 559458 e4c3 g2b7 a8b8 b7c6 e8f8 e3d2 b8b1
+>LiSHeX v2(0): isready
+>Tscp 1.82(1): ?
+>Tscp 1.82(1): force
+>Tscp 1.82(1): result 0-1 {Black wins by adjudication: user decision}
+<LiSHeX v2(0): readyok
+<Tscp 1.82(1): 7 898 263 3322638 e4c3 g2b7 a8b8 b7c6 e8f8 e3f4 b8b1 c1b1 c3b1
+<Tscp 1.82(1): move e4c3
+<Tscp 1.82(1): Error (unknown command): ?
+<Tscp 1.82(1): Error (unknown command): result

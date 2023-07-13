@@ -1,8 +1,6 @@
 /* Static exchange evaluation code for move ordering */
 #include "see.h"
 
-#include <algorithm> // std::min, std::max
-
 #ifdef TRACE_SEE_ENABLE
 #define TRACE_SEE(str) LOG(str)
 #else
@@ -79,7 +77,7 @@ bb_t get_least_valuable_pce(const board_t *board, bb_t attadef, int colour,
         subset = attadef & board->bitboards[piece];
         if (subset) {
             //return subset & -subset; // single bit
-            LOG(piece_to_ascii[piece] << " at " << square_to_str(GETLSB(subset)));
+            TRACE_SEE(piece_to_ascii[piece] << " at " << square_to_str(GETLSB(subset)));
             return LSB_BB(subset);
         }
     }

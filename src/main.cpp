@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Built on " << __DATE__ << " " << __TIME__ << std::endl;
 
     // Initialization
-    init_eval_masks();
     init_keys();
+    init_eval_masks();
     init_leap_attacks();
     init_bishop_occupancies();
     init_rook_occupancies();

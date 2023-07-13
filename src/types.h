@@ -47,6 +47,9 @@ constexpr bool bmi2 = true;
 constexpr bool bmi2 = false;
 #endif
 
+#define MIN(x, y) (((x) <= (y)) ? (x) : (y))
+#define MAX(x, y) (((x) >= (y)) ? (x) : (y))
+
 // Whether to use the null move heuristic
 constexpr bool USE_NULL = true;
 
@@ -224,8 +227,9 @@ enum {
 
 #define is_capture(move) (((move) >> 12) & 0b0100)
 
-#define is_promotion(move) (((move) >> 12) & 0b1000)
-
+inline int is_promotion(move_t move) {
+    return (((move) >> 12) & 0b1000);
+}
 
 
 // Undo move structure
@@ -247,7 +251,7 @@ typedef struct undo_t {
 // Struct containing a move and its corresponding score for move ordering
 typedef struct scored_move_t {
     move_t move;
-    uint32_t score;
+    int32_t score;
 
     void operator=(move_t m) { move = m; }
     bool operator==(const move_t& m) { return move == m; }
@@ -309,7 +313,7 @@ using bb_t = uint64_t;
 /* Miscellaneous */
 /*****************/
 
-constexpr int oo = 1'000'000; // INF
+constexpr int oo = 30'000; // INF
 
 // Castling rights encoding (4 bits)
 enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };

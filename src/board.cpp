@@ -3,6 +3,7 @@
 #include <cstring> //std::memset
 #include <sstream> //std::istringstream
 #include <string>
+#include <bitset>
 #ifdef DEBUG
 #include <vector>
 #include <iomanip>
@@ -28,33 +29,29 @@ std::vector<board_t> ref_boards(64); // TODO: C-style array
 /* Zobrist hashing */
 /*******************/
 
-uint64_t piece_keys[PIECE_NO][SQUARE_NO];
+uint64_t piece_keys[PIECE_NO][SQUARE_NO] = {};
 uint64_t turn_key = 0ULL;
-uint64_t castle_keys[16]; // == WK | WQ | BK | BQ + 1 = 0b1111 + 1
-uint64_t ep_keys[SQUARE_NO];
+uint64_t castle_keys[16] = {}; // == WK | WQ | BK | BQ + 1 = 0b1111 + 1
+uint64_t ep_keys[SQUARE_NO] = {};
 
 void init_keys() {
     seed_rng();
     // For each piece type and square generate a random key
-    for (piece_t p : pieces) {
-        for (square_t sq = A1; sq <= H8; ++sq) {
+    for (piece_t p = NO_PIECE; p < PIECE_NO; ++p)
+        for (square_t sq = A1; sq <= H8; ++sq)
             piece_keys[p][sq] = rand_uint64();
-        }
-    }
 
     // Generate hash key for White's side to play
     turn_key = rand_uint64();
 
     // Generate hash keys for castling rights
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 16; ++i)
         castle_keys[i] = rand_uint64();
-    }
 
     // Generate hash keys for en passant squares
     // (though we only need 16, having 64 keys makes the code cleaner)
-    for (square_t sq = A1; sq <= H8; ++sq) {
+    for (square_t sq = A1; sq <= H8; ++sq)
         ep_keys[sq] = rand_uint64();
-    }
 }
 
 /* Zeroes out the entire position */
@@ -314,18 +311,18 @@ uint64_t generate_pos_key(const board_t *board) {
     uint64_t key = 0ULL;
 
     // Hash in all the pieces on the board
-    /*
     for (piece_t p : pieces) {
-        for (square_t sq = A1; sq <= H8; ++sq) {
-            if (GETBIT(board->bitboards[p], sq)) {
-                key ^= piece_keys[p][sq];
-            }
+        bb_t b = board->bitboards[p];
+        while (b) {
+            square_t sq = POPLSB(b);
+            key ^= piece_keys[p][sq];
         }
     }
-    */
+    /*
     for (square_t sq = A1; sq <= H8; ++sq) {
         key ^= piece_keys[board->pieces[sq]][sq];
     }
+    */
 
     // Hash in the side playing
     if (board->turn == WHITE) {
@@ -489,7 +486,7 @@ bool make_move(board_t *board, move_t move) {
 
     // Handle counters
     ++board->ply;
-    ++board->fifty_move; // if a pawn push/captures performed, we'll reset this
+    ++board->fifty_move; // if a pawn push/capture performed, we'll reset this
 
     // If en passant performed, remove the captured pawn
     if (flags == EPCAPTURE) {
@@ -818,7 +815,7 @@ void undo_null(board_t *board) {
 //        : Last captured piece: [captured]
 void history_trace(const board_t *b, size_t n) {
     // Ensure that n does not exceed the number of positions in the history
-    n = std::min(n, static_cast<size_t>(b->history_ply));
+    n = MIN(n, static_cast<size_t>(b->history_ply));
 
     for (size_t i = b->history_ply - n; i < b->history_ply; ++i) {
       const undo_t &undo = b->history[i];

@@ -25,14 +25,14 @@ typedef struct alignas(64) {
     // Best move in the current node
     uint16_t move;
     // Stored value in this node (either exact or lower/upperbound)
-    uint32_t score;
+    int32_t score;
 } tt_entry;
 
 
 class TT {
   public:
     // Constructor & Destructor
-    TT(const int = 64);
+    TT(const int MB = 64);
     ~TT();
 
     // Clears the transposition table
@@ -40,7 +40,7 @@ class TT {
     // Resets the statistics
     void reset_stats();
     // Probes the transposition table for a move and a score
-    int probe(const board_t *board, move_t *move, int *score, int alpha,
+    int probe(const board_t *board, move_t &move, int &score, int alpha,
               int beta, int depth);
     // Stores an entry in our transposition table
     void store(const board_t *board, move_t move, int score,
@@ -59,5 +59,8 @@ class TT {
     unsigned hit;
     unsigned cut;
 };
+
+// Global transposition table in transposition.cpp
+extern TT tt;
 
 #endif // TRANSPOSITION_H_

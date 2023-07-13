@@ -1,8 +1,6 @@
 #ifndef EVAL_H_
 #define EVAL_H_
 
-#include <algorithm> // std::min, std::max
-
 #include "types.h"
 #include "board.h"
 #include "see.h"
@@ -39,7 +37,7 @@ typedef struct eval_t {
         phase *= 3;
         phase -= 128;
         phase >>= 1;
-        phase = std::min(std::max(0, phase), 256);
+        phase = MIN(MAX(0, phase), 256);
     }
 
     inline int get_tapered_score() {
@@ -72,9 +70,10 @@ int evaluate(const board_t *board, eval_t *eval);
  * exchange evaluation and piece values
  * @param board current board state (for access to pieces involved)
  * @param m the capture to consider
+ * @param threshold threshold for SEE
  * @returns non-zero integer if the capture is losing, zero otherwise
  * */
-int losing_capture(const board_t *board, move_t m);
+int losing_capture(const board_t *board, move_t m, int threshold);
 
 void mirror_test(board_t *board);
 

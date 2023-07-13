@@ -615,7 +615,7 @@ void mirror_test(board_t *board) {
 }
 
 // Inspired by https://www.chessprogramming.org/CPW-Engine_quiescence
-int losing_capture(const board_t *board, move_t m) {
+int losing_capture(const board_t *board, move_t m, int threshold) {
     const piece_t& capturing = board->pieces[get_from(m)];
     const piece_t& captured = board->pieces[get_to(m)];
     // Capturing with a pawn can't immediately lose material
@@ -628,8 +628,8 @@ int losing_capture(const board_t *board, move_t m) {
 
     // From Crafty: If opponent has only one piece left, we search this kind of
     // move since it can be the move that allows a passed pawn to promote
-    if (CNT(board->sides_pieces[board->turn ^ 1]) <= 2) return 0;
+    if (CNT(board->sides_pieces[board->turn ^ 1] & ~pawns(board)) <= 2) return 0;
 
     // Finally, check if Static Exchange Evaluation deems the capture as losing
-    return see(board, m) < 0;
+    return see(board, m) < threshold;
 }

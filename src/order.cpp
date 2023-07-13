@@ -5,22 +5,34 @@
 
 #include <cstring> // memmove
 #include <string>
+#include <climits> // INT_MAX
 
 #include "eval.h"
 #include "movegen.h"
+
+
+#ifdef TRACE_ORDER_ENABLE
+#define TRACE_ORDER(str) LOG(str)
+#else
+#define TRACE_ORDER(str)
+#endif
 
 namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = 2'000'000;
-constexpr int CAPTURE_BONUS = 1'000'000;
-constexpr int KILLER1_BONUS = 900'000;
-constexpr int KILLER2_BONUS = 800'000;
+constexpr int PV_BONUS = INT_MAX;
+constexpr int GOOD_PROMO_BONUS = 20'000'000;
+constexpr int CAPTURE_BONUS = 10'000'000;
+constexpr int KILLER1_BONUS = 9'000'000;
+constexpr int KILLER2_BONUS = 8'000'000;
+
+// Penalty for 'bad' (very rare) promotions like knight/rook
+constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
 
 // Small bonuses for promoting & castling
-constexpr int PROMO_BONUS = 100;
-constexpr int CASTLE_BONUS = 10;
+constexpr int CASTLE_BONUS = 100;
+
 
 /* MVV-LVA heuristic setup */
 constexpr int victim_score[PIECE_NO] = {
@@ -98,22 +110,34 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
     int flags = 0;
     for (int i = 0; i < n; ++i) {
         scored_move_t& move = moves->movelist[i];
-        //if (pv_move != NULLMV && move == pv_move) {
-        if (move == pv_move) {
+        if (move.move == pv_move) {
             assert(move.move == pv_move && pv_move != NULLMV);
             move.score = PV_BONUS;
-            // Since we want to search the PV move first, we can swap it in already
-            //scored_move_t tmp = moves->movelist[0];
-            //moves->movelist[0] = move;
-            //move = tmp;
             continue;
         }
-        move.score = 0;
 
+        move.score = 0;
         from = get_from(move);
         to = get_to(move);
         flags = get_flags(move);
-        if (flags & CAPTURE) {
+
+        // We search promotions before captures
+        if (is_promotion(move)) {
+            switch (flags & ~CAPTURE) {
+                case QUEENPROMO:
+                    move.score = GOOD_PROMO_BONUS + 1;  break;
+                case KNIGHTPROMO:
+                    move.score = GOOD_PROMO_BONUS;      break;
+                case ROOKPROMO:
+                    move.score = BAD_PROMO_PENALTY + 1; break;
+                case BISHOPPROMO:
+                    move.score = BAD_PROMO_PENALTY;     break;
+                default:
+                    break;
+            }
+
+        }
+        if (is_capture(move)) {
             // TODO: Speed up SEE, since the following is slow
             // If the capture is losing, we leave its score as 0
             // if (losing_capture(board, move)) {
@@ -124,6 +148,11 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
                 move.score += MVV_LVA[PAWN][PAWN];
             else
                 move.score += MVV_LVA[board->pieces[to]][board->pieces[from]];
+
+            // Losing captures are searched at the very end
+            if (losing_capture(board, move, -value_eg[PAWN])) {
+                move.score -= 2 * CAPTURE_BONUS;
+            }
             continue;
         }
 
@@ -156,7 +185,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
 }
 
 // Assumes moves were scored already, moves the best move to the movelist[moves->used] position
-move_t next_best(movelist_t *moves, int ply) {
+move_t next_best(movelist_t *moves, [[maybe_unused]] int ply) {
 
     if (moves->used >= moves->size()) {
         return NULLMV;
@@ -165,7 +194,7 @@ move_t next_best(movelist_t *moves, int ply) {
     // Find next best move in our move list and place it at the current best move idx
     // (single-pass linear scan)
     size_t best_idx = moves->used;
-    uint32_t best_score = 0;
+    int32_t best_score = 0;
     for (size_t idx = moves->used; idx < moves->size(); ++idx) {
         scored_move_t& move = moves->movelist[idx];
         if (move.score > best_score) {
@@ -178,12 +207,14 @@ move_t next_best(movelist_t *moves, int ply) {
     scored_move_t tmp = moves->movelist[moves->used];
     moves->movelist[moves->used] = moves->movelist[best_idx];
     moves->movelist[best_idx] = tmp;
-#ifdef DEBUG
-    std::cout << std::string(2 * ply, ' ') \
-        << "Selected move " << move_to_str(moves->movelist[moves->used]) \
-        << " with score " << moves->movelist[moves->used].score \
-        << std::endl;
-#endif
+ #ifdef DEBUG
+    /*
+         std::cout << std::string(2 * ply, ' ') \
+         << "Selected move " << move_to_str(moves->movelist[moves->used]) \
+         << " with score " << moves->movelist[moves->used].score \
+         << std::endl;
+    */
+ #endif
                            // Move used, hence increase the counter
     return moves->movelist[moves->used++];
 }

@@ -5,7 +5,11 @@
 #include "search.h"
 
 
-TT::TT(const int MB) : size{(1 << 20) * MB / sizeof(tt_entry)} {
+// Global transposition table
+constexpr int TTSIZEMB = 64;
+TT tt(TTSIZEMB);
+
+TT::TT(const int MB) : size{((1 << 20) * MB / sizeof(tt_entry)) - 2} {
 
     table = new tt_entry[size];
     if (table == nullptr) {
@@ -28,11 +32,12 @@ void TT::reset_stats() {
 }
 
 void TT::clear() {
-    std::memset(table, 0, this->size * sizeof(tt_entry));
+    // std::memset(table, 0, this->size * sizeof(tt_entry));
+    std::fill(table, table + size, tt_entry());
     reset_stats();
 }
 
-int TT::probe(const board_t *board, move_t *move, int *score,
+int TT::probe(const board_t *board, move_t &move, int &score,
               int alpha, int beta, int depth) {
 
     // TODO: Ensure size of TT is a power of 2 for efficient mod with &
@@ -40,6 +45,11 @@ int TT::probe(const board_t *board, move_t *move, int *score,
     tt_entry *entry = &table[idx];
 
     assert(0 <= idx && idx <= this->size - 1);
+    assert(1 <= depth && depth < MAX_DEPTH);
+    assert(alpha < beta);
+    assert(-oo <= alpha && alpha <= +oo);
+    assert(-oo <= beta && beta <= +oo);
+    assert(0 <= board->ply && board->ply < MAX_DEPTH);
 
     /* Check if the zobrist key matches */
     if (entry->key != board->key)
@@ -47,20 +57,26 @@ int TT::probe(const board_t *board, move_t *move, int *score,
 
     /* We have a match! Check if search was deep enough */
 
+    // The move stored might be useful for move ordering
+    move = static_cast<move_t>(entry->move);
+
     // If the previous search wasn't as deep as current
     if (depth > entry->depth)
         return TTMISS;
 
+    assert(1 <= entry->depth && entry->depth < MAX_DEPTH);
+
     // Otherwise, we've hit a valid entry!
     ++hit;
 
-    *score = entry->score;
+    // We overwrite the score
+    score = entry->score;
 
     // Adjust for mate scores
-    if (*score > +oo - MAX_DEPTH)
-        *score -= board->ply;
-    else if (*score < -oo + MAX_DEPTH)
-        *score += board->ply;
+    if (score > +oo - MAX_DEPTH)
+        score -= board->ply;
+    else if (score < -oo + MAX_DEPTH)
+        score += board->ply;
 
     /**
      * If we have an EXACT entry, the score was within the [alpha, beta]
@@ -75,25 +91,15 @@ int TT::probe(const board_t *board, move_t *move, int *score,
 
     /* The entry can be useful. Check it's type */
     switch (entry->flags) {
-        case EXACT: *move = entry->move; break;
-        case LOWER:
-            *move = entry->move;
-            if (*score >= beta)
-                *score = beta;
-            break;
-        case UPPER:
-            *move = NULLMV;
-            if (*score <= alpha)
-                *score = alpha;
-            break;
-        case BAD:
-            LOG("TODO: Not handled yet");
-            assert(false);
+        case LOWER: score = MIN(score, beta); break;
+        case UPPER: score = MAX(score, alpha); break;
+        case EXACT: break;
+        case BAD: LOG("TODO: Not handled yet"); assert(false);
     }
     return TTHIT;
 }
 
-// Always overwrite scheme
+// Replace by depth cheme
 void TT::store(const board_t *board, move_t move, int score,
                const int flags, const int depth) {
 
@@ -114,13 +120,13 @@ void TT::store(const board_t *board, move_t move, int score,
     else if (score <= -oo + MAX_DEPTH) score -= board->ply;
 
     // If all moves failed high, we don't know which move is the best,
-    // hence we don't store it
-    if (flags == UPPER) move = NULLMV;
+    // hence the stored move should be empty
+    assert(flags == UPPER ? move == NULLMV : move != NULLMV);
 
     // Finally, store the entry in the transposition table
     entry->key   = board->key;
-    entry->depth = depth;
-    entry->flags = flags;
-    entry->move  = move;
-    entry->score = score;
+    entry->depth = static_cast<uint8_t>(depth);
+    entry->flags = static_cast<uint8_t>(flags);
+    entry->move  = static_cast<uint16_t>(move);
+    entry->score = static_cast<int32_t>(score);
 }
