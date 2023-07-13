@@ -5,7 +5,7 @@
 #include "search.h"
 
 
-TT::TT(const int MB) : size{(1 << 6) * MB / sizeof(tt_entry)} {
+TT::TT(const int MB) : size{(1 << 20) * MB / sizeof(tt_entry)} {
 
     table = new tt_entry[size];
     if (table == nullptr) {
@@ -13,6 +13,8 @@ TT::TT(const int MB) : size{(1 << 6) * MB / sizeof(tt_entry)} {
         assert(false);
     }
     clear();
+    std::cout << "Allocated TT of size " << MB << "MB " \
+              << "with " << size << " entries" << std::endl;
 }
 
 TT::~TT() {
@@ -37,7 +39,7 @@ int TT::probe(const board_t *board, move_t *move, int *score,
     int idx = board->key % this->size;
     tt_entry *entry = &table[idx];
 
-    assert(0 <= index && index <= this->size - 1);
+    assert(0 <= idx && idx <= this->size - 1);
 
     /* Check if the zobrist key matches */
     if (entry->key != board->key)
@@ -45,14 +47,13 @@ int TT::probe(const board_t *board, move_t *move, int *score,
 
     /* We have a match! Check if search was deep enough */
 
-    // If the previous search was at least as deep as current
+    // If the previous search wasn't as deep as current
     if (depth > entry->depth)
         return TTMISS;
 
-    // We hit a valid entry
+    // Otherwise, we've hit a valid entry!
     ++hit;
 
-    /* The entry can be useful. Check it's type */
     *score = entry->score;
 
     // Adjust for mate scores
@@ -71,6 +72,8 @@ int TT::probe(const board_t *board, move_t *move, int *score,
      * Otherwise, if the entry is an UPPER entry, the entry score is only
      * an upperbound on the score of the position and all moves failed.
      * */
+
+    /* The entry can be useful. Check it's type */
     switch (entry->flags) {
         case EXACT: *move = entry->move; break;
         case LOWER:
@@ -90,6 +93,7 @@ int TT::probe(const board_t *board, move_t *move, int *score,
     return TTHIT;
 }
 
+// Always overwrite scheme
 void TT::store(const board_t *board, move_t move, int score,
                const int flags, const int depth) {
 

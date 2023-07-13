@@ -299,9 +299,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
 
     // Bruce Moreland's trick for storing entries in the TT
-    // - unless we get a cut-off, the score is a lowerbound of
+    // - unless we get a cut-off, the score is an upperbound of
     //   the actual score
-    int type = LOWER;
+    int type = UPPER;
 
     // Generate pseudolegal moves
     movelist_t moves;
@@ -400,10 +400,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return (in_check) ? -oo + board->ply : 0;
     }
 
-    assert(type == EXACT || type == LOWER);
+    assert(type == EXACT || type == UPPER);
 
-    /* Store the best move (& corresponding score &  type, either EXACT or
-     * LOWER) in the transposition table */
+    /* Store the best move (+ corresponding score & type, either EXACT or LOWER)
+     * in the transposition table */
     tt.store(board, bestmove, alpha, type, depth);
 
     assert(check(board));
@@ -416,7 +416,7 @@ inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
 
   // Print the info line
   std::cout << "info score cp " << s << " depth " << d << " nodes "
-            << n << " time " << t << " pv ";
+            << n << " time " << t << " hashfull " << tt.hashfull() << " pv ";
   pv.print();
 }
 
@@ -436,9 +436,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     }
 
     // Clear the global pv table
-    //for (int i = 0; i < MAX_DEPTH; ++i) {
-        //pv_tb[i].clear();
-    //}
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        pv_tb[i].clear();
+    }
 
     // Clear search info, like # nodes searched
     info->clear();
