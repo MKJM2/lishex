@@ -225,10 +225,12 @@ enum {
 
 #define scored(move, score) (({ (move), (score) }))
 
-#define is_capture(move) (((move) >> 12) & 0b0100)
-
 inline int is_promotion(move_t move) {
     return (((move) >> 12) & 0b1000);
+}
+
+inline int is_capture(move_t move) {
+    return (((move) >> 12) & 0b0100);
 }
 
 

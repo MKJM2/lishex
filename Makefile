@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17 -mpopcnt -m64 -mbmi2
+CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++20 -mpopcnt -m64 -mbmi2
 # For faster compilation
 CPUS := $(shell nproc)
 MAKEFLAGS += --jobs=$(CPUS)

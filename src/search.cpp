@@ -218,15 +218,15 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return 0; // Draw score
     }
 
+    // Are we too deep into the search tree?
+    if (board->ply > MAX_DEPTH - 1) {
+        return evaluate(board, &eval);
+    }
+
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
     if (in_check) {
         ++depth;
-    }
-
-    // Are we too deep into the search tree?
-    if (board->ply > MAX_DEPTH - 1) {
-        return evaluate(board, &eval);
     }
 
     int score = -oo;
@@ -259,7 +259,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // TODO: Adaptive null move pruning: size of reduction depends on depth
     // int R = (depth > 6) ? 3 : 2;
-    int R = 3 + depth / 6;
+    int R = 3; // + depth / 6;
 
     if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
         board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
@@ -278,8 +278,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
       // TODO: Handle mate scores
       if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
           ++info->nullcut;
-          // fail-soft beta cutoff
-          return score;
+          // fail-hard beta cutoff
+          return beta;
       }
 
       /* // TODO: Null move reduction
@@ -313,12 +313,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // score_and_sort(board, &moves, pv_tb[0][board->ply]);
     // TODO: test with ttmove, separate ttmove and pvmove?
     // score_moves(board, &moves, pv_tb[0][board->ply]);
-    if (ttmove == NULLMV) ttmove = pv_tb[0][board->ply];
+    // if (ttmove == NULLMV) ttmove = pv_tb[0][board->ply];
     score_moves(board, &moves, ttmove);
 
     int legal = 0;
-    int bestscore = -oo;
-    score = -oo;
+    int bestscore = score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
     // for (const auto& move : moves) {
@@ -340,56 +339,63 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         assert(info->state == ENGINE_SEARCHING);
 
-        bestscore = MAX(score, bestscore);
+        if (score > bestscore) {
+            bestscore = score;
+            if (score > alpha) { // PV or fail-high node
+                bestmove = move;
 
-        if (score > alpha) { // PV or fail-high node
+                // Update the PV
+                pv[board->ply] = bestmove;
+                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
+                pv.size = new_pv.size;
 
-            if (score >= beta) { // Fail-high node
-                if (legal == 1) {
-                    info->fail_high_first++;
-                }
-                info->fail_high++;
-
-                // Killer moves (cause a beta cutoff but aren't captures)
-                if (!is_capture(move)) {
-                    // Don't update killer moves if this would result in duplicating the move
-                    if (board->killer1[board->ply] != move) {
-                        board->killer2[board->ply] = board->killer1[board->ply];
-                        board->killer1[board->ply] = move;
+                if (score >= beta) { // Fail-high node
+                    if (legal == 1) {
+                        info->fail_high_first++;
                     }
+                    info->fail_high++;
+
+                    // Killer moves (cause a beta cutoff but aren't captures)
+                    if (!is_capture(move)) {
+                        // Don't update killer moves if this would result in duplicating the move
+                        if (board->killer1[board->ply] != move) {
+                            board->killer2[board->ply] = board->killer1[board->ply];
+                            board->killer1[board->ply] = move;
+                        }
+                    }
+
+                    /* The move caused a beta cutoff, hence we get a lowerbound score */
+                    tt.store(board, bestmove, beta, LOWER, depth);
+
+                    // fail hard beta-cutoff (fail-high)
+                    return beta;
                 }
 
-                /* The move caused a beta cutoff, hence we get a lowerbound score */
-                tt.store(board, move, beta, LOWER, depth);
+                /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
 
-                // fail hard beta-cutoff (fail-high)
-                return beta;
+                // Move causes a cutoff, hence update the search history tables
+                // (History heuristic)
+                if (!is_capture(move)) {
+                    board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
+                }
+
+                // Update the search window lowerbound
+                alpha = score;
+
+                // Store the move in the principal variation for the current ply
+                pv[board->ply] = move;
+
+                // Copy over the rest of the principal variation from the next ply
+                //for (int j = board->ply + 1; j < new_pv.size; ++j) {
+                    //pv[j] = new_pv[j];
+                //}
+                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
+                pv.size = new_pv.size;
+
+                // /* Store the move in the transposition table */
+                //bestmove = move;
+                type = EXACT;
             }
-
-            /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
-
-            // Move causes a cutoff, hence update the search history tables
-            // (History heuristic)
-            if (!is_capture(move)) {
-                board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
-            }
-
-            // Update the search window lowerbound
-            alpha = score;
-
-            // Store the move in the principal variation for the current ply
-            pv[board->ply] = move;
-
-            // Copy over the rest of the principal variation from the next ply
-            //for (int j = board->ply + 1; j < new_pv.size; ++j) {
-                //pv[j] = new_pv[j];
-            //}
-            movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-            pv.size = new_pv.size;
-
-            // /* Store the move in the transposition table */
-            bestmove = move;
-            type = EXACT;
         }
         /* Fail low: simply search the next move */
     }

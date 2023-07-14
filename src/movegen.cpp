@@ -299,6 +299,17 @@ int generate_moves(const board_t *board, movelist_t *moves) {
     return generate_noisy(board, moves) + generate_quiet(board, moves);
 }
 
+bool move_exists(const board_t *board, move_t move) {
+    movelist_t moves;
+    generate_moves(board, &moves);
+    for (const move_t m : moves) {
+        if (m == move) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 uint64_t perft(board_t *board, int depth, bool verbose) {
     if (depth == 0) {

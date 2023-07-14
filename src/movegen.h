@@ -46,4 +46,7 @@ int generate_moves(const board_t *board, movelist_t *moves);
  */
 uint64_t perft(board_t *board, int depth, bool verbose = false);
 
+// True if pseudolegal move exists in the current position, false otherwise
+bool move_exists(const board_t *board, move_t move);
+
 #endif // MOVEGEN_H_

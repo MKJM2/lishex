@@ -11,7 +11,7 @@
 #define GETBIT(bb, sq) ((bb) & (1ULL << (sq)))
 #define SQ_TO_BB(sq) (1ULL << (sq))
 #define CLRLSB(bb) ((bb) &= (bb - 1))
-#define CNT(bb) (__builtin_popcountll(bb)) // TODO: C++20: Switch to std::popcount()
+#define CNT(bb) (std::popcount(bb)) // TODO: C++20: Switch to std::popcount()
 #define GETLSB(bb) (bit_scan_forward(bb))
 #define GETMSB(bb) (bit_scan_reverse(bb))
 #define POPLSB(bb) (bit_drop_forward(bb))

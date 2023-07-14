@@ -3,10 +3,11 @@
 #include <cstring> // std::memset
 
 #include "search.h"
+#include "movegen.h"
 
 
 // Global transposition table
-constexpr int TTSIZEMB = 64;
+constexpr int TTSIZEMB = 16;
 TT tt(TTSIZEMB);
 
 TT::TT(const int MB) : size{((1 << 20) * MB / sizeof(tt_entry)) - 2} {
@@ -129,4 +130,15 @@ void TT::store(const board_t *board, move_t move, int score,
     entry->flags = static_cast<uint8_t>(flags);
     entry->move  = static_cast<uint16_t>(move);
     entry->score = static_cast<int32_t>(score);
+}
+
+
+move_t TT::probe_pv(const board_t *board) {
+    int idx = board->key % this->size;
+    tt_entry *entry = &table[idx];
+
+    if (entry->key == board->key) {
+        return entry->move;
+    }
+    return NULLMV;
 }

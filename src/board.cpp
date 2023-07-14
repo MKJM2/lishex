@@ -381,9 +381,6 @@ void test(board_t *board) {
 
 // Adds a piece pce to board on square sq
 inline static void add_piece(board_t *board, piece_t pce, square_t sq) {
-
-    assert(check(board));
-
     /* Place piece to the board */
 
     // 8x8 board
@@ -399,8 +396,6 @@ inline static void add_piece(board_t *board, piece_t pce, square_t sq) {
 
 // Removes a piece pce from board on square sq
 inline static void rm_piece(board_t *board, square_t sq) {
-
-    assert(check(board));
     piece_t pce = board->pieces[sq];
 
     /* Clear piece off the board */
@@ -444,157 +439,105 @@ inline static void mv_piece(board_t *board, square_t from, square_t to) {
  @returns True if move was legal, False otherwise
 */
 bool make_move(board_t *board, move_t move) {
-    assert(check(board));
-
-    // Extract move data
-    square_t to = get_to(move);
-    square_t from = get_from(move);
-    int flags = get_flags(move);
-
-    int me = board->turn;
-    int opp = me ^ 1;
-
-    // Store the pre-move state
-    /* In C++20 we can do:
-    undo_t undo = {
-        .move = move,
-        .castle_rights = board->castle_rights,
-        .ep_square = board->ep_square,
-        .fifty_move = board->fifty_move,
-        .key = board->key
-    };
-    */
-    undo_t undo = {
-        move,
-        board->castle_rights,
-        board->ep_square,
-        board->fifty_move,
-        board->key,
-        board->pieces[to] // captured piece, if any
-    };
 
     #ifdef DEBUG
+    assert(check(board));
     // Store the board state (for debugging purposes)
     //ref_boards[boards++] = *board;
     ref_boards.push_back(*board);
     #endif
 
-    /* Update board state */
+    undo_t& prev_state = board->history[board->history_ply];
+    prev_state = {
+        .move = move,
+        .castle_rights = board->castle_rights,
+        .ep_square = board->ep_square,
+        .fifty_move = board->fifty_move,
+        .key = board->key,
+        .captured = NO_PIECE
+    };
 
-    // Handle counters
-    ++board->ply;
-    ++board->fifty_move; // if a pawn push/capture performed, we'll reset this
+    // Extract move data
+    square_t from = get_from(move);
+    square_t to = get_to(move);
+    int flags = get_flags(move);
+    piece_t piece = board->pieces[from];
 
-    // If en passant performed, remove the captured pawn
+    int is_castle = flags == KINGCASTLE || flags == QUEENCASTLE;
+
+    board->fifty_move++;
+
+    int dir = board->turn == WHITE ? NORTH : SOUTH;
+
     if (flags == EPCAPTURE) {
-        // std::cout << "Holy hell!\n";
-        square_t target_square = board->ep_square;
-        target_square += opp ? NORTH : SOUTH;
-        undo.captured = board->pieces[target_square];
-        rm_piece(board, target_square);
-
-        // Since a capture was performed, we reset the 50move counter
+        rm_piece(board, to - dir); // +?
+        board->fifty_move = 0;
+    }
+    else if (flags & CAPTURE) {
+        piece_t captured = board->pieces[to];
+        rm_piece(board, to);
+        prev_state.captured = captured;
         board->fifty_move = 0;
     }
 
-    // Save previous board state
-    board->history[board->history_ply++] = undo;
-
-    // If castling, move the rook to its new square
-    if (flags == KINGCASTLE) {
-        if (to == G1) {
-            mv_piece(board, H1, F1);
-        } else {
-            mv_piece(board, H8, F8);
-        }
-    } else if (flags == QUEENCASTLE) {
-        if (to == C1) {
-            mv_piece(board, A1, D1);
-        } else {
-            mv_piece(board, A8, D8);
-        }
+    if (piece_type(piece) == PAWN) {
+        board->fifty_move = 0;
     }
 
-    /* Handle en passant */
-    // Hash out old en passant square (if was set)
+    ++board->history_ply;
+    ++board->ply;
+
+    rm_piece(board, from);
+
+    if (is_promotion(move)) {
+        piece_t promoted_piece = NO_PIECE;
+        switch (flags & ~CAPTURE) {
+            case KNIGHTPROMO: promoted_piece = set_colour(KNIGHT, board->turn); break;
+            case BISHOPPROMO: promoted_piece = set_colour(BISHOP, board->turn); break;
+            case ROOKPROMO:   promoted_piece = set_colour(ROOK,   board->turn); break;
+            case QUEENPROMO:  promoted_piece = set_colour(QUEEN,  board->turn); break;
+            default: LOG("Uhoh, wrong flag!"); break;
+        }
+        add_piece(board, promoted_piece, to);
+    } else {
+        add_piece(board, piece, to);
+    }
+
     if (board->ep_square != NO_SQ) {
         board->key ^= ep_keys[board->ep_square];
     }
 
-    // Handle new en passant square (only if double pawn push)
+    board->ep_square = NO_SQ;
+
     if (flags == PAWNPUSH) {
-        board->ep_square = (to + from) >> 1;
+        board->ep_square = to - dir;
         board->key ^= ep_keys[board->ep_square];
-    } else {
-        board->ep_square = NO_SQ;
     }
 
-    /* Handle castle permissions */
-    // Hash out old permissions
-    board->key ^= castle_keys[board->castle_rights];
-
-    // Set new permissions
-    // (can be spoiled by e.g. moving the king)
-    board->castle_rights &= castle_spoils[from];
-    board->castle_rights &= castle_spoils[to];
-
-    // Hash in new permissions
-    board->key ^= castle_keys[board->castle_rights];
-
-    // Clear any pieces & reset 50move counter if necessary
-    if (board->pieces[to] != NO_PIECE) {
-        rm_piece(board, to);
-        board->fifty_move = 0;
-    }
-
-    // If pawn move, reset 50 move counter
-    // TODO: No need to do this before in the EPCAPTURE branch?
-    if (piece_type(board->pieces[from]) == PAWN) {
-        board->fifty_move = 0;
-    }
-
-    // Finally, we move the piece
-    mv_piece(board, from, to);
-
-    // Handle promotions
-    if (is_promotion(move)) {
-        // Update the pawn to be the capture choice
-        rm_piece(board, to);
-        // clear the capture bit
-        switch (flags & ~CAPTURE) {
-            case ROOKPROMO:
-                add_piece(board, set_colour(ROOK, me), to); break;
-            case BISHOPPROMO:
-                add_piece(board, set_colour(BISHOP, me), to); break;
-            case KNIGHTPROMO:
-                add_piece(board, set_colour(KNIGHT, me), to); break;
-            default: /* QUEENPROMO */
-                add_piece(board, set_colour(QUEEN, me), to); break;
+    if (is_castle) {
+        switch (to) {
+            case G1: mv_piece(board, H1, F1); break;
+            case C1: mv_piece(board, A1, D1); break;
+            case G8: mv_piece(board, H8, F8); break;
+            case C8: mv_piece(board, A8, D8); break;
         }
     }
 
-    /* TODO: King bitboard should have been updated by mv_piece
-    // Update the king square if the king was moved
-    std::cout << piece_type(board->pieces[to]) << std::endl;
-    std::cout << KING << std::endl;
+    board->key ^= castle_keys[board->castle_rights];
 
-    if (piece_type(board->pieces[to]) == KING) {
-        std::cout << "Updating king square for ";
-        std::cout << (me ? "White" : "Black") << " to ";
-        std::cout << square_to_str(to) << std::endl;
-        // board->king_square[me] = to;
-    }
-    */
+    board->castle_rights &= castle_spoils[from];
+    board->castle_rights &= castle_spoils[to];
 
-    // Miscellaneous bookkeeping
-    board->turn = opp;
+    board->key ^= castle_keys[board->castle_rights];
+
+    board->turn ^= 1;
     board->key ^= turn_key;
 
     assert(check(board));
 
     // Finally, undo the move if puts the player in check (pseudolegal move)
     //if (is_attacked(board, king_square(board, me), opp)) {
-    if (is_in_check(board, me)) {
+    if (is_in_check(board, board->turn ^ 1)) {
         undo_move(board, move);
         return false;
     }
@@ -605,103 +548,54 @@ bool make_move(board_t *board, move_t move) {
 void undo_move(board_t *board, move_t move) {
     assert(check(board));
 
+    undo_t &last = board->history[--board->history_ply];
+    board->castle_rights = last.castle_rights;
+    board->ep_square = last.ep_square;
+    board->fifty_move = last.fifty_move;
+    piece_t captured = last.captured;
+
+    assert(move == last.move);
+
     // Extract move data
-    square_t to = get_to(move);
     square_t from = get_from(move);
+    square_t to = get_to(move);
     int flags = get_flags(move);
 
-    undo_t last = board->history[--board->history_ply];
+    int is_castle = flags == KINGCASTLE || flags == QUEENCASTLE;
 
-    // Flip sides
-    int me = board->turn;
-    int opp = me ^ 1; // The side that performed the move
+    if (is_promotion(move)) {
+        rm_piece(board, to);
+        add_piece(board, set_colour(PAWN, board->turn ^ 1), from);
+    } else {
+        mv_piece(board, to, from);
+    }
 
-    board->turn = opp;
+
+    int dir = board->turn == WHITE ? NORTH : SOUTH;
+
+    if (flags == EPCAPTURE) {
+        add_piece(board, set_colour(PAWN, board->turn), to + dir);
+    } else if (is_capture(move)) {
+        add_piece(board, captured, to);
+    }
+
+    if (is_castle) {
+        switch (to) {
+            case G1: mv_piece(board, F1, H1); break;
+            case C1: mv_piece(board, D1, A1); break;
+            case G8: mv_piece(board, F8, H8); break;
+            case C8: mv_piece(board, D8, A8); break;
+            default: LOG("Uhoh, this shouldn't ever happen!"); break;
+        }
+    }
+
+    board->turn ^= 1;
     board->key ^= turn_key;
 
-    // Undo the move
-    mv_piece(board, to, from);
-
-    // Hash out the en passant square if was currently set
-    if (board->ep_square != NO_SQ) {
-        board->key ^= ep_keys[board->ep_square];
-    }
-
-    // Restore the en passant square from pre-move state
-    board->ep_square = last.ep_square;
-
-    // Hash in old en passant square (if any)
-    if (board->ep_square != NO_SQ) {
-        board->key ^= ep_keys[board->ep_square];
-    }
-
-    // If last move was an en passant capture, restore the captured pawn
-    if (flags == EPCAPTURE) {
-        // std::cout << "New response just dropped\n";
-        square_t target_square = board->ep_square;
-        target_square += me ? NORTH : SOUTH; // TODO
-        add_piece(board, last.captured, target_square);
-    } else {
-        if (last.captured != NO_PIECE) {
-            add_piece(board, last.captured, to); // TODO
-        }
-    }
-
-    // If castled, move the rook back
-    if (flags == KINGCASTLE) {
-        if (to == G1) {
-            mv_piece(board, F1, H1);
-        } else {
-            mv_piece(board, F8, H8);
-        }
-    } else if (flags == QUEENCASTLE) {
-        if (to == C1) {
-            mv_piece(board, D1, A1);
-        } else {
-            mv_piece(board, D8, A8);
-        }
-    }
-
-    /* Handle castling permissions */
-
-    // Hash out current permissions
-    board->key ^= castle_keys[board->castle_rights];
-
-    // Restore old castle rights
-    board->castle_rights = last.castle_rights;
-
-    // Hash in old castle rights
-    board->key ^= castle_keys[board->castle_rights];
-
-    // Restore 50move counter
-    board->fifty_move = last.fifty_move;
-
-
-    /* TODO: King bitboard should have been updated by mv_piece
-    // Restore king's square
-    if (piece_type(board->pieces[from]) == KING) {
-        std::cout << "Updating king square for ";
-        std::cout << (opp ? "White" : "Black") << " to ";
-        std::cout << square_to_str(from) << std::endl;
-        // board->king_square[opp] = from; // TODO Validate side?
-    }
-    */
-
-    // Undo promotions
-    if (is_promotion(move)) {
-        // Remove piece that was promoted to
-        rm_piece(board, from);
-        // Add the pawn back in
-        add_piece(board, set_colour(PAWN, opp), from);
-    }
-
-    // Update ply counter
+    board->key = last.key;
     --board->ply;
 
-
     /* DEBUG only */
-    assert(board->key == last.key);
-
     assert(check(board));
 
     // Assert that the board matches the previous board
