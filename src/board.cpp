@@ -32,26 +32,35 @@ std::vector<board_t> ref_boards(64); // TODO: C-style array
 uint64_t piece_keys[PIECE_NO][SQUARE_NO] = {};
 uint64_t turn_key = 0ULL;
 uint64_t castle_keys[16] = {}; // == WK | WQ | BK | BQ + 1 = 0b1111 + 1
-uint64_t ep_keys[SQUARE_NO] = {};
+uint64_t *ep_keys;
 
 void init_keys() {
     seed_rng();
     // For each piece type and square generate a random key
-    for (piece_t p = NO_PIECE; p < PIECE_NO; ++p)
-        for (square_t sq = A1; sq <= H8; ++sq)
+    for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
+        std::cout << piece_to_ascii[p] << std::endl;
+        for (square_t sq = A1; sq <= H8; ++sq) {
             piece_keys[p][sq] = rand_uint64();
+            std::cout << piece_keys[p][sq] << std::endl;
+        }
+    }
+
 
     // Generate hash key for White's side to play
     turn_key = rand_uint64();
+    std::cout << "Turn key " << turn_key << std::endl;
 
     // Generate hash keys for castling rights
-    for (int i = 0; i < 16; ++i)
+    std::cout << "Castle keys: \n";
+    for (int i = 0; i < 16; ++i) {
         castle_keys[i] = rand_uint64();
+        std::cout << castle_keys[i] << std::endl;
+    }
 
-    // Generate hash keys for en passant squares
-    // (though we only need 16, having 64 keys makes the code cleaner)
-    for (square_t sq = A1; sq <= H8; ++sq)
-        ep_keys[sq] = rand_uint64();
+    // For en passant squares, we simply use the piece_keys
+    // indexed by an empty piece type
+    // (these keys are being generated but otherwise not used anyways)
+    ep_keys = piece_keys[NO_PIECE];
 }
 
 /* Zeroes out the entire position */
@@ -375,12 +384,14 @@ inline static void add_piece(board_t *board, piece_t pce, square_t sq) {
 
     assert(check(board));
 
-    // Add piece to the current position
+    /* Place piece to the board */
+
     // 8x8 board
     board->pieces[sq] = pce;
+
     // Bitboards
-    board->bitboards[pce] |= SQ_TO_BB(sq);
-    board->sides_pieces[piece_color(pce)] |= SQ_TO_BB(sq);
+    SETBIT(board->bitboards[pce], sq);
+    SETBIT(board->sides_pieces[piece_color(pce)], sq);
 
     // Hash the piece into the Zobrist key for the board
     board->key ^= piece_keys[pce][sq];
@@ -393,11 +404,13 @@ inline static void rm_piece(board_t *board, square_t sq) {
     piece_t pce = board->pieces[sq];
 
     /* Clear piece off the board */
+
     // 8x8 board
     board->pieces[sq] = NO_PIECE;
+
     // Bitboards
-    board->bitboards[pce] ^= SQ_TO_BB(sq);
-    board->sides_pieces[piece_color(pce)] ^= SQ_TO_BB(sq);
+    CLRBIT(board->bitboards[pce], sq);
+    CLRBIT(board->sides_pieces[piece_color(pce)], sq);
 
     // Hash the piece out of the Zobrist key for the board
     board->key ^= piece_keys[pce][sq];
@@ -408,15 +421,16 @@ inline static void mv_piece(board_t *board, square_t from, square_t to) {
 
     /* Move the piece on the board */
     piece_t pce = board->pieces[from];
+
     // 8x8 board
     board->pieces[to] = pce;
     board->pieces[from] = NO_PIECE;
     // Bitboards
-    board->bitboards[pce] ^= SQ_TO_BB(from);
-    board->bitboards[pce] |= SQ_TO_BB(to);
+    CLRBIT(board->bitboards[pce], from);
+    SETBIT(board->bitboards[pce], to);
 
-    board->sides_pieces[piece_color(pce)] ^= SQ_TO_BB(from);
-    board->sides_pieces[piece_color(pce)] |= SQ_TO_BB(to);
+    CLRBIT(board->sides_pieces[piece_color(pce)], from);
+    SETBIT(board->sides_pieces[piece_color(pce)], to);
 
     /* Hash the piece out of the old square and into the new */
     board->key ^= piece_keys[pce][from];
