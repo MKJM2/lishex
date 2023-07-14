@@ -138,6 +138,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         if (piece_type(captured) == KING) {
             return +oo - board->ply;
         }
+        /*
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
             if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
@@ -150,6 +151,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 continue;
             }
         }
+        */
 
         /* All checks failed, hence the move is promising and we try making it */
 

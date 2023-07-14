@@ -28,7 +28,7 @@ TT::~TT() {
 }
 
 void TT::reset_stats() {
-    writes = overwrites = hit = cut = 0U;
+    overwrites = hit = cut = 0U;
 }
 
 void TT::clear() {

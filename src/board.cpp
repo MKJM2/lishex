@@ -57,9 +57,6 @@ void init_keys() {
 /* Zeroes out the entire position */
 void reset(board_t *board) {
 
-    // Throws compiler warnings:
-    // std::memset(board, 0, sizeof(board_t));
-
     // Clear board history
     // memset(board->history, 0, MAX_MOVES * sizeof(undo_t));
     for (int his_ply = 0; his_ply < MAX_MOVES; ++his_ply) {
@@ -95,9 +92,6 @@ void reset(board_t *board) {
 
     // Clear Zobrist board key
     board->key = 0ULL;
-
-    // Reset king squares
-    // board->king_square[WHITE] = board->king_square[BLACK] = NO_SQ;
 }
 
 // TODO: Parsing current board position to a FEN string
@@ -257,26 +251,34 @@ std::string to_fen(const board_t *board) {
 */
 void print(const board_t *board, bool verbose) {
     // TODO: Overload the << operator for board printing
+
     // Print files on top of the board
     std::cout << "    a b c d e f g h" << std::endl;
+
+    // Print the board
     std::cout << "  ╔═════════════════╗ " << std::endl;
+
     // Loop over all ranks
     for (int rank = RANK_8; rank >= RANK_1; --rank) {
         std::cout << rank + 1 << " ║ ";
+
         // Loop over all files
         for (int file = A_FILE; file <= H_FILE; ++file) {
+
             // Current square to print
             square_t sq = rank * RANK_NO + file;
 
             piece_t pce = board->pieces[sq];
+
             // Print the piece
-            //std::cout << piece_to_ascii[pce] << (file == H_FILE ? "" : " ");
             std::cout << piece_to_ascii[pce] << " ";
         }
+
         // Print rank number to the right of current rank
         std::cout << "║ " << rank + 1 << std::endl;
     }
     std::cout << "  ╚═════════════════╝ " << std::endl;
+
     // Print files underneath the board
     std::cout << "    a b c d e f g h" << std::endl << std::endl;
 
@@ -286,24 +288,6 @@ void print(const board_t *board, bool verbose) {
     std::cout << "KEY: " << std::hex << std::showbase \
               << board->key << std::dec << std::endl;
     std::cout << "FEN: " << to_fen(board) << std::endl;
-    /*
-    // Print additional information, like castle permissions, side to move etc.
-    std::cout << "Side to play: " \
-              << ((board->turn) ? "White" : "Black") << std::endl;
-    std::cout << "En Passant square: "
-              << ((board->ep_square == NO_SQ) ? "null"
-                                              : square_to_str(board->ep_square))
-              << std::endl;
-    std::cout << "Castle permissions: "
-              << castling_rights_to_str(board->castle_rights) << std::endl;
-
-    std::cout << "Zobrist hash key: " << std::hex \
-              << board->key << std::dec << std::endl;
-
-    std::cout << "King squares: White at " \
-              << square_to_str(king_square(board, WHITE)) << ", Black at " \
-              << square_to_str(king_square(board, BLACK)) << std::endl;
-    */
 }
 
 /* Generates the position key from scratch for the current position */
@@ -314,8 +298,7 @@ uint64_t generate_pos_key(const board_t *board) {
     for (piece_t p : pieces) {
         bb_t b = board->bitboards[p];
         while (b) {
-            square_t sq = POPLSB(b);
-            key ^= piece_keys[p][sq];
+            key ^= piece_keys[p][POPLSB(b)];
         }
     }
     /*
@@ -701,7 +684,10 @@ void undo_move(board_t *board, move_t move) {
     // Update ply counter
     --board->ply;
 
+
     /* DEBUG only */
+    assert(board->key == last.key);
+
     assert(check(board));
 
     // Assert that the board matches the previous board
@@ -799,6 +785,7 @@ void undo_null(board_t *board) {
     --board->ply;
 
     /* DEBUG only */
+    assert(board->key == last.key);
     assert(check(board));
 }
 

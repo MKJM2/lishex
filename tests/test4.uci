@@ -1,0 +1,68 @@
+isready
+ucinewgame
+position startpos
+isready
+go wtime 121000 btime 121000 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5
+isready
+go wtime 121976 btime 121943 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5
+isready
+go wtime 122914 btime 122742 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6
+isready
+go wtime 123684 btime 123456 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6
+isready
+go wtime 124146 btime 124132 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7
+isready
+go wtime 124834 btime 124854 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6
+isready
+go wtime 125632 btime 125621 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5
+isready
+go wtime 126125 btime 126501 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8
+isready
+go wtime 126924 btime 127353 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6
+isready
+go wtime 127784 btime 128254 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8
+isready
+go wtime 128574 btime 129088 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5
+isready
+go wtime 129186 btime 130005 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4
+isready
+go wtime 130091 btime 130917 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5
+isready
+go wtime 130709 btime 131831 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4
+isready
+go wtime 131545 btime 132728 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3
+isready
+go wtime 132324 btime 133329 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7
+isready
+go wtime 132836 btime 133997 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7 c1b2 d7b6
+isready
+go wtime 133489 btime 134640 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7 c1b2 d7b6 g2g3 d8e7
+isready
+go wtime 133842 btime 135359 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7 c1b2 d7b6 g2g3 d8e7 b3b5 e7e4
+isready
+go wtime 134417 btime 136178 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7 c1b2 d7b6 g2g3 d8e7 b3b5 e7e4 b5d3 e4e6
+isready
+#BLUNDER:d3f5
+go wtime 134943 btime 137083 winc 1000 binc 1000 depth 7
+position startpos moves g1f3 d7d5 d2d4 c8f5 e2e3 e7e6 b1c3 f8d6 c3b5 d6e7 f1d3 g8f6 d3f5 e6f5 b5c3 e8g8 h1f1 b8c6 a1b1 f8e8 f3e5 c6e5 d4e5 f6g4 h2h3 g4e5 d1d5 e7b4 d5b3 b4c3 b2c3 e5d7 c1b2 d7b6 g2g3 d8e7 b3b5 e7e4 b5d3 e4e6 d3f5 e6f5
+isready
