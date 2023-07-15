@@ -24,6 +24,7 @@ void generate_quiet_moves_for(const board_t *board, movelist_t *moves) {
 
     while (pieces) {
         square_t from = POPLSB(pieces);
+        assert(square_ok(from));
 
         bb_t attacked = 0ULL;
         if constexpr (is_sliding<PIECE_T>) {
@@ -55,6 +56,7 @@ void generate_noisy_moves_for(const board_t *board, movelist_t *moves) {
 
     while (pieces) {
         square_t from = POPLSB(pieces);
+        assert(square_ok(from));
 
         bb_t attacked = 0ULL;
         if constexpr (is_sliding<PIECE_T>) {
@@ -97,6 +99,7 @@ void generate_promotions(const board_t *board, movelist_t *moves) {
     while (targets) {
         // Add all possible east capture promotions to the move list
         to = POPLSB(targets);
+        assert(square_ok(to));
         for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
             moves->push_back(Move(to - dir - EAST, to, type | CAPTURE));
         }
@@ -107,6 +110,7 @@ void generate_promotions(const board_t *board, movelist_t *moves) {
     targets &= opp_pieces;
     while (targets) {
         to = POPLSB(targets);
+        assert(square_ok(to));
         for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
             moves->push_back(Move(to - dir - WEST, to, type | CAPTURE));
         }
@@ -119,6 +123,7 @@ void generate_promotions(const board_t *board, movelist_t *moves) {
     targets &= empty_squares;
     while (targets) {
         to = POPLSB(targets);
+        assert(square_ok(to));
         for (int type = QUEENPROMO; type >= KNIGHTPROMO; --type) {
             moves->push_back(Move(to - dir, to, type));
         }
@@ -208,11 +213,13 @@ int generate_quiet(const board_t *board, movelist_t *moves) {
 
     while (pawn_pushes) {
         to = POPLSB(pawn_pushes);
+        assert(square_ok(to));
         moves->push_back(Move(to - dir, to, QUIET));
     }
 
     while (double_pawn_pushes) {
         to = POPLSB(double_pawn_pushes);
+        assert(square_ok(to));
         moves->push_back(Move(to - dir - dir, to, PAWNPUSH));
     }
 
@@ -253,6 +260,7 @@ int generate_noisy(const board_t *board, movelist_t *moves) {
 
     while (pawn_captures_east) {
         to = POPLSB(pawn_captures_east);
+        assert(square_ok(to));
         moves->push_back(Move(to - dir - EAST, to, CAPTURE));
     }
 
@@ -261,6 +269,7 @@ int generate_noisy(const board_t *board, movelist_t *moves) {
 
     while (pawn_captures_west) {
         to = POPLSB(pawn_captures_west);
+        assert(square_ok(to));
         moves->push_back(Move(to - dir - WEST, to, CAPTURE));
     }
 
@@ -273,6 +282,7 @@ int generate_noisy(const board_t *board, movelist_t *moves) {
         // If attacked by one of our pawns
         if (attacked_by &= pawns_bb) {
             while (attacked_by) {
+                assert(square_ok(GETLSB(attacked_by)));
                 moves->push_back(Move(POPLSB(attacked_by), board->ep_square, EPCAPTURE));
             }
         }

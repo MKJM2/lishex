@@ -179,6 +179,7 @@ bb_t attacks<BISHOP>(square_t sq, bb_t blockers);
 
 template<>
 bb_t generate_attacks<BISHOP>(const square_t sq, const bb_t blockers) {
+    assert(square_ok(sq));
 
     bb_t attacks = 0ULL;
 
@@ -219,6 +220,7 @@ bb_t generate_attacks<BISHOP>(const square_t sq, const bb_t blockers) {
 
 template<>
 bb_t generate_attacks<ROOK>(const square_t sq, const bb_t blockers) {
+    assert(square_ok(sq));
 
     bb_t attacks = 0ULL;
 
@@ -259,6 +261,7 @@ bb_t generate_attacks<ROOK>(const square_t sq, const bb_t blockers) {
 // Early return if any attacker found to save on time
 bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
     assert(check(board));
+    assert(square_ok(sq));
 
     bb_t attackers = 0ULL;
 
@@ -302,6 +305,8 @@ bb_t is_attacked(const board_t *board, const square_t sq, const int colour) {
 
 
 bb_t attacks_to(const board_t *board, const square_t sq) {
+    assert(check(board));
+    assert(square_ok(sq));
     bb_t attackers = 0ULL;
     bb_t target = SQ_TO_BB(sq);
     bb_t occupied = all_pieces(board);

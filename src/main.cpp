@@ -16,6 +16,7 @@
 #include "bitboard.h"
 #include "uci.h"
 #include "attack.h"
+#include "search.h" // TODO: Debugging, remove later
 
 int main(int argc, char* argv[]) {
 
@@ -26,6 +27,7 @@ int main(int argc, char* argv[]) {
     // Initialization
     init_keys();
     init_eval_masks();
+    InitHashTable(HashTable, 64);
     init_leap_attacks();
     init_bishop_occupancies();
     init_rook_occupancies();

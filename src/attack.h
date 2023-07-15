@@ -182,6 +182,7 @@ inline bb_t attacks(square_t from, bb_t blockers) {
 template<piece_t PIECE_T> // BISHOP or ROOK
 inline bb_t xray_attacks(square_t from, bb_t occ, bb_t blockers) {
     static_assert(PIECE_T == ROOK || PIECE_T == BISHOP, "Unsupported piece type");
+    assert(square_ok(from));
     bb_t attackers = attacks<PIECE_T>(from, occ);
     blockers &= attackers;
     return attackers ^ (attacks<PIECE_T>(from, occ ^ blockers));
@@ -189,6 +190,7 @@ inline bb_t xray_attacks(square_t from, bb_t occ, bb_t blockers) {
 
 // Helper that allows us to call xray_attacks for a given piece_t at runtime
 inline bb_t xray_attacks(piece_t pce, square_t from, bb_t occ, bb_t blockers) {
+    assert(square_ok(from));
     piece_t PIECE_T = piece_type(pce);
     if (PIECE_T == ROOK) {
         return xray_attacks<ROOK>(from, occ, blockers);

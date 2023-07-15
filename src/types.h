@@ -108,6 +108,10 @@ inline std::string square_to_str(const square_t sq) {
     return std::string{(char)('a'+SQUARE_FILE(sq)),(char)('1'+SQUARE_RANK(sq))};
 }
 
+inline bool square_ok(const square_t sq) {
+    return (A1 <= sq && sq <= H8);
+}
+
 
 /**********/
 /* Pieces */
@@ -208,25 +212,36 @@ enum {
 };
 
 // Constructor
-#define Move(from, to, flags) \
-        ((((flags) & 0xf)  << 12) | \
-          (((from) & 0x3f) <<  6) | \
-             ((to) & 0x3f))
+inline move_t Move(square_t from, square_t to, int flags) {
+    return ((((flags) & 0xf) << 12) | \
+            (((from) & 0x3f) << 6)  | \
+             ((to) & 0x3f));
+}
 
 #define NULLMV ((move_t) 0U)
 
-#define get_to(move) ((move) & 0x3f)
+inline square_t get_to(const move_t move) {
+    return ((move) & 0x3f);
+}
 
-#define get_from(move) (((move) >> 6) & 0x3f)
+inline square_t get_from(const move_t move) {
+    return (((move) >> 6) & 0x3f);
+}
 
-#define get_flags(move) (((move) >> 12) & 0xf)
+inline int get_flags(const move_t move) {
+    return (((move) >> 12) & 0xf);
+}
 
-inline int is_promotion(move_t move) {
+inline int is_promotion(const move_t move) {
     return (((move) >> 12) & 0b1000);
 }
 
-inline int is_capture(move_t move) {
+inline int is_capture(const move_t move) {
     return (((move) >> 12) & 0b0100);
+}
+
+inline bool move_ok(const move_t move) {
+    return square_ok(get_to(move)) && square_ok(get_from(move));
 }
 
 

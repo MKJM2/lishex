@@ -38,23 +38,18 @@ void init_keys() {
     seed_rng();
     // For each piece type and square generate a random key
     for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
-        std::cout << piece_to_ascii[p] << std::endl;
         for (square_t sq = A1; sq <= H8; ++sq) {
             piece_keys[p][sq] = rand_uint64();
-            std::cout << piece_keys[p][sq] << std::endl;
         }
     }
 
 
     // Generate hash key for White's side to play
     turn_key = rand_uint64();
-    std::cout << "Turn key " << turn_key << std::endl;
 
     // Generate hash keys for castling rights
-    std::cout << "Castle keys: \n";
     for (int i = 0; i < 16; ++i) {
         castle_keys[i] = rand_uint64();
-        std::cout << castle_keys[i] << std::endl;
     }
 
     // For en passant squares, we simply use the piece_keys
@@ -150,7 +145,7 @@ void setup(board_t *board, const std::string& fen) {
     // Set the king squares
     assert(CNT(board->bitboards[K]) == CNT(board->bitboards[k]) == 1);
     assert(king_square_bb(board, WHITE) == board->bitboards[K]);
-    assert(king_square_bb(board, WHITE) == board->bitboards[K]);
+    assert(king_square_bb(board, BLACK) == board->bitboards[k]);
 
     // Set the side to move
     board->turn = (fen_parts[1] == "w") ? WHITE : BLACK;
@@ -446,6 +441,8 @@ bool make_move(board_t *board, move_t move) {
     //ref_boards[boards++] = *board;
     ref_boards.push_back(*board);
     #endif
+    int me = board->turn;
+    int opp = me ^ 1;
 
     undo_t& prev_state = board->history[board->history_ply];
     prev_state = {
@@ -530,14 +527,14 @@ bool make_move(board_t *board, move_t move) {
 
     board->key ^= castle_keys[board->castle_rights];
 
-    board->turn ^= 1;
+    board->turn = opp;
     board->key ^= turn_key;
 
     assert(check(board));
 
     // Finally, undo the move if puts the player in check (pseudolegal move)
     //if (is_attacked(board, king_square(board, me), opp)) {
-    if (is_in_check(board, board->turn ^ 1)) {
+    if (is_in_check(board, me)) {
         undo_move(board, move);
         return false;
     }
@@ -801,7 +798,11 @@ bool check_against_ref(const board_t *b) {
 /* Verifies that the position is valid (useful for debugging) */
 bool check(const board_t *board) {
 
+    // There's only two players
     assert(board->turn == WHITE || board->turn == BLACK);
+
+    // The kings never get 'actually' captured
+    assert(board->bitboards[K] || board->bitboards[k]);
 
     // Verify the board Zobrist key (critical for TT functionality)
     uint64_t expected = generate_pos_key(board);

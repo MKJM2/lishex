@@ -9,538 +9,492 @@
 #include "order.h"
 #include "transposition.h"
 
-
-namespace {
-
-// For maintaining the principal variation in the triangular array (debug)
-// Copies up to n moves from p_src to p_tgt, kind of like memcpy
-// Adapted from https://www.chessprogramming.org/Triangular_PV-Table
-void movcpy(move_t *p_tgt, move_t *p_src, int n) {
-    while (n-- && (*p_tgt++ = *p_src++));
-}
-
-/* Principal Variation
-
-Triangular table layout:
-
-ply  maxLengthPV
-    +--------------------------------------------+
-0   |N                                           |
-    +------------------------------------------+-+
-1   |N-1                                       |
-    +----------------------------------------+-+
-2   |N-2                                     |
-    +--------------------------------------+-+
-3   |N-3                                   |
-    +------------------------------------+-+
-4   |N-4                                 |
-...                        /
-N-4 |4      |
-    +-----+-+
-N-3 |3    |
-    +---+-+
-N-2 |2  |
-    +-+-+
-N-1 |1|
-    +-+
-*/
-typedef struct pv_line {
-    move_t moves[MAX_DEPTH] = {};
-    size_t size = 0;
-    void push_back(const move_t m) {
-        assert(size < MAX_DEPTH);
-        *last++ = m;
-    }
-    void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
-
-    move_t operator[](int i) const { assert(i < size); return moves[i]; }
-    move_t& operator[](int i) { return moves[i]; }
-
-    // Print the principal variation line
-    void print() const {
-        for (size_t i = 0; i < size; ++i) {
-            std::cout << move_to_str(moves[i]) << " ";
-        }
-    }
-
-    private:
-        move_t *last = moves;
-} pv_line;
-
-// Global PV table (quadratic approach)
-// - indexed by [ply]
-// - pv[ply] is the principal variation line for the search at depth 'ply'
-pv_line pv_tb[MAX_DEPTH];
-
-// Global evaluator (for multithreaded, we'll want to have a separate one for
-// each thread)
+// Global evaluation struct
 eval_t eval;
 
-/**
- @brief Quiescence search
- @param alpha the lowerbound
- @param beta the upperbound
- @param board the board position to search
- @param info search info: time, depth to search, etc.
-*/
-int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
-    assert(check(board));
-    assert(alpha < beta);
 
-    ++info->nodes;
+// ################## pvtable.c ############################
 
-    // Position encountered previously?
-    if (is_repetition(board) || board->fifty_move >= 100) {
-        return 0; // Draw score
-    }
+enum { HFNONE, HFALPHA, HFBETA, HFEXACT };
 
-    /* Stand-pat score */
-    int score = evaluate(board, &eval);
+S_HASHTABLE HashTable[1];
 
-    // Are we too deep into the search tree?
-    if (board->ply > MAX_DEPTH - 1) {
-        return score;
-    }
+void InitHashTable(S_HASHTABLE *table, const int MB);
+void StoreHashEntry(board_t *pos, const int move, int score, const int flags, const int depth);
+int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int depth);
+int ProbePvMove(const board_t *pos);
+int GetPvLine(const int depth, board_t *pos);
+void ClearHashTable(S_HASHTABLE *table);
 
-    assert(-oo < score && score < +oo);
+int GetPvLine(const int depth, board_t *pos) {
 
-    if (score >= beta) { // fail-high
-        return beta;
-    }
+	assert(depth < MAX_DEPTH && depth >= 1);
 
-    if (score > alpha) { // PV-node
-        alpha = score;
-    }
+	int move = ProbePvMove(pos);
+	int count = 0;
 
-    movelist_t captures;
-    generate_noisy(board, &captures);
+	while(move != NULLMV && count < depth) {
 
-    // If following the principal variation (from a previous search at a smaller
-    // depth), order the PV move higher
+		assert(count < MAX_DEPTH);
 
-    // Move ordering                 // PV move, if any
-    // score_and_sort(board, &captures, NULLMV);
-    score_moves(board, &captures, NULLMV);
+		if( move_exists(pos, move) ) {
+			make_move(pos, move);
+			pos->pv[count++] = move;
+		} else {
+			break;
+		}
+		move = ProbePvMove(pos);
+	}
 
-    int legal = 0;
+	while(pos->ply > 0) {
+		undo_move(pos);
+	}
 
-    // Iterate over the pseudolegal moves in the current position
-    move_t move;
-    while ((move = next_best(&captures, board->ply)) != NULLMV) {
-    // for (const auto& move : captures) {
+	return count;
 
-        /* We perform a couple quick checks to see if the move can be
-         * safely discarded */
-
-        // If the move captures the king (TODO: Debug this)
-        /*
-        piece_t& captured = board->pieces[get_to(move)];
-
-        if (piece_type(captured) == KING) {
-            return +oo - board->ply;
-        }
-
-        if (!is_promotion(move)) {
-            // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
-                ++info->deltacut;
-                continue;
-            }
-
-            if (losing_capture(board, move, -value_eg[KNIGHT])) {
-                ++info->seecut;
-                continue;
-            }
-        }
-        */
-
-        /* All checks failed, hence the move is promising and we try making it */
-
-        // Pseudo-legal move generation
-        if (!make_move(board, move)) //
-            continue;
-
-        ++legal;
-        score = -quiescence(-beta, -alpha, board, info);
-
-        undo_move(board, move);
-
-        if (search_stopped(info)) {
-            return 0;
-        }
-
-        if (score >= beta) { // fail-high
-            if (legal == 1) {
-                info->fail_high_first++;
-            }
-            info->fail_high++;
-            return beta;
-        }
-
-        if (score > alpha) { // PV-node
-            alpha = score;
-        }
-    }
-    return alpha;
 }
 
-/**
- @brief Alpha-Beta search in negamax fashion.
- @param alpha the lowerbound
- @param beta the upperbound
- @param board the board position to search
- @param info search info: time, depth to search, etc.
- @param do_null whether to perform a null move or not
- @param pv reference to a table storing the (depth - 1) principal variation
-*/
-int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
-    assert(check(board));
-    assert(alpha < beta);
-    assert(depth >= 0);
+void ClearHashTable(S_HASHTABLE *table) {
 
-    // Check if in pv node
+  S_HASHENTRY *tableEntry;
 
-    // PV for the current search ply
-    pv_line &pv = pv_tb[board->ply];
-    // PV for the next search ply
-    pv_line &new_pv = pv_tb[board->ply + 1];
-
-    // Set principal variation line size for the current search ply
-    pv.size = board->ply;
-
-    if (depth <= 0) {
-        return quiescence(alpha, beta, board, info);
-    }
-
-    ++info->nodes;
-
-    // If not at root of the search, check for repetitions
-    if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
-        return 0; // Draw score
-    }
-
-    // Are we too deep into the search tree?
-    if (board->ply > MAX_DEPTH - 1) {
-        return evaluate(board, &eval);
-    }
-
-    // Check search extension
-    bool in_check = is_in_check(board, board->turn);
-    if (in_check) {
-        ++depth;
-    }
-
-    int score = -oo;
-    move_t ttmove = NULLMV;
-
-    /* Transposition table probing */
-    tt_entry entry[1];
-
-    // Check if can get a cutoff
-    int tthit = tt.probe(board, entry, ttmove, score);
-    if ( tthit == TTHIT && entry->depth > depth &&
-         (entry->flags & (score <= alpha ? UPPER : LOWER))
-    ) {
-       ++info->hashcut;
-       return score;
-    }
-
-    // Otherwise, we keep searching
-
-    /* Null move pruning */
-
-    /* Requirements:
-     - can do null move (we only want to do one, and not do them repeatedly)
-     - not in check
-     - we are at least 2 plies into the search
-     - we are not in a zugzwag (heuristic: at least one big piece on board)
-     - current eval is already >= beta
-     - TODO: If PVS: not in a PV node
-     depth - 1 - R (for R = 3) is allowed
-    */
-
-    // Are we in a PV node? (credit: Pedro Castro)
-    // int pv_node = beta - alpha > 1;
-
-    // TODO: Adaptive null move pruning: size of reduction depends on depth
-    // int R = (depth > 6) ? 3 : 2;
-    int R = 3; // + depth / 6;
-
-    if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
-        board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
-        CNT(board->sides_pieces[board->turn] ^
-            board->bitboards[board->turn ? P : p]) > 1) {
-
-      make_null(board);
-      // do_null is now set to false, since we don't want to do two null moves
-      // in a row
-      score = -negamax(-beta, -beta + 1, depth - 1 - R, board, info, false);
-      undo_null(board);
-
-      if (search_stopped(info))
-        return 0;
-
-      // TODO: Handle mate scores
-      if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
-          ++info->nullcut;
-          // fail-hard beta cutoff
-          return beta;
-      }
-
-      /* // TODO: Null move reduction
-      if (score >= beta) {
-          if (std::abs(score) < +oo - MAX_DEPTH) {
-              return score;
-          }
-          depth -= 4;
-          if (depth <= 0) {
-              return quiescence(alpha, beta, board, info);
-          }
-      }
-    */
-    }
-
-
-    // Bruce Moreland's trick for storing entries in the TT
-    // - unless we get a cut-off, the score is an upperbound of
-    //   the actual score
-    int type = UPPER;
-
-    // Generate pseudolegal moves
-    movelist_t moves;
-    generate_moves(board, &moves);
-
-    // If following the principal variation (from a previous search at a smaller
-    // depth), order the PV move higher
-
-    // pv move from the previous iter is the first move in the parent pv
-    // Move ordering              // PV move, if any // TODO: test against 0
-    // score_and_sort(board, &moves, pv_tb[0][board->ply]);
-    // TODO: test with ttmove, separate ttmove and pvmove?
-    // score_moves(board, &moves, pv_tb[0][board->ply]);
-    // if (ttmove == NULLMV) ttmove = pv_tb[0][board->ply];
-    score_moves(board, &moves, ttmove);
-
-    int legal = 0;
-    int bestscore = score = -oo;
-
-    // Iterate over the pseudolegal moves in the current position
-    // for (const auto& move : moves) {
-    move_t move, bestmove = NULLMV;
-    while ((move = next_best(&moves, board->ply)) != NULLMV) {
-
-        // Pseudo-legal move generation
-        if (!make_move(board, move)) {
-            continue;
-        }
-
-        ++legal;
-        score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
-
-        undo_move(board, move);
-
-        if (search_stopped(info))
-            return 0;
-
-        assert(info->state == ENGINE_SEARCHING);
-
-        if (score > bestscore) {
-            bestscore = score;
-            bestmove = move;
-            if (score > alpha) { // PV or fail-high node
-
-                // Update the PV
-                pv[board->ply] = bestmove;
-                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                pv.size = new_pv.size;
-
-                if (score >= beta) { // Fail-high node
-                    if (legal == 1) {
-                        info->fail_high_first++;
-                    }
-                    info->fail_high++;
-
-                    // Killer moves (cause a beta cutoff but aren't captures)
-                    if (!is_capture(move)) {
-                        // Don't update killer moves if this would result in duplicating the move
-                        if (board->killer1[board->ply] != move) {
-                            board->killer2[board->ply] = board->killer1[board->ply];
-                            board->killer1[board->ply] = move;
-                        }
-
-
-                        // Move causes a cutoff, hence update the search history tables
-                        // (History heuristic)
-                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
-                    }
-
-                    /* The move caused a beta cutoff, hence we get a lowerbound score */
-                    // tt.store(board, bestmove, beta, LOWER, depth);
-                    // fail hard beta-cutoff (fail-high)
-                    // return beta;
-                    type = LOWER;
-                    break;
-                }
-
-                /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
-
-                // Update the search window lowerbound
-                type = EXACT;
-                alpha = score;
-
-                // Store the move in the principal variation for the current ply
-                //pv[board->ply] = move;
-
-                // Copy over the rest of the principal variation from the next ply
-                //for (int j = board->ply + 1; j < new_pv.size; ++j) {
-                    //pv[j] = new_pv[j];
-                //}
-                //movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                //pv.size = new_pv.size;
-
-                // /* Store the move in the transposition table */
-                //bestmove = move;
-            }
-        }
-        /* Fail low: simply search the next move */
-    }
-
-    // If no legal moves, then check if we're in check
-    // If not, it's a stalemate
-    if (!legal) {
-                            // Mate score      // Stalemate
-        return (in_check) ? -oo + board->ply : 0;
-    }
-
-
-    /* Store the best move (+ corresponding score & type, either EXACT or UPPER)
-     * in the transposition table. If we couldn't beat alpha, the move stored is
-     * an empty move with the flag UPPER */
-    assert((type == LOWER && bestscore >= beta) ||
-           (type == UPPER && bestscore <= alpha) || (type == EXACT));
-
-    // Adjust score for mates before storing in tt
-    // if (bestscore > +oo - MAX_DEPTH) bestscore -= board->ply;
-    // else if (bestscore < -oo + MAX_DEPTH) bestscore += board->ply;
-
-    //tt.store(board, bestmove, bestscore, type, depth);
-    tt.store(
-        board,
-        bestmove,
-        bestscore > +oo - MAX_DEPTH ? bestscore + board->ply :
-        bestscore < -oo + MAX_DEPTH ? bestscore - board->ply :
-        bestscore,
-        type,
-        depth
-    );
-
-    assert(check(board));
-
-    return bestscore;
-}
-
-inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
-                              const pv_line &pv, board_t *board) {
-
-  // Print the info line
-  std::cout << "info score cp " << s << " depth " << d << " nodes "
-            << n << " time " << t << " hashfull " << tt.hashfull() << " pv ";
-  pv.print();
-  std::cout << " tt ";
-  int ttmoves = tt.get_pv_line(board, d);
-  for (int i = 0; i < ttmoves; ++i) {
-      std::cout << move_to_str(board->pv[i]) << ' ';
+  for (tableEntry = table->pTable; tableEntry < table->pTable + table->numEntries; tableEntry++) {
+    tableEntry->posKey = 0ULL;
+    tableEntry->move = NULLMV;
+    tableEntry->depth = 0;
+    tableEntry->score = 0;
+    tableEntry->flags = 0;
   }
-  std::cout << std::endl;
+  table->newWrite=0;
+}
+
+void InitHashTable(S_HASHTABLE *table, const int MB) {
+
+	int HashSize = 0x100000 * MB;
+    table->numEntries = HashSize / sizeof(S_HASHENTRY);
+    table->numEntries -= 2;
+
+	if(table->pTable!=NULL) {
+		free(table->pTable);
+	}
+
+    table->pTable = (S_HASHENTRY *) malloc(table->numEntries * sizeof(S_HASHENTRY));
+	if(table->pTable == NULL) {
+		printf("Hash Allocation Failed, trying %dMB...\n",MB/2);
+		InitHashTable(table,MB/2);
+	} else {
+		ClearHashTable(table);
+		printf("HashTable init complete with %d entries\n",table->numEntries);
+	}
 
 }
 
+int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int depth) {
 
-void init_search(board_t *board, searchinfo_t *info) {
+	int index = pos->key % HashTable->numEntries;
 
-    // Clear tables used for the history heuristic
-    for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
-        for (square_t sq = A1; sq <= H8; ++sq) {
-            board->history_h[p][sq] = 0;
-        }
-    }
+	assert(index >= 0 && index <= HashTable->numEntries - 1);
+    assert(depth>=1&&depth<MAX_DEPTH);
+    assert(alpha<beta);
+    assert(alpha>=-oo&&alpha<=oo);
+    assert(beta>=-oo&&beta<=oo);
+    assert(pos->ply>=0&&pos->ply<MAX_DEPTH);
 
-    // Clear tables used for the killer move heuristic
-    for (int i = 0; i < MAX_DEPTH; ++i) {
-        board->killer1[i] = board->killer2[i] = NULLMV;
-    }
+	if( HashTable->pTable[index].posKey == pos->key ) {
+		*move = HashTable->pTable[index].move;
+		if(HashTable->pTable[index].depth >= depth){
+			HashTable->hit++;
 
-    // Clear the global pv table
-    for (int i = 0; i < MAX_DEPTH; ++i) {
-        pv_tb[i].clear();
-    }
+			assert(HashTable->pTable[index].depth>=1&&HashTable->pTable[index].depth<MAX_DEPTH);
+            assert(HashTable->pTable[index].flags>=HFALPHA&&HashTable->pTable[index].flags<=HFEXACT);
 
-    // Clear search info, like # nodes searched
-    info->clear();
+			*score = HashTable->pTable[index].score;
+			if(*score > +oo - MAX_DEPTH) *score -= pos->ply;
+            else if(*score < -oo + MAX_DEPTH) *score += pos->ply;
 
-    // Reset statistics for the transposition table
-    tt.reset_stats();
+			switch(HashTable->pTable[index].flags) {
+
+                case HFALPHA: if(*score<=alpha) {
+                    *score=alpha;
+                    return true;
+                    }
+                    break;
+                case HFBETA: if(*score>=beta) {
+                    *score=beta;
+                    return true;
+                    }
+                    break;
+                case HFEXACT:
+                    return true;
+                    break;
+                default: assert(false); break;
+            }
+		}
+	}
+
+	return false;
+}
+
+void StoreHashEntry(board_t *pos, const int move, int score, const int flags, const int depth) {
+
+	int index = pos->key % HashTable->numEntries;
+
+	assert(index >= 0 && index <= HashTable->numEntries - 1);
+	assert(depth>=1&&depth<MAX_DEPTH);
+    assert(flags>=HFALPHA&&flags<=HFEXACT);
+    assert(score>=-oo&&score<=+oo);
+    assert(pos->ply>=0&&pos->ply<MAX_DEPTH);
+
+	if( HashTable->pTable[index].posKey == 0) {
+		HashTable->newWrite++;
+	} else {
+		HashTable->overWrite++;
+	}
+
+	if(score > +oo - MAX_DEPTH) score += pos->ply;
+    else if(score < -oo + MAX_DEPTH) score -= pos->ply;
+
+	HashTable->pTable[index].move = move;
+    HashTable->pTable[index].posKey = pos->key;
+	HashTable->pTable[index].flags = flags;
+	HashTable->pTable[index].score = score;
+	HashTable->pTable[index].depth = depth;
+}
+
+int ProbePvMove(const board_t *pos) {
+
+	int index = pos->key % HashTable->numEntries;
+	assert(index >= 0 && index <= HashTable->numEntries - 1);
+
+	if( HashTable->pTable[index].posKey == pos->key ) {
+		return HashTable->pTable[index].move;
+	}
+
+	return NULLMV;
 }
 
 
-} // namespace
+
+// ################ search.c ###########################
 
 
-/* Search the tree starting from the root node (current board state) */
-void search(board_t *board, searchinfo_t *info) {
-    assert(check(board));
+static int IsRepetition(const board_t *pos) {
 
-    move_t best_move = NULLMV;
-    int best_score = -oo;
+	int index = 0;
 
-    // Clear for search
-    init_search(board, info);
+	for(index = pos->history_ply - pos->fifty_move; index < pos->history_ply-1; ++index) {
+		assert(index >= 0 && index < MAX_MOVES);
+		if(pos->key == pos->history[index].key) {
+			return true;
+		}
+	}
+	return false;
+}
 
-    int curr_depth_nodes = 0;
-    // Iterative deepening
-    for (int depth = 1; depth <= info->depth; ++depth) {
-        // For calculating the branching factor
-        curr_depth_nodes = info->nodes;
+static void ClearForSearch(board_t *pos, searchinfo_t *info) {
 
-        best_score = negamax(-oo, +oo, depth, board, info, USE_NULL);
+	int index = 0;
+	int index2 = 0;
 
-        curr_depth_nodes = info->nodes - curr_depth_nodes;
+	for(index = 0; index < PIECE_NO; ++index) {
+		for(index2 = 0; index2 < SQUARE_NO; ++index2) {
+			pos->history_h[index][index2] = 0;
+		}
+	}
 
-        if (search_stopped(info)) {
-            break;
-        }
-
-        assert(info->state == ENGINE_SEARCHING);
-
-        best_move = pv_tb[0][0];
-
-        print_search_info(best_score,
-                          depth,
-                          info->nodes,
-                          now() - info->start,
-                          pv_tb[0], board);
-
-        std::cout << "info string depth " << depth \
-            << std::setprecision(4) \
-            << " branchf " << std::pow(curr_depth_nodes, 1.0/depth) \
-            << std::setprecision(2) \
-            << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
-            << " nullcut " << info->nullcut \
-            << " hashcut " << info->hashcut \
-            << " deltacut " << info->deltacut \
-            << " seecut " << info->seecut \
-            << std::endl;
+    for(index2 = 0; index2 < MAX_DEPTH; ++index2) {
+        pos->killer1[index2] = 0;
+        pos->killer2[index2] = 0;
     }
 
-    std::cout << "bestmove " << move_to_str(best_move) << std::endl;
+	//pos->tt->overWrite=0;
+	//pos->HashTable->hit=0;
+	//pos->HashTable->cut=0;
+	pos->ply = 0;
 
-    /*
-    std::cout << "Ordering: "
-              << (static_cast<double>(info->fail_high_first) / info->fail_high)
-              << std::endl;
-    */
+	info->stopped = 0;
+	info->nodes = 0;
+	info->fail_high = 0;
+	info->fail_high_first = 0;
+	info->nullcut = 0;
+}
 
-    assert(check(board));
+static int Quiescence(int alpha, int beta, board_t *pos, searchinfo_t *info) {
 
-    info->state = ENGINE_STOPPED;
+	assert(check(pos));
+	assert(beta>alpha);
+	//if(( info->nodes & 2047 ) == 0) {
+		//CheckUp(info);
+	//}
+
+	info->nodes++;
+
+	if(IsRepetition(pos) || pos->fifty_move >= 100) {
+		return 0;
+	}
+
+	if(pos->ply > MAX_DEPTH - 1) {
+		return evaluate(pos, &eval);
+	}
+
+	int Score = evaluate(pos, &eval);
+
+	assert(Score>-oo && Score<+oo);
+
+	if(Score >= beta) {
+		return beta;
+	}
+
+	if(Score > alpha) {
+		alpha = Score;
+	}
+
+	movelist_t list[1];
+    generate_noisy(pos,list);
+
+    // TODO:
+    score_moves(pos, list, NULLMV);
+
+    //int MoveNum = 0;
+	int Legal = 0;
+	Score = -oo;
+
+	//for(MoveNum = 0; MoveNum < list->count; ++MoveNum) {
+    //
+	//  PickNextMove(MoveNum, list, pos->ply);
+	move_t move = NULLMV;
+	while ((move = next_best(list, pos->ply)) != NULLMV) {
+
+        assert(move_ok(move));
+        if ( !make_move(pos, move))  {
+            continue;
+        }
+
+		Legal++;
+		Score = -Quiescence( -beta, -alpha, pos, info);
+        undo_move(pos);
+
+		if(search_stopped(info)) {
+			return 0;
+		}
+
+		if(Score > alpha) {
+			if(Score >= beta) {
+				if(Legal==1) {
+					info->fail_high_first++;
+				}
+				info->fail_high++;
+				return beta;
+			}
+			alpha = Score;
+		}
+    }
+
+	return alpha;
+}
+
+static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t *info, int DoNull) {
+
+	assert(check(pos));
+	assert(beta>alpha);
+	assert(depth>=0);
+
+	if(depth <= 0) {
+		return Quiescence(alpha, beta, pos, info);
+		// return EvalPosition(pos);
+	}
+
+	//if(( info->nodes & 2047 ) == 0) {
+		//CheckUp(info);
+	//}
+
+	info->nodes++;
+
+	if((IsRepetition(pos) || pos->fifty_move >= 100) && pos->ply) {
+		return 0;
+	}
+
+	if(pos->ply > MAX_DEPTH - 1) {
+		return evaluate(pos, &eval);
+	}
+
+	//int InCheck = SqAttacked(pos->KingSq[pos->side],pos->side^1,pos);
+	bb_t checkers = is_in_check(pos, pos->turn);
+
+	if (checkers != 0ULL) {
+		depth++;
+	}
+
+	int Score = -oo;
+	int PvMove = NULLMV;
+
+	if( ProbeHashEntry(pos, &PvMove, &Score, alpha, beta, depth) == true ) {
+		HashTable->cut++;
+		return Score;
+	}
+
+	if( DoNull && !checkers && pos->ply &&
+        CNT(pos->sides_pieces[pos->turn] ^
+            pos->bitboards[pos->turn ? P : p]) > 1
+        && depth >= 4) {
+		make_null(pos);
+		Score = -AlphaBeta( -beta, -beta + 1, depth-4, pos, info, false);
+		undo_null(pos);
+		if (search_stopped(info)) {
+			return 0;
+		}
+
+		if (Score >= beta && abs(Score) < +oo - MAX_DEPTH) {
+			info->nullcut++;
+			return beta;
+		}
+	}
+
+	movelist_t list[1];
+    generate_moves(pos,list);
+
+	int Legal = 0;
+	int OldAlpha = alpha;
+	int BestMove = NULLMV;
+
+	int BestScore = -oo;
+
+	Score = -oo;
+
+	//if( PvMove != NOMOVE) {
+		//for(MoveNum = 0; MoveNum < list->count; ++MoveNum) {
+			//if( list->moves[MoveNum].move == PvMove) {
+				//list->moves[MoveNum].score = 2000000;
+				////printf("Pv move found \n");
+				//break;
+			//}
+		//}
+	//}
+
+    score_moves(pos, list, PvMove);
+
+	// for(MoveNum = 0; MoveNum < list->count; ++MoveNum) {
+
+		// PickNextMove(MoveNum, list, pos->ply);
+
+    move_t move = NULLMV;
+    while ((move = next_best(list, pos->ply)) != NULLMV) {
+
+        assert(move_ok(move));
+        if ( !make_move(pos,move))  {
+            continue;
+        }
+
+		Legal++;
+		Score = -AlphaBeta( -beta, -alpha, depth-1, pos, info, true);
+		undo_move(pos);
+
+		if(search_stopped(info)) {
+			return 0;
+		}
+		if(Score > BestScore) {
+			BestScore = Score;
+			BestMove = move;
+			if(Score > alpha) {
+				if(Score >= beta) {
+					if(Legal==1) {
+						info->fail_high_first++;
+					}
+					info->fail_high++;
+
+					if(!is_capture(move)) {
+						pos->killer2[pos->ply] = pos->killer1[pos->ply];
+						pos->killer1[pos->ply] = move;
+					}
+
+					StoreHashEntry(pos, BestMove, beta, HFBETA, depth);
+
+					return beta;
+				}
+				alpha = Score;
+
+				if(!is_capture(move)) {
+					pos->history_h[pos->pieces[get_from(BestMove)]][get_to(BestMove)] += depth * depth;
+				}
+			}
+		}
+    }
+
+	if(Legal == 0) {
+		if(checkers) {
+			return -oo + pos->ply;
+		} else {
+			return 0;
+		}
+	}
+
+	assert(alpha>=OldAlpha);
+
+	if(alpha != OldAlpha) {
+		StoreHashEntry(pos, BestMove, BestScore, HFEXACT, depth);
+	} else {
+		StoreHashEntry(pos, BestMove, alpha, HFALPHA, depth);
+	}
+
+	return alpha;
+}
+
+void search(board_t *pos, searchinfo_t *info) {
+
+	int bestMove = NULLMV;
+	int bestScore = -oo;
+	int currentDepth = 0;
+	int pvMoves = 0;
+	int pvNum = 0;
+
+	ClearForSearch(pos,info);
+
+	//if(EngineOptions->UseBook == TRUE) {
+		//bestMove = GetBookMove(pos);
+	//}
+
+	//printf("Search depth:%d\n",info->depth);
+
+	// iterative deepening
+	if(bestMove == NULLMV) {
+
+		int nodes_depth = 0;
+		for( currentDepth = 1; currentDepth <= info->depth; ++currentDepth ) {
+			nodes_depth = info->nodes;
+								// alpha	 beta
+			bestScore = AlphaBeta(-oo, +oo, currentDepth, pos, info, true);
+
+			nodes_depth = info->nodes - nodes_depth;
+
+			if(search_stopped(info)) {
+				break;
+			}
+
+			pvMoves = GetPvLine(currentDepth, pos);
+			bestMove = pos->pv[0];
+            printf("info score cp %d depth %d nodes %ld time %lu ",
+            bestScore,currentDepth,info->nodes,now()-info->start);
+
+            pvMoves = GetPvLine(currentDepth, pos);
+                printf("pv");
+            for(pvNum = 0; pvNum < pvMoves; ++pvNum) {
+                printf(" %s",move_to_str(pos->pv[pvNum]).c_str());
+            }
+            std::cout << std::endl;
+
+            std::cout << "info string depth " << currentDepth \
+                << std::setprecision(4) \
+                << " branchf " << std::pow(nodes_depth, 1.0/currentDepth) \
+                << std::setprecision(2) \
+                << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
+                << " nullcut " << info->nullcut \
+                << " hashcut " << HashTable->cut \
+                << " deltacut " << info->deltacut \
+                << " seecut " << info->seecut \
+                << std::endl;
+
+		}
+	}
+    std::cout << "bestmove " << move_to_str(bestMove) << std::endl;
+
 }

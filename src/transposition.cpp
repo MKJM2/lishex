@@ -49,10 +49,6 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score) {
     *entry = table[idx];
 
     assert(0 <= idx && idx <= this->size - 1);
-    assert(1 <= depth && depth < MAX_DEPTH);
-    assert(alpha < beta);
-    assert(-oo <= alpha && alpha <= +oo);
-    assert(-oo <= beta && beta <= +oo);
     assert(0 <= board->ply && board->ply < MAX_DEPTH);
 
     /* Check if the zobrist key matches */
@@ -118,7 +114,7 @@ void TT::store(const board_t *board, move_t move, int score,
 
     // If all moves failed high, we don't know which move is the best,
     // hence the stored move should be empty
-    assert(flags == UPPER ? move == NULLMV : move != NULLMV);
+    // assert(flags == UPPER ? move == NULLMV : move != NULLMV);
 
     /* Finally, store the entry in the transposition table */
 

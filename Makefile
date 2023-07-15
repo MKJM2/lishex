@@ -11,7 +11,7 @@ TARGET = lishex
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -O2 -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+	CXXFLAGS += -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
 endif
 
 ### Sanitizers

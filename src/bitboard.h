@@ -104,11 +104,13 @@ inline square_t bit_drop_forward(bb_t &bb);
 #ifdef __GNUC__ // gcc, clang
 
 inline square_t bit_scan_forward(bb_t bb) {
+    assert(bb);
     // counts trailing zeroes
     return __builtin_ctzll(bb);
 }
 
 inline square_t bit_scan_reverse(bb_t bb) {
+    assert(bb);
                  // counts leading zeroes
     return (63 ^ __builtin_clzll(bb));
 }

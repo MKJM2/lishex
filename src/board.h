@@ -6,6 +6,7 @@
 #include "types.h"
 #include "bitboard.h"
 
+
 /************************/
 /* Board representation */
 /************************/
@@ -48,6 +49,14 @@ typedef struct board_t {
     move_t pv[MAX_DEPTH] = {};
 } board_t;
 
+#ifdef DEBUG
+extern void history_trace(const board_t *board, size_t n);
+extern bool check(const board_t *board);
+extern bool check_against_ref(const board_t* b);
+extern void perft_test(board_t *board, const std::string& epd_filename);
+#endif // DEBUG
+
+
 extern void init_keys();
 
 extern void reset(board_t *board);
@@ -70,6 +79,17 @@ void undo_move(board_t *board); // Undo last move
 /* Null move pruning */
 void make_null(board_t *board);
 void undo_null(board_t *board);
+
+// Prints out the moves taken from the root of the search, helpful for debugging
+inline void path_from_root(const board_t* board) {
+    std::cout << "Moves since root (in reverse order): ";
+    int count = 0;
+    while (count <= board->history_ply) {
+        std::cout << move_to_str(board->history[board->history_ply - count].move) << ' ';
+        count++;
+    }
+    std::cout << std::endl;
+}
 
 inline bb_t all_pieces(const board_t *board) {
     return board->sides_pieces[BLACK] | board->sides_pieces[WHITE];
@@ -100,15 +120,13 @@ inline bb_t king_square_bb(const board_t* board, const int colour) {
 }
 
 inline square_t king_square(const board_t* board, const int colour) {
-    return GETLSB(king_square_bb(board, colour));
+    if (king_square_bb(board, colour) == 0ULL) {
+        print(board);
+        path_from_root(board);
+    }
+    square_t sq = GETLSB(king_square_bb(board, colour));
+    assert(square_ok(sq));
+    return sq;
 }
-
-#ifdef DEBUG
-extern void history_trace(const board_t *board, size_t n);
-extern bool check(const board_t *board);
-extern bool check_against_ref(const board_t* b);
-extern void perft_test(board_t *board, const std::string& epd_filename);
-#endif // DEBUG
-
 
 #endif // BOARD_H_

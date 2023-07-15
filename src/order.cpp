@@ -21,11 +21,11 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = INT_MAX;
-constexpr int GOOD_PROMO_BONUS = 20'000'000;
-constexpr int CAPTURE_BONUS = 10'000'000;
-constexpr int KILLER1_BONUS = 9'000'000;
-constexpr int KILLER2_BONUS = 8'000'000;
+constexpr int PV_BONUS = INT_MAX-1;
+constexpr int GOOD_PROMO_BONUS = 50'000'000;
+constexpr int CAPTURE_BONUS = 20'000'000;
+constexpr int KILLER1_BONUS = 10'000'000;
+constexpr int KILLER2_BONUS = 9'000'000;
 
 // Penalty for 'bad' (very rare) promotions like knight/rook
 constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
@@ -110,6 +110,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
     int flags = 0;
     for (int i = 0; i < n; ++i) {
         scored_move_t& move = moves->movelist[i];
+        assert(move_ok(move.move));
         if (move.move == pv_move) {
             assert(move.move == pv_move && pv_move != NULLMV);
             move.score = PV_BONUS;
@@ -117,11 +118,12 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         }
 
         move.score = 0;
-        from = get_from(move);
-        to = get_to(move);
-        flags = get_flags(move);
+        from = get_from(move.move);
+        to = get_to(move.move);
+        flags = get_flags(move.move);
 
         // We search promotions before captures
+        /*
         if (is_promotion(move)) {
             switch (flags & ~CAPTURE) {
                 case QUEENPROMO:
@@ -137,6 +139,8 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
             }
 
         }
+        */
+
         if (is_capture(move)) {
             // TODO: Speed up SEE, since the following is slow
             // If the capture is losing, we leave its score as 0
@@ -150,9 +154,9 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
                 move.score += MVV_LVA[board->pieces[to]][board->pieces[from]];
 
             // Losing captures are searched at the very end
-            if (losing_capture(board, move, -value_eg[PAWN])) {
-                move.score -= 2 * CAPTURE_BONUS;
-            }
+            //if (losing_capture(board, move, -value_eg[PAWN])) {
+                //move.score -= 2 * CAPTURE_BONUS;
+            //}
             continue;
         }
 
