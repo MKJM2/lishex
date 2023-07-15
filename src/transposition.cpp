@@ -5,16 +5,17 @@
 #include "search.h"
 #include "movegen.h"
 
+// Default TT size in MB
+constexpr int TTSIZEMB = 64;
 
 // Global transposition table
-constexpr int TTSIZEMB = 16;
 TT tt(TTSIZEMB);
 
 TT::TT(const int MB) : size{((1 << 20) * MB / sizeof(tt_entry)) - 2} {
 
     table = new tt_entry[size];
     if (table == nullptr) {
-        std::cout << "Transposition table allocation failed!\n";
+        std::cerr << "Transposition table allocation failed!\n";
         assert(false);
     }
     clear();
@@ -23,9 +24,12 @@ TT::TT(const int MB) : size{((1 << 20) * MB / sizeof(tt_entry)) - 2} {
 }
 
 TT::~TT() {
-    if (table != nullptr) {
-        delete[] table;
-    }
+    //if (table != nullptr) {
+        //delete[] table;
+    //}
+
+    // delete is safe to use on nullptrs
+    delete[] table;
 }
 
 void TT::reset_stats() {
@@ -95,12 +99,14 @@ int TT::probe(const board_t *board, move_t &move, int &score,
         case LOWER: score = MIN(score, beta); break;
         case UPPER: score = MAX(score, alpha); break;
         case EXACT: break;
-        case BAD: LOG("TODO: Not handled yet"); assert(false);
+        case BAD:
+        default:
+            LOG("TODO: Uhoh, this shouldn't have happened"); assert(false);
     }
     return TTHIT;
 }
 
-// Replace by depth cheme
+// Always-replace scheme
 void TT::store(const board_t *board, move_t move, int score,
                const int flags, const int depth) {
 
@@ -125,10 +131,17 @@ void TT::store(const board_t *board, move_t move, int score,
     assert(flags == UPPER ? move == NULLMV : move != NULLMV);
 
     // Finally, store the entry in the transposition table
+    // Inspired by Stockfish
+    if (move || entry->key != board->key) {
+        entry->move = static_cast<uint16_t>(move);
+    }
+
+    // For non-exact entries, we only store the move
+    if (flags != EXACT) return;
+
     entry->key   = board->key;
     entry->depth = static_cast<uint8_t>(depth);
     entry->flags = static_cast<uint8_t>(flags);
-    entry->move  = static_cast<uint16_t>(move);
     entry->score = static_cast<int32_t>(score);
 }
 
@@ -141,4 +154,25 @@ move_t TT::probe_pv(const board_t *board) {
         return entry->move;
     }
     return NULLMV;
+}
+
+int TT::get_pv_line(board_t *board, const int depth) {
+
+    move_t move = NULLMV;
+    int count = 0;
+
+    while ((move = probe_pv(board)) != NULLMV && count < depth) {
+        if (move_exists(board, move)) {
+            make_move(board, move);
+            board->pv[count++] = move;
+        } else {
+            break;
+        }
+    }
+
+    while (board->ply > 0) {
+        undo_move(board);
+    }
+
+    return count;
 }

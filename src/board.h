@@ -44,6 +44,8 @@ typedef struct board_t {
     move_t killer2[MAX_DEPTH] = {};
     // History heuristic, table indexed by [piece][to square]
     unsigned history_h[PIECE_NO][SQUARE_NO] = {};
+    // TODO: Temporary
+    move_t pv[MAX_DEPTH] = {};
 } board_t;
 
 extern void init_keys();

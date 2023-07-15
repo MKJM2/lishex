@@ -470,7 +470,7 @@ bool make_move(board_t *board, move_t move) {
     int dir = board->turn == WHITE ? NORTH : SOUTH;
 
     if (flags == EPCAPTURE) {
-        rm_piece(board, to - dir); // +?
+        rm_piece(board, to - dir);
         board->fifty_move = 0;
     }
     else if (flags & CAPTURE) {
@@ -570,7 +570,6 @@ void undo_move(board_t *board, move_t move) {
         mv_piece(board, to, from);
     }
 
-
     int dir = board->turn == WHITE ? NORTH : SOUTH;
 
     if (flags == EPCAPTURE) {
@@ -617,37 +616,28 @@ void undo_move(board_t *board) {
  @param board current position
 */
 void make_null(board_t *board) {
-    assert(check(board));
 
-    int me = board->turn;
-    int opp = me ^ 1;
+    #ifdef DEBUG
+    assert(check(board));
+    // Store the board state (for debugging purposes)
+    //ref_boards[boards++] = *board;
+    ref_boards.push_back(*board);
+    #endif
 
     // Store the pre-move state
-    /* In C++20 we can do:
-    undo_t undo = {
-        .move = move,
+    board->history[board->history_ply++] = {
+        .move = NULLMV,
         .castle_rights = board->castle_rights,
         .ep_square = board->ep_square,
         .fifty_move = board->fifty_move,
-        .key = board->key
-    };
-    */
-    undo_t undo = {
-        NULLMV,
-        board->castle_rights,
-        board->ep_square,
-        board->fifty_move,
-        board->key,
-        NO_PIECE
+        .key = board->key,
+        .captured = NO_PIECE
     };
 
     /* Update board state */
 
     // Handle counters
     ++board->ply;
-
-    // Save previous board state
-    board->history[board->history_ply++] = undo;
 
     /* Handle en passant */
     // Hash out old en passant square (if was set)
@@ -657,22 +647,21 @@ void make_null(board_t *board) {
     board->ep_square = NO_SQ;
 
     // Miscellaneous bookkeeping
-    board->turn = opp;
+    board->turn ^= 1;
     board->key ^= turn_key;
 
     assert(check(board));
 }
 
 void undo_null(board_t *board) {
+
+#ifdef DEBUG
     assert(check(board));
+#endif
 
-    undo_t last = board->history[--board->history_ply];
+    undo_t &last = board->history[--board->history_ply];
 
-    // Flip sides
-    int me = board->turn;
-    int opp = me ^ 1; // The side that performed the null move
-
-    board->turn = opp;
+    board->turn ^= 1;
     board->key ^= turn_key;
 
     // Restore the en passant square from pre-move state
@@ -692,9 +681,10 @@ void undo_null(board_t *board) {
     // Update ply counter
     --board->ply;
 
-    /* DEBUG only */
-    assert(board->key == last.key);
+#ifdef DEBUG
     assert(check(board));
+    assert(check_against_ref(board));
+#endif
 }
 
 

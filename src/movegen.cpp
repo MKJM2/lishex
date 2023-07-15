@@ -299,6 +299,7 @@ int generate_moves(const board_t *board, movelist_t *moves) {
     return generate_noisy(board, moves) + generate_quiet(board, moves);
 }
 
+
 bool move_exists(const board_t *board, move_t move) {
     movelist_t moves;
     generate_moves(board, &moves);

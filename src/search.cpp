@@ -61,7 +61,6 @@ typedef struct pv_line {
         for (size_t i = 0; i < size; ++i) {
             std::cout << move_to_str(moves[i]) << " ";
         }
-        std::cout << std::endl;
     }
 
     private:
@@ -134,11 +133,13 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
          * safely discarded */
 
         // If the move captures the king (TODO: Debug this)
+        /*
         piece_t& captured = board->pieces[get_to(move)];
+
         if (piece_type(captured) == KING) {
             return +oo - board->ply;
         }
-        /*
+
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
             if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
@@ -341,8 +342,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         if (score > bestscore) {
             bestscore = score;
+            bestmove = move;
             if (score > alpha) { // PV or fail-high node
-                bestmove = move;
 
                 // Update the PV
                 pv[board->ply] = bestmove;
@@ -365,10 +366,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                     }
 
                     /* The move caused a beta cutoff, hence we get a lowerbound score */
-                    tt.store(board, bestmove, beta, LOWER, depth);
-
+                    // tt.store(board, bestmove, beta, LOWER, depth);
                     // fail hard beta-cutoff (fail-high)
-                    return beta;
+                    // return beta;
+                    type = LOWER;
+                    break;
                 }
 
                 /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
@@ -380,21 +382,21 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 }
 
                 // Update the search window lowerbound
+                type = EXACT;
                 alpha = score;
 
                 // Store the move in the principal variation for the current ply
-                pv[board->ply] = move;
+                //pv[board->ply] = move;
 
                 // Copy over the rest of the principal variation from the next ply
                 //for (int j = board->ply + 1; j < new_pv.size; ++j) {
                     //pv[j] = new_pv[j];
                 //}
-                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                pv.size = new_pv.size;
+                //movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
+                //pv.size = new_pv.size;
 
                 // /* Store the move in the transposition table */
                 //bestmove = move;
-                type = EXACT;
             }
         }
         /* Fail low: simply search the next move */
@@ -407,25 +409,47 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return (in_check) ? -oo + board->ply : 0;
     }
 
-    assert(type == EXACT || type == UPPER);
 
     /* Store the best move (+ corresponding score & type, either EXACT or UPPER)
      * in the transposition table. If we couldn't beat alpha, the move stored is
      * an empty move with the flag UPPER */
-    tt.store(board, bestmove, bestscore, type, depth);
+    assert((type == LOWER && bestscore >= beta) ||
+           (type == UPPER && bestscore <= alpha) || (type == EXACT));
+
+    // Adjust score for mates before storing in tt
+    // if (bestscore > +oo - MAX_DEPTH) bestscore -= board->ply;
+    // else if (bestscore < -oo + MAX_DEPTH) bestscore += board->ply;
+
+    //tt.store(board, bestmove, bestscore, type, depth);
+    tt.store(
+        board,
+        bestmove,
+        bestscore > +oo - MAX_DEPTH ? bestscore - board->ply :
+        bestscore < -oo + MAX_DEPTH ? bestscore + board->ply :
+        bestscore,
+        type,
+        depth
+    );
 
     assert(check(board));
 
-    return alpha;
+    return bestscore;
 }
 
 inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
-                              const pv_line &pv) {
+                              const pv_line &pv, board_t *board) {
 
   // Print the info line
   std::cout << "info score cp " << s << " depth " << d << " nodes "
             << n << " time " << t << " hashfull " << tt.hashfull() << " pv ";
   pv.print();
+  std::cout << " tt ";
+  int ttmoves = tt.get_pv_line(board, d);
+  for (int i = 0; i < ttmoves; ++i) {
+      std::cout << move_to_str(board->pv[i]) << ' ';
+  }
+  std::cout << std::endl;
+
 }
 
 
@@ -445,7 +469,7 @@ void init_search(board_t *board, searchinfo_t *info) {
 
     // Clear the global pv table
     for (int i = 0; i < MAX_DEPTH; ++i) {
-        //pv_tb[i].clear();
+        pv_tb[i].clear();
     }
 
     // Clear search info, like # nodes searched
@@ -491,7 +515,7 @@ void search(board_t *board, searchinfo_t *info) {
                           depth,
                           info->nodes,
                           now() - info->start,
-                          pv_tb[0]);
+                          pv_tb[0], board);
 
         std::cout << "info string depth " << depth \
             << std::setprecision(4) \

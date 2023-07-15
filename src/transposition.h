@@ -6,26 +6,26 @@
 
 // Hash entry flags for the transposition table
 // - BAD: Don't use the retrieved value
-// - LOWER: Fail-low bound
-// - UPPER: Fail-high bound
+// - LOWER: Fail-high bound
+// - UPPER: Fail-low bound
 // - EXACT: Exact score
 enum { BAD, LOWER, UPPER, EXACT = LOWER | UPPER };
 
 enum { TTMISS = 0, TTHIT = 1 };
 
 // 64+8+8+16+32=128 bits for better cache performance
-// (aligned with 64-bit cache lines)
-typedef struct alignas(64) {
+// (aligned with 64-byte cache lines)
+typedef struct alignas(64) tt_entry {
     // The Zobrist hash key of the stored node
-    uint64_t key;
+    uint64_t key = 0ULL;
     // Depth the position was searched to
-    uint8_t depth;
+    uint8_t depth = 0;
     // Type of entry
-    uint8_t flags;
+    uint8_t flags = BAD;
     // Best move in the current node
-    uint16_t move;
+    uint16_t move = NULLMV;
     // Stored value in this node (either exact or lower/upperbound)
-    int32_t score;
+    int32_t score = 0;
 } tt_entry;
 
 
@@ -47,19 +47,21 @@ class TT {
                const int flags, const int depth);
     // Returns the pv move for the current board state, if any
     move_t probe_pv(const board_t *board);
+    // VICE inspired: retrievews pv line from the transposition table
+    int get_pv_line(board_t *board, const int depth);
     // Returns the hashfull info in permilles
     inline int hashfull() {
         return writes * 1000 / size;
     }
 
   private:
-    tt_entry *table;
-    size_t size;
+    tt_entry *table = nullptr;
+    size_t size = 0;
     // Statistics
-    unsigned writes;
-    unsigned overwrites;
-    unsigned hit;
-    unsigned cut;
+    unsigned writes = 0;
+    unsigned overwrites = 0;
+    unsigned hit = 0;
+    unsigned cut = 0;
 };
 
 // Global transposition table in transposition.cpp
