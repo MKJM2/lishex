@@ -234,9 +234,13 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     move_t ttmove = NULLMV;
 
     /* Transposition table probing */
+    tt_entry entry[1];
 
     // Check if can get a cutoff
-    if (board->ply && tt.probe(board, ttmove, score, alpha, beta, depth) == TTHIT) {
+    int tthit = tt.probe(board, entry, ttmove, score);
+    if ( tthit == TTHIT && entry->depth > depth &&
+         (entry->flags & (score <= alpha ? UPPER : LOWER))
+    ) {
        ++info->hashcut;
        return score;
     }
@@ -363,6 +367,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                             board->killer2[board->ply] = board->killer1[board->ply];
                             board->killer1[board->ply] = move;
                         }
+
+
+                        // Move causes a cutoff, hence update the search history tables
+                        // (History heuristic)
+                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
                     }
 
                     /* The move caused a beta cutoff, hence we get a lowerbound score */
@@ -374,12 +383,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 }
 
                 /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
-
-                // Move causes a cutoff, hence update the search history tables
-                // (History heuristic)
-                if (!is_capture(move)) {
-                    board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
-                }
 
                 // Update the search window lowerbound
                 type = EXACT;
@@ -424,8 +427,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     tt.store(
         board,
         bestmove,
-        bestscore > +oo - MAX_DEPTH ? bestscore - board->ply :
-        bestscore < -oo + MAX_DEPTH ? bestscore + board->ply :
+        bestscore > +oo - MAX_DEPTH ? bestscore + board->ply :
+        bestscore < -oo + MAX_DEPTH ? bestscore - board->ply :
         bestscore,
         type,
         depth

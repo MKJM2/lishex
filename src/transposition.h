@@ -40,8 +40,7 @@ class TT {
     // Resets the statistics
     void reset_stats();
     // Probes the transposition table for a move and a score
-    int probe(const board_t *board, move_t &move, int &score, int alpha,
-              int beta, int depth);
+    int probe(const board_t *board, tt_entry *entry, move_t &move, int &score);
     // Stores an entry in our transposition table
     void store(const board_t *board, move_t move, int score,
                const int flags, const int depth);

@@ -221,10 +221,6 @@ enum {
 
 #define get_flags(move) (((move) >> 12) & 0xf)
 
-// #define get_score(move) (((move) >> 16) & 0xffff)
-
-#define scored(move, score) (({ (move), (score) }))
-
 inline int is_promotion(move_t move) {
     return (((move) >> 12) & 0b1000);
 }
@@ -252,8 +248,8 @@ typedef struct undo_t {
 
 // Struct containing a move and its corresponding score for move ordering
 typedef struct scored_move_t {
-    move_t move;
     int32_t score;
+    move_t move;
 
     void operator=(move_t m) { move = m; }
     bool operator==(const move_t& m) { return move == m; }
@@ -318,7 +314,7 @@ using bb_t = uint64_t;
 constexpr int oo = 30'000; // INF
 
 // Castling rights encoding (4 bits)
-enum { WK = 1, WQ = 2, BK = 4, BQ = 8 };
+enum { WK = 0b0001, WQ = 0b0010, BK = 0b0100, BQ = 0b1000 };
 
 // Castling rights can be spoiled when one of the pieces participating in it
 // moves. castle_spoils[from] determines how to change castle permissions for a

@@ -42,12 +42,11 @@ void TT::clear() {
     reset_stats();
 }
 
-int TT::probe(const board_t *board, move_t &move, int &score,
-              int alpha, int beta, int depth) {
+int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score) {
 
     // TODO: Ensure size of TT is a power of 2 for efficient mod with &
     int idx = board->key % this->size;
-    tt_entry *entry = &table[idx];
+    *entry = table[idx];
 
     assert(0 <= idx && idx <= this->size - 1);
     assert(1 <= depth && depth < MAX_DEPTH);
@@ -65,9 +64,10 @@ int TT::probe(const board_t *board, move_t &move, int &score,
     // The move stored might be useful for move ordering
     move = static_cast<move_t>(entry->move);
 
-    // If the previous search wasn't as deep as current
+    /* If the previous search wasn't as deep as current
     if (depth > entry->depth)
         return TTMISS;
+    */
 
     assert(1 <= entry->depth && entry->depth < MAX_DEPTH);
 
@@ -93,20 +93,10 @@ int TT::probe(const board_t *board, move_t &move, int &score,
      * Otherwise, if the entry is an UPPER entry, the entry score is only
      * an upperbound on the score of the position and all moves failed.
      * */
-
-    /* The entry can be useful. Check it's type */
-    switch (entry->flags) {
-        case LOWER: score = MIN(score, beta); break;
-        case UPPER: score = MAX(score, alpha); break;
-        case EXACT: break;
-        case BAD:
-        default:
-            LOG("TODO: Uhoh, this shouldn't have happened"); assert(false);
-    }
     return TTHIT;
 }
 
-// Always-replace scheme
+// Stockfish inspired replacement scheme
 void TT::store(const board_t *board, move_t move, int score,
                const int flags, const int depth) {
 
@@ -130,14 +120,14 @@ void TT::store(const board_t *board, move_t move, int score,
     // hence the stored move should be empty
     assert(flags == UPPER ? move == NULLMV : move != NULLMV);
 
-    // Finally, store the entry in the transposition table
-    // Inspired by Stockfish
+    /* Finally, store the entry in the transposition table */
+
     if (move || entry->key != board->key) {
         entry->move = static_cast<uint16_t>(move);
     }
 
     // For non-exact entries, we only store the move
-    if (flags != EXACT) return;
+    if (flags != EXACT && entry->key == board->key) return;
 
     entry->key   = board->key;
     entry->depth = static_cast<uint8_t>(depth);
@@ -145,6 +135,8 @@ void TT::store(const board_t *board, move_t move, int score,
     entry->score = static_cast<int32_t>(score);
 }
 
+
+/* Adapted from VICE by Bluefever Software */
 
 move_t TT::probe_pv(const board_t *board) {
     int idx = board->key % this->size;
@@ -155,6 +147,7 @@ move_t TT::probe_pv(const board_t *board) {
     }
     return NULLMV;
 }
+
 
 int TT::get_pv_line(board_t *board, const int depth) {
 
