@@ -84,7 +84,8 @@ void InitHashTable(S_HASHTABLE *table, const int MB) {
 		InitHashTable(table,MB/2);
 	} else {
 		ClearHashTable(table);
-		printf("HashTable init complete with %d entries\n",table->numEntries);
+		printf("HashTable init complete with %d entries ",table->numEntries);
+        printf("(entry size is %lu)\n", sizeof(S_HASHENTRY));
 	}
 
 }
@@ -326,12 +327,16 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 	}
 
 	int Score = -oo;
-	int PvMove = NULLMV;
+	move_t PvMove = NULLMV;
 
-	if( ProbeHashEntry(pos, &PvMove, &Score, alpha, beta, depth) == true ) {
-		HashTable->cut++;
-		return Score;
-	}
+	//if( ProbeHashEntry(pos, &PvMove, &Score, alpha, beta, depth) == true ) {
+		//HashTable->cut++;
+		//return Score;
+	//}
+	tt_entry entry;
+	if (tt.probe(pos, &entry, &PvMove, &Score, alpha, beta, depth) == TTHIT) {
+        return Score;
+    }
 
 	if( DoNull && !checkers && pos->ply &&
         CNT(pos->sides_pieces[pos->turn] ^
@@ -355,7 +360,7 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 
 	int Legal = 0;
 	int OldAlpha = alpha;
-	int BestMove = NULLMV;
+	move_t BestMove = NULLMV;
 
 	int BestScore = -oo;
 
@@ -407,7 +412,8 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 						pos->killer1[pos->ply] = move;
 					}
 
-					StoreHashEntry(pos, BestMove, beta, HFBETA, depth);
+					//StoreHashEntry(pos, BestMove, beta, HFBETA, depth);
+					tt.store(pos, BestMove, beta, LOWER, depth);
 
 					return beta;
 				}
@@ -430,14 +436,20 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 
 	assert(alpha>=OldAlpha);
 
-	if(alpha != OldAlpha) {
-		StoreHashEntry(pos, BestMove, BestScore, HFEXACT, depth);
-	} else {
-		StoreHashEntry(pos, BestMove, alpha, HFALPHA, depth);
-	}
+	//if(alpha != OldAlpha) {
+		//StoreHashEntry(pos, BestMove, BestScore, HFEXACT, depth);
+	//} else {
+		//StoreHashEntry(pos, BestMove, alpha, HFALPHA, depth);
+	//}
+	if (alpha != OldAlpha) {
+        tt.store(pos, BestMove, BestScore, EXACT, depth);
+    } else {
+        tt.store(pos, BestMove, alpha, UPPER, depth);
+    }
 
 	return alpha;
 }
+
 
 void search(board_t *pos, searchinfo_t *info) {
 
@@ -449,51 +461,72 @@ void search(board_t *pos, searchinfo_t *info) {
 
 	ClearForSearch(pos,info);
 
-	//if(EngineOptions->UseBook == TRUE) {
-		//bestMove = GetBookMove(pos);
-	//}
 
 	//printf("Search depth:%d\n",info->depth);
+	move_t m = Move(B2, A1, QUEENPROMO);
+    uint64_t k = pos->key;
+    int depth = 5;
+    int flags = EXACT;
+    int score = 574;
+    std::cout << "Storing move " << m << " for board " << k << " depth "
+              << depth << " flag " << flags << " with score " << score
+              << std::endl;
 
-	// iterative deepening
-	if(bestMove == NULLMV) {
+    tt.store(pos, m, score, flags, depth);
+    move_t retrieved_m = NULLMV;
+    int retrieved_score = NULLMV;
+    tt_entry entry;
+    tt.probe(pos, &entry, &retrieved_m, &retrieved_score, -oo, +oo, 5);
+    std::cout << "Retrieved move " << retrieved_m << " for board " << entry.key << " depth "
+              << depth << " flag " << static_cast<int>(entry.flags) << " with score " << retrieved_score
+              << std::endl;
 
-		int nodes_depth = 0;
-		for( currentDepth = 1; currentDepth <= info->depth; ++currentDepth ) {
-			nodes_depth = info->nodes;
-								// alpha	 beta
-			bestScore = AlphaBeta(-oo, +oo, currentDepth, pos, info, true);
+    unsigned char* pointer = (unsigned char*)&entry;
+    while (pointer < (unsigned char*)&entry + sizeof(entry))
+    {
+        printf("%02hhX", *pointer);
+        pointer++;
+    }
+    std::cout << std::endl;
 
-			nodes_depth = info->nodes - nodes_depth;
+    // iterative deepening
+    if (bestMove == NULLMV) {
 
-			if(search_stopped(info)) {
-				break;
-			}
+      int nodes_depth = 0;
+      for (currentDepth = 1; currentDepth <= info->depth; ++currentDepth) {
+        nodes_depth = info->nodes;
+        // alpha	 beta
+        bestScore = AlphaBeta(-oo, +oo, currentDepth, pos, info, true);
 
-			pvMoves = GetPvLine(currentDepth, pos);
-			bestMove = pos->pv[0];
-            printf("info score cp %d depth %d nodes %ld time %lu ",
-            bestScore,currentDepth,info->nodes,now()-info->start);
+        nodes_depth = info->nodes - nodes_depth;
 
-            pvMoves = GetPvLine(currentDepth, pos);
-                printf("pv");
-            for(pvNum = 0; pvNum < pvMoves; ++pvNum) {
-                printf(" %s",move_to_str(pos->pv[pvNum]).c_str());
-            }
-            std::cout << std::endl;
+        if (search_stopped(info)) {
+          break;
+        }
 
-            std::cout << "info string depth " << currentDepth \
-                << std::setprecision(4) \
-                << " branchf " << std::pow(nodes_depth, 1.0/currentDepth) \
-                << std::setprecision(2) \
-                << " ordering " << (static_cast<double>(info->fail_high_first) / info->fail_high) \
-                << " nullcut " << info->nullcut \
-                << " hashcut " << HashTable->cut \
-                << " deltacut " << info->deltacut \
-                << " seecut " << info->seecut \
-                << std::endl;
+        // pvMoves = GetPvLine(currentDepth, pos);
+        pvMoves = tt.get_pv_line(pos, currentDepth);
+        bestMove = pos->pv[0];
+        printf("info score cp %d depth %d nodes %ld time %lu ", bestScore,
+               currentDepth, info->nodes, now() - info->start);
 
-		}
+        pvMoves = tt.get_pv_line(pos, currentDepth);
+        printf("pv");
+        for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
+          printf(" %s", move_to_str(pos->pv[pvNum]).c_str());
+        }
+        std::cout << std::endl;
+
+        std::cout << "info string depth " << currentDepth
+                  << std::setprecision(4) << " branchf "
+                  << std::pow(nodes_depth, 1.0 / currentDepth)
+                  << std::setprecision(2) << " ordering "
+                  << (static_cast<double>(info->fail_high_first) /
+                      info->fail_high)
+                  << " nullcut " << info->nullcut << " hashcut "
+                  << info->hashcut << " deltacut " << info->deltacut
+                  << " seecut " << info->seecut << std::endl;
+      }
 	}
     std::cout << "bestmove " << move_to_str(bestMove) << std::endl;
 

@@ -24,7 +24,7 @@ CUTECHESS_FLAGS+=" -tournament gauntlet"
 CUTECHESS_FLAGS+=" -concurrency ${CORES}"
 
 # Number of games to play against each opponent
-GAMES=30
+GAMES=300
 CUTECHESS_FLAGS+=" -games ${GAMES}"
 
 # Debug output?
