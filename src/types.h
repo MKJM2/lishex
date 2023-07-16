@@ -213,31 +213,31 @@ enum {
 
 // Constructor
 inline move_t Move(square_t from, square_t to, int flags) {
-    return ((((flags) & 0xf) << 12) | \
-            (((from) & 0x3f) << 6)  | \
-             ((to) & 0x3f));
+    return (((flags & 0xf) << 12) | \
+            ((from & 0x3f) << 6)  | \
+             (to & 0x3f));
 }
 
 #define NULLMV ((move_t) 0U)
 
 inline square_t get_to(const move_t move) {
-    return ((move) & 0x3f);
+    return (move & 0x3f);
 }
 
 inline square_t get_from(const move_t move) {
-    return (((move) >> 6) & 0x3f);
+    return ((move >> 6) & 0x3f);
 }
 
 inline int get_flags(const move_t move) {
-    return (((move) >> 12) & 0xf);
+    return ((move >> 12) & 0xf);
 }
 
 inline int is_promotion(const move_t move) {
-    return (((move) >> 12) & 0b1000);
+    return ((move >> 12) & 0b1000);
 }
 
 inline int is_capture(const move_t move) {
-    return (((move) >> 12) & 0b0100);
+    return ((move >> 12) & 0b0100);
 }
 
 inline bool move_ok(const move_t move) {

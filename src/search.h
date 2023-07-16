@@ -6,6 +6,7 @@
 #include "bitboard.h"
 #include "movegen.h"
 #include "time.h"
+#include "transposition.h"
 
 /**
  @brief Searches the current board state for the best move
@@ -24,13 +25,23 @@ typedef struct {
 } S_HASHENTRY;
 
 typedef struct {
-	S_HASHENTRY *pTable;
+	tt_entry *pTable;
 	int numEntries;
 	int newWrite;
 	int overWrite;
 	int hit;
 	int cut;
 } S_HASHTABLE;
+
+//typedef struct {
+	//S_HASHENTRY *pTable;
+	//int numEntries;
+	//int newWrite;
+	//int overWrite;
+	//int hit;
+	//int cut;
+//} S_HASHTABLE;
+
 
 void InitHashTable(S_HASHTABLE *table, const int MB);
 

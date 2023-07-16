@@ -56,10 +56,12 @@ int GetPvLine(const int depth, board_t *pos) {
 
 void ClearHashTable(S_HASHTABLE *table) {
 
-  S_HASHENTRY *tableEntry;
+  //S_HASHENTRY *tableEntry;
+  tt_entry *tableEntry;
 
   for (tableEntry = table->pTable; tableEntry < table->pTable + table->numEntries; tableEntry++) {
-    tableEntry->posKey = 0ULL;
+    //tableEntry->posKey = 0ULL;
+    tableEntry->key = 0ULL;
     tableEntry->move = NULLMV;
     tableEntry->depth = 0;
     tableEntry->score = 0;
@@ -71,27 +73,30 @@ void ClearHashTable(S_HASHTABLE *table) {
 void InitHashTable(S_HASHTABLE *table, const int MB) {
 
 	int HashSize = 0x100000 * MB;
-    table->numEntries = HashSize / sizeof(S_HASHENTRY);
+    //table->numEntries = HashSize / sizeof(S_HASHENTRY);
+    table->numEntries = HashSize / sizeof(tt_entry);
     table->numEntries -= 2;
 
 	if(table->pTable!=NULL) {
 		free(table->pTable);
 	}
 
-    table->pTable = (S_HASHENTRY *) malloc(table->numEntries * sizeof(S_HASHENTRY));
+    //table->pTable = (S_HASHENTRY *) malloc(table->numEntries * sizeof(S_HASHENTRY));
+    table->pTable = (tt_entry *) malloc(table->numEntries * sizeof(tt_entry));
 	if(table->pTable == NULL) {
 		printf("Hash Allocation Failed, trying %dMB...\n",MB/2);
 		InitHashTable(table,MB/2);
 	} else {
 		ClearHashTable(table);
 		printf("HashTable init complete with %d entries ",table->numEntries);
-        printf("(entry size is %lu)\n", sizeof(S_HASHENTRY));
+        printf("(entry size is %lu)\n", sizeof(tt_entry));
 	}
 
 }
+                                //change back to int int
+int ProbeHashEntry(board_t *pos, move_t *move, int *score, int alpha, int beta, int depth) {
 
-int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int depth) {
-
+    std::cout << "[ProbeHash]: Probing " << pos->key << " " << alpha << " " << beta << " " << depth << std::endl;
 	int index = pos->key % HashTable->numEntries;
 
 	assert(index >= 0 && index <= HashTable->numEntries - 1);
@@ -101,9 +106,10 @@ int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int
     assert(beta>=-oo&&beta<=oo);
     assert(pos->ply>=0&&pos->ply<MAX_DEPTH);
 
-	if( HashTable->pTable[index].posKey == pos->key ) {
+	if( HashTable->pTable[index].key == pos->key ) {
 		*move = HashTable->pTable[index].move;
 		if(HashTable->pTable[index].depth >= depth){
+            std::cout << "Correct entry!\n";
 			HashTable->hit++;
 
 			assert(HashTable->pTable[index].depth>=1&&HashTable->pTable[index].depth<MAX_DEPTH);
@@ -113,8 +119,7 @@ int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int
 			if(*score > +oo - MAX_DEPTH) *score -= pos->ply;
             else if(*score < -oo + MAX_DEPTH) *score += pos->ply;
 
-			switch(HashTable->pTable[index].flags) {
-
+			switch(static_cast<int>(HashTable->pTable[index].flags)) {
                 case HFALPHA: if(*score<=alpha) {
                     *score=alpha;
                     return true;
@@ -124,19 +129,28 @@ int ProbeHashEntry(board_t *pos, int *move, int *score, int alpha, int beta, int
                     *score=beta;
                     return true;
                     }
+                    std::cout << "Hi!\n";
                     break;
                 case HFEXACT:
                     return true;
                     break;
-                default: assert(false); break;
+                default:
+                    std::cout << "UHOH" << std::endl;
+                    assert(false); break;
             }
+            std::cout << "How even..." << (int)HashTable->pTable[index].flags << std::endl; // ??????????????????
 		}
+        std::cout << "[ProbeHash]: Depth insufficient: " << (int)HashTable->pTable[index].depth << " vs " << depth << std::endl;
 	}
 
+    std::cout << "[ProbeHash]: Key mismatch: " << HashTable->pTable[index].key << " vs " << pos->key << std::endl;
 	return false;
 }
 
 void StoreHashEntry(board_t *pos, const int move, int score, const int flags, const int depth) {
+
+    std::cout << "[StoreHash]: Storing " << pos->key << " " << pos->key % HashTable->numEntries << " " << move << " "
+              << score << " " << flags << " " << depth << std::endl;
 
 	int index = pos->key % HashTable->numEntries;
 
@@ -146,7 +160,8 @@ void StoreHashEntry(board_t *pos, const int move, int score, const int flags, co
     assert(score>=-oo&&score<=+oo);
     assert(pos->ply>=0&&pos->ply<MAX_DEPTH);
 
-	if( HashTable->pTable[index].posKey == 0) {
+	//if( HashTable->pTable[index].posKey == 0) {
+	if( HashTable->pTable[index].key == 0) {
 		HashTable->newWrite++;
 	} else {
 		HashTable->overWrite++;
@@ -156,10 +171,18 @@ void StoreHashEntry(board_t *pos, const int move, int score, const int flags, co
     else if(score < -oo + MAX_DEPTH) score -= pos->ply;
 
 	HashTable->pTable[index].move = move;
-    HashTable->pTable[index].posKey = pos->key;
+    //HashTable->pTable[index].posKey = pos->key;
+    HashTable->pTable[index].key = pos->key;
 	HashTable->pTable[index].flags = flags;
 	HashTable->pTable[index].score = score;
 	HashTable->pTable[index].depth = depth;
+
+    std::cout << "[StoreHash]:  Stored " << HashTable->pTable[index].key
+                << " " << index
+                << " " << HashTable->pTable[index].move << " "
+                << HashTable->pTable[index].score << " "
+                << (int)HashTable->pTable[index].flags << " "
+                << (int)HashTable->pTable[index].depth << std::endl;
 }
 
 int ProbePvMove(const board_t *pos) {
@@ -167,7 +190,8 @@ int ProbePvMove(const board_t *pos) {
 	int index = pos->key % HashTable->numEntries;
 	assert(index >= 0 && index <= HashTable->numEntries - 1);
 
-	if( HashTable->pTable[index].posKey == pos->key ) {
+	//if( HashTable->pTable[index].posKey == pos->key ) {
+	if( HashTable->pTable[index].key == pos->key ) {
 		return HashTable->pTable[index].move;
 	}
 
@@ -329,14 +353,54 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 	int Score = -oo;
 	move_t PvMove = NULLMV;
 
-	//if( ProbeHashEntry(pos, &PvMove, &Score, alpha, beta, depth) == true ) {
-		//HashTable->cut++;
-		//return Score;
-	//}
-	tt_entry entry;
-	if (tt.probe(pos, &entry, &PvMove, &Score, alpha, beta, depth) == TTHIT) {
+    tt_entry entry;
+    if ( tt.probe(pos, &entry, PvMove, Score, alpha, beta, depth) == TTHIT )
         return Score;
-    }
+
+
+    //int ttmove = ProbeHashEntry(pos, &PvMove, &Score, alpha, beta, depth);
+	//if( ttmove ) {
+		//HashTable->cut++;
+    //}
+//
+    //int tmpScore = -oo;
+    //move_t tmpMove = NULLMV;
+    //tt_entry entry;
+    //int ttmove2 = tt.probe(pos, &entry, tmpMove, tmpScore, alpha, beta, depth);
+
+    //if (ttmove != ttmove2) {
+        //std::cout << "For position: " << pos->key << std::endl;
+        //size_t idx = pos->key % HashTable->numEntries;
+        //std::cout << ttmove << " vs " << ttmove2 << std::endl;
+        //std::cout << "Move " << ttmove2 << " retrieved from " << (ttmove ? "1" : "2") << std::endl;
+        //std::cout << "Score " << tmpScore << " retrieved from " << (ttmove ? "1" : "2") << std::endl;
+    //std::cout << "Stored " << entry.key << " " << idx << " " << entry.move << " "
+              //<< entry.score << " " << (int)entry.flags << " " << (int)entry.depth << std::endl;
+    //std::cout << "while hashmap has"
+                 //<< " " << HashTable->pTable[idx].key
+                 //<< " " << idx
+                 //<< " " << HashTable->pTable[idx].move
+                 //<< " " << HashTable->pTable[idx].score
+                 //<< " " << (int)HashTable->pTable[idx].flags
+                 //<< " " << (int)HashTable->pTable[idx].depth
+        //<< std::endl;
+        //exit(1);
+    //}
+
+    //if (tmpScore != Score) {
+        //std::cout << "Score mismatch: " << Score << " vs " << tmpScore << std::endl;
+        //exit(1);
+    //}
+    //if (PvMove != tmpMove) {
+        //std::cout << "Move mismatch: " << PvMove << " vs " << tmpMove << std::endl;
+        //exit(1);
+    //}
+//
+    //if (ttmove) {
+        //return Score;
+    //}
+
+
 
 	if( DoNull && !checkers && pos->ply &&
         CNT(pos->sides_pieces[pos->turn] ^
@@ -436,16 +500,18 @@ static int AlphaBeta(int alpha, int beta, int depth, board_t *pos, searchinfo_t 
 
 	assert(alpha>=OldAlpha);
 
-	//if(alpha != OldAlpha) {
+	if(alpha != OldAlpha) {
 		//StoreHashEntry(pos, BestMove, BestScore, HFEXACT, depth);
-	//} else {
-		//StoreHashEntry(pos, BestMove, alpha, HFALPHA, depth);
-	//}
-	if (alpha != OldAlpha) {
         tt.store(pos, BestMove, BestScore, EXACT, depth);
-    } else {
+	} else {
+		//StoreHashEntry(pos, BestMove, alpha, HFALPHA, depth);
         tt.store(pos, BestMove, alpha, UPPER, depth);
-    }
+	}
+	//if (alpha != OldAlpha) {
+        //tt.store(pos, BestMove, BestScore, EXACT, depth);
+    //} else {
+        //tt.store(pos, BestMove, alpha, UPPER, depth);
+    //}
 
 	return alpha;
 }
@@ -463,31 +529,32 @@ void search(board_t *pos, searchinfo_t *info) {
 
 
 	//printf("Search depth:%d\n",info->depth);
-	move_t m = Move(B2, A1, QUEENPROMO);
-    uint64_t k = pos->key;
-    int depth = 5;
-    int flags = EXACT;
-    int score = 574;
-    std::cout << "Storing move " << m << " for board " << k << " depth "
-              << depth << " flag " << flags << " with score " << score
-              << std::endl;
-
-    tt.store(pos, m, score, flags, depth);
-    move_t retrieved_m = NULLMV;
-    int retrieved_score = NULLMV;
-    tt_entry entry;
-    tt.probe(pos, &entry, &retrieved_m, &retrieved_score, -oo, +oo, 5);
-    std::cout << "Retrieved move " << retrieved_m << " for board " << entry.key << " depth "
-              << depth << " flag " << static_cast<int>(entry.flags) << " with score " << retrieved_score
-              << std::endl;
-
-    unsigned char* pointer = (unsigned char*)&entry;
-    while (pointer < (unsigned char*)&entry + sizeof(entry))
-    {
-        printf("%02hhX", *pointer);
-        pointer++;
-    }
-    std::cout << std::endl;
+	//move_t m = Move(B2, A1, QUEENPROMO);
+    //uint64_t k = pos->key;
+    //int depth = 5;
+    //int flags = UPPER;
+    //int score = -574;
+    //std::cout << "Storing move   " << std::hex << m << " for board "
+              //<< k << " depth "
+              //<< depth << " flag " << flags << " with score " << score
+              //<< std::endl;
+//
+    //tt.store(pos, m, score, flags, depth);
+    //move_t retrieved_m = NULLMV;
+    //int retrieved_score = NULLMV;
+    //tt_entry entry;
+    //tt.probe(pos, &entry, &retrieved_m, &retrieved_score, -oo, +oo, 5);
+    //std::cout << "Retrieved move " << retrieved_m << " for board " << entry.key << " depth "
+              //<< depth << " flag " << static_cast<int>(entry.flags) << " with score " << retrieved_score
+              //<< std::endl;
+//
+    //unsigned char* pointer = (unsigned char*)&entry;
+    //while (pointer < (unsigned char*)&entry + sizeof(entry))
+    //{
+        //printf("%02hhX", *pointer);
+        //pointer++;
+    //}
+    //std::cout << std::endl;
 
     // iterative deepening
     if (bestMove == NULLMV) {
@@ -504,13 +571,14 @@ void search(board_t *pos, searchinfo_t *info) {
           break;
         }
 
-        // pvMoves = GetPvLine(currentDepth, pos);
+        //pvMoves = GetPvLine(currentDepth, pos);
         pvMoves = tt.get_pv_line(pos, currentDepth);
         bestMove = pos->pv[0];
         printf("info score cp %d depth %d nodes %ld time %lu ", bestScore,
                currentDepth, info->nodes, now() - info->start);
 
         pvMoves = tt.get_pv_line(pos, currentDepth);
+        //pvMoves = GetPvLine(currentDepth, pos);
         printf("pv");
         for (pvNum = 0; pvNum < pvMoves; ++pvNum) {
           printf(" %s", move_to_str(pos->pv[pvNum]).c_str());
