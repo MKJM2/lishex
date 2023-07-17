@@ -122,7 +122,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     // score_and_sort(board, &captures, NULLMV);
     score_moves(board, &captures, NULLMV);
 
-    int legal = 0;
+    int moves_searched = 0;
 
     // Iterate over the pseudolegal moves in the current position
     move_t move;
@@ -160,7 +160,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         if (!make_move(board, move)) //
             continue;
 
-        ++legal;
+        ++moves_searched;
         score = -quiescence(-beta, -alpha, board, info);
 
         undo_move(board, move);
@@ -170,7 +170,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         }
 
         if (score >= beta) { // fail-high
-            if (legal == 1) {
+            if (moves_searched == 1) {
                 info->fail_high_first++;
             }
             info->fail_high++;
@@ -199,7 +199,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(depth >= 0);
 
     // [PVS] Check if in pv node (credit: Pedro Castro)
-    // int pv_node = beta - alpha > 1;
+    int pv_node = beta - alpha > 1;
 
     // PV for the current search ply
     pv_line &pv = pv_tb[board->ply];
@@ -231,9 +231,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     /* Transposition table probing */
     tt_entry entry[1];
+    int tthit = tt.probe(board, entry, ttmove, score, alpha, beta, depth);
 
     // Check if can get a cutoff (a root node is by def. a pv node)
-    if (tt.probe(board, entry, ttmove, score, alpha, beta, depth)) {
+    if (tthit) {
        ++info->hashcut;
        return score;
     }
@@ -258,10 +259,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
      depth - 1 - R (for R = 3) is allowed
     */
 
-    // TODO: Adaptive null move pruning: size of reduction depends on depth
     int R = 3 + depth / 6;
 
-    if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
+    if (!pv_node && do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
         board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
         CNT(board->sides_pieces[board->turn] ^
             board->bitboards[board->turn ? P : p]) > 1) {
@@ -275,7 +275,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
       if (search_stopped(info))
         return 0;
 
-      // TODO: Handle mate scores
       if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
           ++info->nullcut;
           // fail-hard beta cutoff
@@ -307,16 +306,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // If following the principal variation (from a previous search at a smaller
     // depth), order the PV move higher
-
-    // pv move from the previous iter is the first move in the parent pv
-    // Move ordering              // PV move, if any // TODO: test against 0
-    // score_and_sort(board, &moves, pv_tb[0][board->ply]);
-    // TODO: test with ttmove, separate ttmove and pvmove?
-    // score_moves(board, &moves, pv_tb[0][board->ply]);
-    // if (ttmove == NULLMV) ttmove = pv_tb[0][board->ply];
     score_moves(board, &moves, ttmove);
 
-    int legal = 0;
+    size_t moves_searched = 0;
     int bestscore = score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
@@ -328,21 +320,63 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         if (!make_move(board, move))
             continue;
 
-        ++legal;
+        ++moves_searched;
 
         // [PVS] Principal variation search
         // We assume that given good move ordering, if we found a PV move
         // we are in a PV node. Thus we want to prove that all the remaining
         // moves are bad. If we were wrong and managed to find a better move,
         // we need to do a research
-        if (type == EXACT) {
-            score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
-            if (score > alpha && score < beta) {
-                // Perform a full window research
-                score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
-            }
-        } else {
+        //if (type == EXACT) {
+            //score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
+            //if (score > alpha && score < beta) {
+                //// Perform a full window research
+                //score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+            //}
+        //} else {
+            //score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+        //}
+
+        /* [LMR] Late Move Reduction */
+        if (moves_searched == 0) {
+            // We assume, given good move ordering, that the first move
+            // is a PV move (leading to a PV node) so we perform a full search
             score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+        } else {
+            // We check whether to consider a reduction or not. We do so if:
+            // - not in a pv node
+            // - enough moves searched already
+            //    - we require that number to be larger if in a PV node
+            // - sufficient depth to reduce
+            // - the move is quiet (we don't want to reduce on captures/promotions)
+            // - not in check
+            // If all of the above are satisfied, we reduce the search by 2 plies
+            if ( !pv_node &&
+                 moves_searched >= lmr_fully_searched_req &&
+                 depth >= lmr_limit  &&
+                 !is_capture(move)   &&
+                 !is_promotion(move) &&
+                 !in_check
+            ) {
+                score = -negamax(-alpha - 1, -alpha, depth - 2, board, info, USE_NULL);
+            } else {
+                // Trick to ensure a full-depth search is done
+                // credit: https://web.archive.org/web/20071028123254/http://www.glaurungchess.com/lmr.html
+                score = alpha + 1;
+            }
+
+            if (score > alpha) {
+                // [PVS] Principal variation search
+                // We assume that given good move ordering, if we found a PV move
+                // we are in a PV node. Thus we want to prove that all the remaining
+                // moves are bad. If we were wrong and managed to find a better move,
+                // we need to do a research
+                score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
+                if (score > alpha && score < beta) {
+                    // Perform a full window re-search
+                    score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+                }
+            }
         }
 
         undo_move(board, move);
@@ -366,7 +400,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 pv.size = new_pv.size;
 
                 if (score >= beta) { // Fail-high node
-                    if (legal == 1) {
+                    if (moves_searched == 1) {
                         info->fail_high_first++;
                     }
                     info->fail_high++;
@@ -419,7 +453,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // If no legal moves, then check if we're in check
     // If not, it's a stalemate
-    if (!legal) {
+    if (!moves_searched) {
                             // Mate score      // Stalemate
         return (in_check) ? -oo + board->ply : 0;
     }
@@ -467,13 +501,12 @@ inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
   std::cout << " depth " << d << " nodes "
             << n << " time " << t << " hashfull " << tt.hashfull() << " pv ";
   //pv.print();
-  //std::cout << " tt ";
+  // std::cout << " tt ";
   int ttmoves = tt.get_pv_line(board, d);
   for (int i = 0; i < ttmoves; ++i) {
       std::cout << move_to_str(board->pv[i]) << ' ';
   }
   std::cout << std::endl;
-
 }
 
 
@@ -503,6 +536,51 @@ void init_search(board_t *board, searchinfo_t *info) {
     tt.reset_stats();
 }
 
+/**
+ @brief Given the score from a previous search, we try to estimate the bounds of the window
+ for the next search. This should result in more beta-cutoffs. If we get a score
+ outside of the window, then we need to perform a research with a wider window
+ @param board the board position to search
+ @param info search info: time, depth to search, etc.
+ @param depth number of plies to search
+ @param do_null whether to perform a null move or not
+*/
+int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score, int depth, bool do_null) {
+
+    // Initialize the initial window
+    int aw_delta = 35;
+    int score = prev_score;
+
+    int alpha = -oo, beta = +oo;
+
+    // If the search depth is low, we want to search with wider windows
+    if (depth >= 3) {
+        alpha = MAX(-oo, score - aw_delta);
+        beta  = MIN(+oo, score + aw_delta);
+    }
+
+    // We keep retrying the search with larger and larger windows
+    for (;;) {
+        score = negamax(alpha, beta, depth, board, info, do_null);
+
+        if (search_stopped(info)) break;
+
+        /* Check if we fell outside of the window */
+        if (score <= alpha) {
+            // We failed low, hence decrease the alpha
+            alpha = MAX(-oo, score - aw_delta);
+        } else if (score >= beta) {
+            // We failed high, hence increase the beta
+            beta = MIN(+oo, score + aw_delta);
+        } else {
+            // We found a score within the window!
+            break;
+        }
+        aw_delta *= 1.44;
+    }
+    return score;
+}
+
 
 } // namespace
 
@@ -512,7 +590,7 @@ void search(board_t *board, searchinfo_t *info) {
     assert(check(board));
 
     move_t best_move = NULLMV;
-    int best_score = -oo;
+    int best_score = 0;
 
     // Clear for search
     init_search(board, info);
@@ -523,7 +601,7 @@ void search(board_t *board, searchinfo_t *info) {
         // For calculating the branching factor
         curr_depth_nodes = info->nodes;
 
-        best_score = negamax(-oo, +oo, depth, board, info, USE_NULL);
+        best_score = aspiration_window_search(board, info, best_score, depth, USE_NULL);
 
         curr_depth_nodes = info->nodes - curr_depth_nodes;
 
@@ -542,7 +620,7 @@ void search(board_t *board, searchinfo_t *info) {
                           now() - info->start,
                           pv_tb[0], board);
 
-        std::cout << "info string depth " << depth \
+        LOG("info string depth " << depth \
             << std::setprecision(4) \
             << " branchf " << std::pow(curr_depth_nodes, 1.0/depth) \
             << std::setprecision(2) \
@@ -551,16 +629,10 @@ void search(board_t *board, searchinfo_t *info) {
             << " hashcut " << info->hashcut \
             << " deltacut " << info->deltacut \
             << " seecut " << info->seecut \
-            << std::endl;
+        );
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;
-
-    /*
-    std::cout << "Ordering: "
-              << (static_cast<double>(info->fail_high_first) / info->fail_high)
-              << std::endl;
-    */
 
     assert(check(board));
 

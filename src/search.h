@@ -15,36 +15,9 @@
 */
 void search(board_t *board, searchinfo_t *info);
 
-
-typedef struct {
-	uint64_t posKey;
-	int move;
-	int score;
-	int depth;
-	int flags;
-} S_HASHENTRY;
-
-typedef struct {
-	tt_entry *pTable;
-	int numEntries;
-	int newWrite;
-	int overWrite;
-	int hit;
-	int cut;
-} S_HASHTABLE;
-
-//typedef struct {
-	//S_HASHENTRY *pTable;
-	//int numEntries;
-	//int newWrite;
-	//int overWrite;
-	//int hit;
-	//int cut;
-//} S_HASHTABLE;
-
-
-void InitHashTable(S_HASHTABLE *table, const int MB);
-
-extern S_HASHTABLE HashTable[1];
+// Constants / parameters
+// [LMR]
+constexpr int lmr_fully_searched_req = 4;
+constexpr int lmr_limit = 3;
 
 #endif // SEARCH_H_
