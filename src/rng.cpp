@@ -15,8 +15,8 @@ inline uint64_t splitmix_next() {
 	return z ^ (z >> 31);
 }
 
-inline uint64_t rol64(uint64_t x, int k) {
-    return (x << k) | (x >> (64 - k));
+inline uint64_t rol64(uint64_t v, int k) {
+    return (v << k) | (v >> (64 - k));
 }
 
 typedef struct xoshiro256ss_state {

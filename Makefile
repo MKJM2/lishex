@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++20 -mpopcnt -m64 -mbmi2
+CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
 # For faster compilation
 CPUS := $(shell nproc)
 MAKEFLAGS += --jobs=$(CPUS)
@@ -11,7 +11,7 @@ TARGET = lishex
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+	CXXFLAGS += -ggdb -DDEBUG -w
 endif
 
 ### Sanitizers
@@ -24,7 +24,7 @@ endif
 optimize ?= yes
 ifeq ($(optimize),yes)
 	ifneq ($(debug),yes)
-		CXXFLAGS += -O2 -pipe -flto # -DNO_TT # -DNO_NMH
+		CXXFLAGS += -Ofast -fno-exceptions -pipe -flto=auto
 	endif
 endif
 
