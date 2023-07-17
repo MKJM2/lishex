@@ -325,12 +325,25 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     while ((move = next_best(&moves, board->ply)) != NULLMV) {
 
         // Pseudo-legal move generation
-        if (!make_move(board, move)) {
+        if (!make_move(board, move))
             continue;
-        }
 
         ++legal;
-        score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+
+        // [PVS] Principal variation search
+        // We assume that given good move ordering, if we found a PV move
+        // we are in a PV node. Thus we want to prove that all the remaining
+        // moves are bad. If we were wrong and managed to find a better move,
+        // we need to do a research
+        if (type == EXACT) {
+            score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
+            if (score > alpha && score < beta) {
+                // Perform a full window research
+                score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+            }
+        } else {
+            score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+        }
 
         undo_move(board, move);
 

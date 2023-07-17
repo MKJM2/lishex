@@ -7,8 +7,9 @@ A UCI chess-engine built in C++.
   - Square centric [8x8 board](https://www.chessprogramming.org/8x8_Board) for quick piece-lookup during move making
 - Iterative deepening [Negamax framework](https://www.chessprogramming.org/Negamax)
   - [Alpha-Beta pruning](https://www.chessprogramming.org/Alpha-Beta)
-  - Most Valuable Victim Least Valuable Attacker ([MVV-LVA](https://www.chessprogramming.org/MVV-LVA)) heuristic 
+  - [Principal variation search](https://www.chessprogramming.org/Principal_Variation_Search)
   - [Quiescence search](https://www.chessprogramming.org/Quiescence_Search)
+  - Most Valuable Victim Least Valuable Attacker ([MVV-LVA](https://www.chessprogramming.org/MVV-LVA)) heuristic 
   - [Killer move heuristic](https://www.chessprogramming.org/Killer_Heuristic)
   - [History heuristic](https://www.chessprogramming.org/History_Heuristic)
   - [Null-move pruning](https://www.chessprogramming.org/Null_Move_Pruning)
@@ -49,7 +50,6 @@ doxygen
 in the project root.
 
 ### TODOs
-- [Principal variation search](https://www.chessprogramming.org/Principal_Variation_Search)
 - [Futility pruning](https://www.chessprogramming.org/Futility_Pruning)
 - [Mobility scores](https://www.chessprogramming.org/Mobility)
 - [Late move reduction](https://www.chessprogramming.org/Late_Move_Reductions)
