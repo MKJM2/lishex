@@ -133,12 +133,13 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
          * safely discarded */
 
         // If the move captures the king (TODO: Debug this)
-        /*
         piece_t& captured = board->pieces[get_to(move)];
 
+        /*
         if (piece_type(captured) == KING) {
             return +oo - board->ply;
         }
+        */
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
@@ -152,7 +153,6 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 continue;
             }
         }
-        */
 
         /* All checks failed, hence the move is promising and we try making it */
 
@@ -209,6 +209,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // Set principal variation line size for the current search ply
     pv.size = board->ply;
 
+    /* Recursion base case */
     if (depth <= 0) {
         return quiescence(alpha, beta, board, info);
     }
@@ -225,12 +226,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         return evaluate(board, &eval);
     }
 
-    // Check search extension
-    bool in_check = is_in_check(board, board->turn);
-    if (in_check) {
-        ++depth;
-    }
-
     int score = -oo;
     move_t ttmove = NULLMV;
 
@@ -241,6 +236,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     if (tt.probe(board, entry, ttmove, score, alpha, beta, depth)) {
        ++info->hashcut;
        return score;
+    }
+
+    // Check search extension
+    bool in_check = is_in_check(board, board->turn);
+    if (in_check) {
+        ++depth;
     }
 
     // Otherwise, we keep searching
@@ -258,8 +259,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     */
 
     // TODO: Adaptive null move pruning: size of reduction depends on depth
-    // int R = (depth > 6) ? 3 : 2;
-    int R = 3; // + depth / 6;
+    int R = 3 + depth / 6;
 
     if (do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
         board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
@@ -423,8 +423,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // else if (bestscore < -oo + MAX_DEPTH) bestscore += board->ply;
 
     // We don't want to store a score outside of the window
-    bestscore = type == UPPER ? alpha : bestscore;
-
     // Fail-hard: we don't want to report scores outside of the search window
     if (type == UPPER) {
         bestscore = alpha;

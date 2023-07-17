@@ -113,7 +113,7 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         time /= movestogo;
 
         // to be safe we don't run out of time
-        time -= 5;
+        time -= 50;
         time = std::abs(time);
         info->end = info->start + time + inc;
     }
