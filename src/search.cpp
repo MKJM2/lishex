@@ -90,12 +90,17 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     ++info->nodes;
 
     // Position encountered previously?
-    if (is_repetition(board) || board->fifty_move >= 100) {
-        return 0; // Draw score
-    }
+    //if (is_repetition(board) || board->fifty_move >= 100) {
+        //return 0; // Draw score
+    //}
 
     /* Stand-pat score */
     int score = evaluate(board, &eval);
+
+    if (board->ply > info->seldepth)
+    {
+        info->seldepth = board->ply - 1;
+    }
 
     // Are we too deep into the search tree?
     if (board->ply > MAX_DEPTH - 1) {
@@ -148,7 +153,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 continue;
             }
 
-            if (losing_capture(board, move, -value_eg[KNIGHT])) {
+            if (losing_capture(board, move, -value_eg[PAWN])) {
                 ++info->seecut;
                 continue;
             }
@@ -237,7 +242,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     if (tthit) {
        ++info->hashcut;
        return score;
-    }
+    } // Otherwise, we keep searching
+
 
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
@@ -245,9 +251,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         ++depth;
     }
 
-    // Otherwise, we keep searching
-
-    /* Null move pruning */
+    /* Reverse futility pruning && Null move pruning */
 
     /* Requirements:
      - can do null move (we only want to do one, and not do them repeatedly)
@@ -258,42 +262,51 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
      - TODO: If PVS: not in a PV node
      depth - 1 - R (for R = 3) is allowed
     */
-
     int R = 3 + depth / 6;
 
-    if (!pv_node && do_null && !in_check && // board->ply >= 2 && depth >= R + 1 && score >= beta &&
-        board->ply && depth >= R + 1 && // evaluate(board, &eval) >= beta &&
+    if (!pv_node && do_null && !in_check &&
         CNT(board->sides_pieces[board->turn] ^
-            board->bitboards[board->turn ? P : p]) > 1) {
+                    board->bitboards[board->turn ? P : p]) > 1
+    ) {
+        score = evaluate(board, &eval);
 
-      make_null(board);
-      // do_null is now set to false, since we don't want to do two null moves
-      // in a row
-      score = -negamax(-beta, -beta + 1, depth - 1 - R, board, info, false);
-      undo_null(board);
+        /* Reverse futility pruning */
+        static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
+                                  value_mg[ROOK], value_mg[QUEEN]};
+        if (depth <= 3 && std::abs(beta) < +oo - MAX_DEPTH && score - margins[depth] >= beta) {
+            // Fail-hard
+            return beta;
+        }
 
-      if (search_stopped(info))
-        return 0;
+        /* Null move pruning */
+        if (depth >= R + 1) {
+            make_null(board);
+            // do_null is now set to false, since we don't want to do two null moves
+            // in a row
+            score = -negamax(-beta, -beta + 1, depth - 1 - R, board, info, false);
+            undo_null(board);
 
-      if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
-          ++info->nullcut;
-          // fail-hard beta cutoff
-          return beta;
-      }
+            if (search_stopped(info))
+                return 0;
 
-      /* // TODO: Null move reduction
-      if (score >= beta) {
-          if (std::abs(score) < +oo - MAX_DEPTH) {
-              return score;
-          }
-          depth -= 4;
-          if (depth <= 0) {
-              return quiescence(alpha, beta, board, info);
-          }
-      }
-    */
+            if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
+                ++info->nullcut;
+                // fail-hard beta cutoff
+                return beta;
+            }
+        }
+        /* // TODO: Null move reduction in endgames
+        if (score >= beta) {
+            if (std::abs(score) < +oo - MAX_DEPTH) {
+                return score;
+            }
+            depth -= 4;
+            if (depth <= 0) {
+                return quiescence(alpha, beta, board, info);
+            }
+        }
+        */
     }
-
 
     // Bruce Moreland's trick for storing entries in the TT
     // - unless we get a cut-off, the score is an upperbound of
@@ -433,19 +446,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 // Update the search window lowerbound
                 type = EXACT;
                 alpha = score;
-
-                // Store the move in the principal variation for the current ply
-                //pv[board->ply] = move;
-
-                // Copy over the rest of the principal variation from the next ply
-                //for (int j = board->ply + 1; j < new_pv.size; ++j) {
-                    //pv[j] = new_pv[j];
-                //}
-                //movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                //pv.size = new_pv.size;
-
-                // /* Store the move in the transposition table */
-                //bestmove = move;
             }
         }
         /* Fail low: simply search the next move */
@@ -465,10 +465,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert((type == LOWER && bestscore >= beta) ||
            (type == UPPER && bestscore <= alpha) || (type == EXACT));
 
-    // Adjust score for mates before storing in tt
-    // if (bestscore > +oo - MAX_DEPTH) bestscore -= board->ply;
-    // else if (bestscore < -oo + MAX_DEPTH) bestscore += board->ply;
-
     // We don't want to store a score outside of the window
     // Fail-hard: we don't want to report scores outside of the search window
     if (type == UPPER) {
@@ -486,20 +482,22 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     return alpha;
 }
 
-inline void print_search_info(int s, int d, uint64_t n, uint64_t t,
+inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
                               const pv_line &pv, board_t *board) {
 
   // Print the info line
-  std::cout << "info score";
+  std::cout << "info depth " << d << " seldepth " << sd \
+            << " score ";
+
   if (std::abs(s) >= +oo - MAX_DEPTH) {
-     std::cout << " mate " \
+     std::cout << "mate " \
           << (s > 0 ? +oo - s + 1 : -oo - s + 1) / 2;
   } else {
-      std::cout << " cp " << s;
+      std::cout << "cp " << s;
   }
+  std::cout << " nodes " << n << " time " << t \
+            << " hashfull " << tt.hashfull() << " pv ";
 
-  std::cout << " depth " << d << " nodes "
-            << n << " time " << t << " hashfull " << tt.hashfull() << " pv ";
   //pv.print();
   // std::cout << " tt ";
   int ttmoves = tt.get_pv_line(board, d);
@@ -616,6 +614,7 @@ void search(board_t *board, searchinfo_t *info) {
 
         print_search_info(best_score,
                           depth,
+                          info->seldepth,
                           info->nodes,
                           now() - info->start,
                           pv_tb[0], board);

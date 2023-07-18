@@ -361,6 +361,7 @@ inline std::string castling_rights_to_str(const int castle_rights) {
 typedef struct searchinfo_t {
     std::atomic_int state; // see src/threads.h
     int depth = MAX_DEPTH;
+    int seldepth = 0;
     uint64_t time;
     uint64_t inc;
     uint64_t start;
@@ -388,6 +389,7 @@ typedef struct searchinfo_t {
         hashcut = 0ULL;
         deltacut = 0ULL;
         seecut = 0ULL;
+        seldepth = 0;
     }
 } searchinfo_t;
 
