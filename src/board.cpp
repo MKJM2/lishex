@@ -361,6 +361,7 @@ void test_see(board_t *board) {
     mirror_test(board);
     print(board);
     mirror_test(board);
+
     std::cout << see(board, Move(E2, F4, CAPTURE)) << std::endl;
     std::cout << see(board, Move(F6, F4, CAPTURE)) << std::endl;
     std::cout << see(board, Move(F6, F8, CAPTURE)) << std::endl;
@@ -368,7 +369,28 @@ void test_see(board_t *board) {
 
 
 void test(board_t *board) {
-    test_see(board);
+    setup(board, "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -");
+    print(board);
+    mirror_test(board);
+    std::cout << see(board, Move(E1, E5, CAPTURE)) << std::endl;
+    mirror_test(board);
+
+    setup(board, "1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -");
+    print(board);
+    mirror_test(board);
+    std::cout << see(board, Move(D3, E5, CAPTURE)) << std::endl;
+    mirror_test(board);
+
+    setup(board, "K4R2/8/5q2/8/5P2/8/4n3/k7 b - - 0 1");
+    mirror_test(board);
+    print(board);
+    mirror_test(board);
+
+
+    setup(board, "rnbqkbnr/2p2p2/p3p2p/1p1p2p1/P1P1P2P/P1P1P2P/8/RNBQKBNR w KQkq d6 0 2");
+    mirror_test(board);
+    print(board);
+    mirror_test(board);
 }
 
 

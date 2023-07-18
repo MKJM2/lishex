@@ -257,7 +257,6 @@ int king_table_eg[SQUARE_NO] = {
 };
 
 // Array of pointers to arrays
-// constexpr const int (*psqt_mg[])[64] = {
 constexpr const int *psqt_mg[] = {
     nullptr, // NO_PIECE
     pawn_table_mg,
@@ -294,8 +293,12 @@ constexpr const int *psqt_eg[] = {
     king_table_eg,
 };
 
+// Tempo score (a small bonus for the side to move)
+const int tempo_bonus = 5;
 // Pass and isolated pawn
-constexpr int isolated_pawn = -10;
+constexpr int isolated_pawn = -13;
+// Doubled pawn penalty
+constexpr int doubled_pawn = -8;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 constexpr int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 // Bonus for having two bishops on board
@@ -371,6 +374,7 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb_t pawns = black_pawns | white_pawns;
     bb_t bb = white_pawns;
 
+    // (White pawns)
     // Pawn values
     eval->middlegame += CNT(bb) * value_mg[P];
     eval->endgame    += CNT(bb) * value_eg[P];
@@ -383,19 +387,30 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame += pawn_table_mg[sq];
         eval->endgame    += pawn_table_eg[sq];
 
-        // Isolated pawns
+        // Isolated pawns penalty
         if ((white_pawns & isolatedMask[sq]) == 0) {
             eval->middlegame += isolated_pawn;
             eval->endgame    += isolated_pawn;
         }
 
-        // Pass pawns  /* black pawns */
+        // Pass pawns bonus  /* black pawns */
         if ((black_pawns & wPassedMask[sq]) == 0) {
             eval->middlegame += passed_pawn[SQUARE_RANK(sq)];
             eval->endgame    += passed_pawn[SQUARE_RANK(sq)];
         }
+
+        // Doubled pawn penalty
+        // - if there's a pawn immediatley behind this one && the pawn isn't
+        //   supported
+        bb_t tmp = SQ_TO_BB(sq);
+        if ((s_shift(tmp) & white_pawns) &&
+            ((se_shift(tmp) | sw_shift(tmp)) & white_pawns) == 0ULL) {
+            eval->middlegame += doubled_pawn;
+            eval->endgame    += doubled_pawn;
+        }
     }
 
+    // (Black pawns)
     // Pawn values
     bb = black_pawns;
     eval->middlegame -= CNT(bb) * value_mg[p];
@@ -413,10 +428,21 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->middlegame -= isolated_pawn;
             eval->endgame    -= isolated_pawn;
         }
+
         // Pass pawns  /* white pawns */
         if ((white_pawns & bPassedMask[sq]) == 0) {
             eval->middlegame -= passed_pawn[SQUARE_RANK(mirror(sq))];
             eval->endgame    -= passed_pawn[SQUARE_RANK(mirror(sq))];
+        }
+
+        // Doubled pawn penalty
+        // - if there's a pawn immediatley behind this one && the pawn isn't
+        //   supported
+        bb_t tmp = SQ_TO_BB(sq);
+        if ((n_shift(tmp) & black_pawns) &&
+            ((ne_shift(tmp) | nw_shift(tmp)) & black_pawns) == 0ULL) {
+            eval->middlegame -= doubled_pawn;
+            eval->endgame    -= doubled_pawn;
         }
     }
 
@@ -544,6 +570,9 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->endgame    -= bishop_pair;
         }
     }
+
+    // Tempo score (small bonus for the side to move)
+    score += (board->turn == WHITE) ? tempo_bonus : -tempo_bonus;
 
     /* Tapered evaluation */
     score = eval->get_tapered_score();
