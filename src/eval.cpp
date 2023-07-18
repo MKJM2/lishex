@@ -299,6 +299,8 @@ const int tempo_bonus = 5;
 constexpr int isolated_pawn = -13;
 // Doubled pawn penalty
 constexpr int doubled_pawn = -8;
+// Bonus for supported pawns
+constexpr int pawn_supported = 15;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 constexpr int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 // Bonus for having two bishops on board
@@ -309,6 +311,52 @@ constexpr int rook_semiopen_file = 5;
 constexpr int queen_open_file = 5;
 constexpr int queen_semiopen_file = 3;
 
+/* Pawn structure helpers */
+
+// Friendly pawns on the same rank & adjacent files
+// for the pawn on square sq
+inline bool is_phalanx(const board_t *board, const square_t sq) {
+    // To avoid color setting logic
+    const piece_t &p = board->pieces[sq];
+    bb_t tmp = SQ_TO_BB(sq);
+    return (e_shift(tmp) | w_shift(tmp)) & board->bitboards[p];
+}
+
+// # of friendly pawns supporting the pawn on square sq
+inline int is_supported(const board_t *board, const square_t sq) {
+   const piece_t &p = board->pieces[sq];
+   bb_t tmp = SQ_TO_BB(sq);
+   if (piece_color(p) == WHITE) {
+       return CNT((se_shift(tmp) | sw_shift(tmp)) & board->bitboards[p]);
+   } else {
+       return CNT((ne_shift(tmp) | nw_shift(tmp)) & board->bitboards[p]);
+   }
+}
+
+// Whether the opponent has a sentry pawn blocking the passage
+// of a pawn on square sq
+inline bool is_opposed(const board_t *board, const square_t sq) {
+    // TODO: Collapse implementation for white and black with flip_colour()
+    const piece_t &p = board->pieces[sq];
+    if (piece_color(p) == WHITE) {
+       return (wPassedMask[sq] & fileBBMask[SQUARE_FILE(sq)]) &
+              board->bitboards[p];
+    } else {
+        return (bPassedMask[sq] & fileBBMask[SQUARE_FILE(sq)]) &
+              board->bitboards[P];
+    }
+}
+
+// Whether the pawn on sq is connected to other friendly pawns, and if yes,
+// a score. We award supported pawns more than phalanx pawns and
+// discourage opposed pawns. We reward pawns pushed further more
+inline int connected(const board_t *board, const square_t sq) {
+    const static int bonuses[] = {0, 5, 10, 15, 20, 25, 30, 0};
+    const piece_t &p = board->pieces[sq];
+    return pawn_supported * is_supported(board, sq) +
+           bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
+               (2 + is_phalanx(board, sq) - is_opposed(board, sq));
+}
 
 // Originally from sjeng 11.2 (adapted from Vice 1.1)
 int material_draw(const board_t *board) {
@@ -408,6 +456,12 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->middlegame += doubled_pawn;
             eval->endgame    += doubled_pawn;
         }
+
+        // Whether the pawn is connected to friendly pawns
+        // (supported || phalanx) + penalty for opposed pawns
+        int connected_bonus = connected(board, sq);
+        eval->middlegame += connected_bonus;
+        eval->endgame    += connected_bonus;
     }
 
     // (Black pawns)
@@ -444,6 +498,12 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->middlegame -= doubled_pawn;
             eval->endgame    -= doubled_pawn;
         }
+
+        // Whether the pawn is connected to friendly pawns
+        // (supported || phalanx) + penalty for opposed pawns
+        int connected_bonus = connected(board, sq);
+        eval->middlegame -= connected_bonus;
+        eval->endgame    -= connected_bonus;
     }
 
     /* Major pieces */

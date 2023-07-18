@@ -12,6 +12,7 @@
 
 #define SQUARE_FILE(sq) ((sq) & 7)
 #define SQUARE_RANK(sq) ((sq) >> 3)
+#define SQUARE_RANK_FOR(colour, sq) (((sq) >> 3) ^ (colour ? 0 : 0b1000))
 #define MAX_MOVES (1024)
 #define MAX_DEPTH (128)
 
@@ -151,6 +152,10 @@ constexpr bool is_sliding = is_sliding_arr[PIECE_T];
 // Set or clear the colour bit depending on specified colour
 inline int set_colour(const piece_t p, const int colour) {
     return colour ? (p & ~0b1000) : (p | 0b1000);
+}
+
+inline int flip_colour(const piece_t p) {
+    return p ^ 0b1000;
 }
 
 // For printing
