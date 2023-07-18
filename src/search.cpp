@@ -90,24 +90,24 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     ++info->nodes;
 
     // Position encountered previously?
+    // TODO: In Qsearch we should only be checking for material draws,
+    // not 3fold repetitions
     //if (is_repetition(board) || board->fifty_move >= 100) {
         //return 0; // Draw score
     //}
 
+    if (board->ply > info->seldepth)
+        info->seldepth = board->ply - 1;
+
     /* Stand-pat score */
     int score = evaluate(board, &eval);
 
-    if (board->ply > info->seldepth)
-    {
-        info->seldepth = board->ply - 1;
-    }
+    assert(-oo < score && score < +oo);
 
     // Are we too deep into the search tree?
     if (board->ply > MAX_DEPTH - 1) {
         return score;
     }
-
-    assert(-oo < score && score < +oo);
 
     if (score >= beta) { // fail-high
         return beta;
@@ -117,34 +117,21 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         alpha = score;
     }
 
-    movelist_t captures;
-    generate_noisy(board, &captures);
+    movelist_t noisy;
+    generate_noisy(board, &noisy);
 
-    // If following the principal variation (from a previous search at a smaller
-    // depth), order the PV move higher
-
-    // Move ordering                 // PV move, if any
-    // score_and_sort(board, &captures, NULLMV);
-    score_moves(board, &captures, NULLMV);
+    // Move ordering              // PV move, if any
+    score_moves(board, &noisy, NULLMV);
 
     int moves_searched = 0;
 
     // Iterate over the pseudolegal moves in the current position
     move_t move;
-    while ((move = next_best(&captures, board->ply)) != NULLMV) {
-    // for (const auto& move : captures) {
+    while ((move = next_best(&noisy, board->ply)) != NULLMV) {
 
         /* We perform a couple quick checks to see if the move can be
-         * safely discarded */
-
-        // If the move captures the king (TODO: Debug this)
+         * safely pruned */
         piece_t& captured = board->pieces[get_to(move)];
-
-        /*
-        if (piece_type(captured) == KING) {
-            return +oo - board->ply;
-        }
-        */
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
