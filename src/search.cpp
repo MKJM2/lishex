@@ -255,19 +255,18 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     ) {
         score = evaluate(board, &eval);
 
-        /* Reverse futility pruning
+        /* Reverse futility pruning */
         static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
         if (depth <= 3 && std::abs(beta) < +oo - MAX_DEPTH && score - margins[depth] >= beta) {
             // Fail-hard
             return beta;
         }
-        */
 
-        int R = 3 + depth / 4 + std::min(2, (score - beta) / 200);
+        int R = 2 + depth / 4 + std::min(2, (score - beta) / 200);
 
         /* Null move pruning */
-        if (depth >= R + 1) {
+        if (depth >= R + 1 && score >= beta) {
             make_null(board);
             // do_null is now set to false, since we don't want to do two null moves
             // in a row
