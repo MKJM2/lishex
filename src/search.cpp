@@ -105,7 +105,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     assert(-oo < score && score < +oo);
 
     // Are we too deep into the search tree?
-    if (board->ply > MAX_DEPTH - 1) {
+    if (board->ply >= MAX_DEPTH - 1) {
         return score;
     }
 
@@ -214,7 +214,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     }
 
     // Are we too deep into the search tree?
-    if (board->ply > MAX_DEPTH - 1) {
+    if (board->ply >= MAX_DEPTH - 1) {
         return evaluate(board, &eval);
     }
 
@@ -246,10 +246,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
      - we are at least 2 plies into the search
      - we are not in a zugzwag (heuristic: at least one big piece on board)
      - current eval is already >= beta
-     - TODO: If PVS: not in a PV node
      depth - 1 - R (for R = 3) is allowed
     */
-    int R = 3 + depth / 6;
 
     if (!pv_node && do_null && !in_check &&
         CNT(board->sides_pieces[board->turn] ^
@@ -257,13 +255,16 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     ) {
         score = evaluate(board, &eval);
 
-        /* Reverse futility pruning */
+        /* Reverse futility pruning
         static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
         if (depth <= 3 && std::abs(beta) < +oo - MAX_DEPTH && score - margins[depth] >= beta) {
             // Fail-hard
             return beta;
         }
+        */
+
+        int R = 3 + depth / 4 + std::min(2, (score - beta) / 200);
 
         /* Null move pruning */
         if (depth >= R + 1) {
@@ -294,6 +295,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         }
         */
     }
+
+    /* Move generation, ordering, and move loop */
 
     // Bruce Moreland's trick for storing entries in the TT
     // - unless we get a cut-off, the score is an upperbound of
