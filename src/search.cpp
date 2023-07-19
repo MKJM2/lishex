@@ -230,7 +230,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     if (tthit) {
        ++info->hashcut;
        return score;
-    } // Otherwise, we keep searching
+    } else {
+        // Internal iterative reduction, as discussed in
+        // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769&sid=64085e3396554f0fba414404445b3120
+        if (depth > 6) --depth;
+    }
 
 
     // Check search extension

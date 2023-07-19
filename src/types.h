@@ -113,6 +113,11 @@ inline bool square_ok(const square_t sq) {
     return (A1 <= sq && sq <= H8);
 }
 
+// Chebyshev distance between squares a and b (useful e.g. for king tropism)
+inline int dist(const square_t a, const square_t b) {
+    return MAX(std::abs((a >> 3) - (b >> 3)), std::abs((a & 7) - (b & 7)));
+}
+
 
 /**********/
 /* Pieces */

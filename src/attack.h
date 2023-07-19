@@ -203,6 +203,23 @@ inline bb_t xray_attacks(piece_t pce, square_t from, bb_t occ, bb_t blockers) {
     }
 }
 
+// TODO: This shouldn't be necessary, need to refactor some code
+// Helper to call attacks<PIECE_T> at runtime:
+inline bb_t attacks(piece_t pce, square_t from, bb_t blockers) {
+    assert(square_ok(from));
+    piece_t PIECE_T = piece_type(pce);
+    assert(PIECE_T > NONE && PIECE_T < KING);
+    bb_t attacks_bb = 0ULL;
+    switch (PIECE_T) {
+        // case: PAWN (we don't handle pawn code here, perhaps we should)
+        case KNIGHT: attacks_bb = attacks<KNIGHT>(from); break;
+        case KING:   attacks_bb = attacks<KING>  (from); break;
+        case BISHOP: attacks_bb = attacks<BISHOP>(from, blockers); break;
+        case ROOK:   attacks_bb = attacks<ROOK>  (from, blockers); break;
+        case QUEEN:  attacks_bb = attacks<QUEEN> (from, blockers); break;
+    }
+    return attacks_bb;
+}
 
 /**
  * @brief Checks if a given square is attacked by the player (colour)

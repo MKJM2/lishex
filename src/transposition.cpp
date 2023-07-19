@@ -1,9 +1,17 @@
+/* Transposition table code */
 #include "transposition.h"
 
 #include <cstring> // std::memset
 
 #include "search.h"
 #include "movegen.h"
+
+#ifdef TRACE_TT_ENABLE
+#define TRACE_TT(str) LOG(str)
+#else
+#define TRACE_TT(str)
+#endif
+
 
 // Default TT size in MB
 constexpr int TTSIZEMB = 64;
@@ -19,7 +27,7 @@ TT::TT(const int MB) : size{(0x100000 * MB / sizeof(tt_entry)) - 2} {
         assert(false);
     }
     this->clear();
-    LOG("Allocated TT of size " << MB << "MB "
+    TRACE_TT("Allocated TT of size " << MB << "MB "
                                 << "with " << size << " entries (entry size is "
                                 << sizeof(tt_entry) << ')');
 }
@@ -54,7 +62,7 @@ void TT::clear() {
 
 int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, int alpha, int beta, int depth) {
 
-    LOG("Probing " << board->key << " " << alpha << " " << beta << " " << depth);
+    TRACE_TT("Probing " << board->key << " " << alpha << " " << beta << " " << depth);
 
     // TODO: Ensure size of TT is a power of 2 for efficient mod with &
     size_t idx = board->key % this->size;
@@ -69,7 +77,7 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
 
     /* Check if the zobrist key matches */
     if (entry->key != board->key) {
-        LOG("Key mismatch: " << entry->key << " vs " << board->key);
+        TRACE_TT("Key mismatch: " << entry->key << " vs " << board->key);
         return TTMISS;
     }
 
@@ -81,7 +89,7 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
     // If the previous search wasn't as deep as current
     //if (depth > static_cast<int>(entry->depth)) {
     if (static_cast<int>(entry->depth) < depth) {
-        LOG("Depth insufficient: " << (int)entry->depth << " vs " << depth);
+        TRACE_TT("Depth insufficient: " << (int)entry->depth << " vs " << depth);
         return TTMISS;
     }
 
@@ -125,7 +133,7 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
             if (score > alpha) return TTMISS;
             score = alpha; break;
         case EXACT: break;
-        case BAD: LOG("TODO: Not handled"); assert(false); break;
+        case BAD: TRACE_TT("TODO: Not handled"); assert(false); break;
     }
     return TTHIT;
 }
@@ -137,7 +145,7 @@ void TT::store(const board_t *board, move_t move, int score,
     size_t idx = board->key % this->size;
     tt_entry *entry = &table[idx];
 
-    LOG("Storing " << board->key << " " << idx << " " << move << " "
+    TRACE_TT("Storing " << board->key << " " << idx << " " << move << " "
               << score << " " << flags << " " << depth);
 
     assert(0 <= idx && idx <= this->size - 1);
@@ -165,7 +173,7 @@ void TT::store(const board_t *board, move_t move, int score,
     entry->move  = static_cast<uint16_t>(move & UINT16_MAX); // only store the 16 least-significant bits
     entry->score = static_cast<int32_t>(score);
 
-    LOG("Stored " << entry->key << " " << idx << " " << entry->move << " "
+    TRACE_TT("Stored " << entry->key << " " << idx << " " << entry->move << " "
               << entry->score << " " << (int)entry->flags << " " << (int)entry->depth);
 
     // Debug: assert the casts are correct

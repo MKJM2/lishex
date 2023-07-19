@@ -37,17 +37,17 @@ constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
 //int queen_semiopen_file = 3;
 
 // REVIEW: Tempo score (a small bonus for the side to move)
-int tempo_bonus = 25;
+int tempo_bonus = 5;
 // Pass and isolated pawn
-int isolated_pawn = -5;
+int isolated_pawn = -10;
 // Doubled pawn penalty
-int doubled_pawn = -10;
+int doubled_pawn = -8;
 // REVIEW: Bonus for supported pawns
-int pawn_supported = 5;
+int pawn_supported = 10;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
-int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+int passed_pawn[RANK_NO] = { 0, 5, 10, 20, 35, 60, 100, 200 };
 // REVIEW: Indexed by rank, bonus for good pawn structure
-int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
+int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 3, 4, 5, 6 };
 // Bonus for having two bishops on board
 int bishop_pair = 30;
 // Bonuses for rooks/queens on open/semi-open files
@@ -55,6 +55,25 @@ int rook_open_file = 7;
 int rook_semiopen_file = 5;
 int queen_open_file = 5;
 int queen_semiopen_file = 3;
+
+/* King safety parameters */
+
+int PAWN_SHIELD1_BONUS = 25;
+int PAWN_SHIELD2_BONUS = 10;
+
+// Stronger pieces have a larger weight when attacking the enemy king
+int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
+// 49 is the max size of the king zone (refer to get_king_zone())
+// We use the weighted number of attackers onto the king zone
+// as an index into this array as a heuristic
+// of how dangerous the opponent's attack is
+int KING_SAFETY_TABLE[50] = {
+    0,   1,   2,   3,   5,   7,   9,   12,  15,  18,
+    22,  26,  30,  35,  40,  45,  51,  57,  63,  70,
+    77,  84,  92,  100, 108, 117, 126, 135, 145, 155,
+    165, 176, 187, 198, 210, 222, 234, 247, 260, 273,
+    287, 301, 315, 330, 345, 360, 376, 392, 408, 425
+};
 
 namespace {
 
@@ -376,18 +395,82 @@ inline bool is_opposed(const board_t *board, const square_t sq) {
 // supported by any other pawn on RANK1, hence the zeroes in the pawn_bonuses
 // array
 inline int pawn_struct_score(const board_t *board, const square_t sq) {
-  const piece_t &p = board->pieces[sq];
+    const piece_t &p = board->pieces[sq];
 
-  int supporting = is_supported(board, sq);
-  int phalanx = is_phalanx(board, sq);
+    int supporting = is_supported(board, sq);
+    int phalanx = is_phalanx(board, sq);
 
-  // If the pawn is disconnected from other friendly pawns on the board
-  if (supporting + phalanx == 0)
-    return 0;
+    // If the pawn is disconnected from other friendly pawns on the board
+    if (supporting + phalanx == 0)
+        return 0;
 
-  return pawn_supported * supporting +
-         pawn_bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
-             (2 + phalanx - is_opposed(board, sq));
+    return pawn_supported * supporting +
+            pawn_bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
+                (2 + phalanx - is_opposed(board, sq));
+}
+
+// We define the king danger zone as the squares to which the King
+// can move within two moves
+bb_t get_king_zone(const board_t *board, const int colour) {
+    bb_t king_bb;
+    king_bb = king_square_bb(board, colour);
+
+    bb_t king_zone = king_bb;
+    // Immediate neighbouring area:
+    king_zone |= n_shift(king_bb);
+    king_zone |= ne_shift(king_bb);
+    king_zone |= e_shift(king_bb);
+    king_zone |= se_shift(king_bb);
+    king_zone |= s_shift(king_bb);
+    king_zone |= sw_shift(king_bb);
+    king_zone |= w_shift(king_bb);
+    king_zone |= nw_shift(king_bb);
+
+    // Area within 2 king moves:
+    king_zone |= ne_shift(king_zone) | se_shift(king_zone) |
+                 sw_shift(king_zone) | nw_shift(king_zone);
+    return king_zone;
+}
+
+// King safety score for the 'colour' king during the middle game
+// - pawn shield (king's file + 2 adjacent files)
+// - pawn storm (opponent's pawn advances on the same 3 files)
+// - piece attack score (number of attackers)
+int king_safety_score(const board_t *board, const int colour, int attackers) {
+    // TODO: Collapse implementation using templates
+
+    /* Setup */
+    int score = 0;
+    // Bitboard masks for finding friendly shielding pawns
+    bb_t pawns1 = 0ULL, pawns2 = 0ULL;
+    // King's friendly pawns bitboard
+    bb_t king_pawns = pawns(board) & board->sides_pieces[colour];
+    bb_t king_bb = king_square_bb(board, colour);
+
+    /* Pawn shields: we score pawns immediately next to the king higher than
+        pushed pawns */
+    if (colour == WHITE) {
+        pawns1 = ne_shift(king_bb) | n_shift(king_bb) | nw_shift(king_bb);
+        pawns2 = n_shift(pawns1);
+    } else {
+        pawns1 = se_shift(king_bb) | s_shift(king_bb) | sw_shift(king_bb);
+        pawns2 = s_shift(pawns1);
+    }
+
+    // Extract the shielding pawns from the current position
+    pawns1 &= king_pawns;
+    pawns2 &= king_pawns;
+
+    // We score the pawns further away from the king less
+    score += CNT(pawns1) * PAWN_SHIELD1_BONUS;
+    score += CNT(pawns2) * PAWN_SHIELD2_BONUS;
+
+    // King safety based on attackers
+    attackers -= 2 * CNT(pawns1);
+    attackers -= 1 * CNT(pawns2);
+    score -= KING_SAFETY_TABLE[MAX(0, MIN(attackers, 49))];
+
+    return score;
 }
 
 // Originally from sjeng 11.2 (adapted from Vice 1.1)
@@ -436,10 +519,12 @@ int material_draw(const board_t *board) {
 int evaluate(const board_t *board, eval_t * eval) {
     assert(check(board));
 
+    /* Setup */
     eval->middlegame = 0;
     eval->endgame = 0;
     eval->set_phase(board);
     int score = 0;
+    bb_t occupied = all_pieces(board);
 
     if (!pawns(board) && material_draw(board)) {
         return 0;
@@ -538,9 +623,15 @@ int evaluate(const board_t *board, eval_t * eval) {
         //eval->endgame    -= connected_bonus;
     }
 
+
     /* Major pieces */
 
     // White
+
+    /* Setup for king safety eval */
+    // King zone of the king we're attacking
+    bb_t king_zone = get_king_zone(board, BLACK);
+    bb_t king_attacks_score[2] = {0, 0};
 
     // PSQTs + Material value
     bb  = board->sides_pieces[WHITE];
@@ -548,6 +639,7 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb ^= board->bitboards[K];
 
     piece_t pce;
+    bb_t attacks_bb;
     while (bb) {
         sq = POPLSB(bb);
         pce = board->pieces[sq];
@@ -582,9 +674,17 @@ int evaluate(const board_t *board, eval_t * eval) {
             default:
                 break;
         }
+
+        // Mobility and attacks on the enemy king
+        attacks_bb = attacks(pce, sq, occupied);
+        // Can get mobility with CNT(attacks_bb);
+        king_attacks_score[BLACK] +=
+            KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
+
     }
 
     // Black
+    king_zone = get_king_zone(board, WHITE);
 
     // PSQTs + Material value
     bb  = board->sides_pieces[BLACK];
@@ -625,6 +725,12 @@ int evaluate(const board_t *board, eval_t * eval) {
             default:
                 break;
         }
+
+        // Mobility and attacks on the enemy king
+        attacks_bb = attacks(pce, sq, occupied);
+        // Can get mobility with CNT(attacks_bb);
+        king_attacks_score[WHITE] +=
+            KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
     }
 
     /* Bishop pair bonus */
@@ -662,6 +768,10 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->endgame    -= bishop_pair;
         }
     }
+
+    // King safety in the middle game:
+    eval->middlegame += king_safety_score(board, WHITE, king_attacks_score[WHITE]);
+    eval->middlegame -= king_safety_score(board, BLACK, king_attacks_score[BLACK]);
 
     /* Tapered evaluation */
     score = eval->get_tapered_score();
