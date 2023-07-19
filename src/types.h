@@ -12,7 +12,7 @@
 
 #define SQUARE_FILE(sq) ((sq) & 7)
 #define SQUARE_RANK(sq) ((sq) >> 3)
-#define SQUARE_RANK_FOR(colour, sq) (((sq) >> 3) ^ (colour ? 0 : 0b1000))
+#define SQUARE_RANK_FOR(colour, sq) (((sq) >> 3) ^ ((colour) ? 0 : 0b0111))
 #define MAX_MOVES (1024)
 #define MAX_DEPTH (128)
 

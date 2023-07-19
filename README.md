@@ -58,6 +58,7 @@ in the project root.
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (Texel's tuning method)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads
 - Razoring
+- King tropism
 - Extension limiting
 - Smarter time control logic, estimated time to finish search
 - UCI Engine options

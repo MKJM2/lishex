@@ -324,12 +324,12 @@ inline bool is_phalanx(const board_t *board, const square_t sq) {
 
 // # of friendly pawns supporting the pawn on square sq
 inline int is_supported(const board_t *board, const square_t sq) {
-   const piece_t &p = board->pieces[sq];
+   const piece_t &pce = board->pieces[sq];
    bb_t tmp = SQ_TO_BB(sq);
-   if (piece_color(p) == WHITE) {
-       return CNT((se_shift(tmp) | sw_shift(tmp)) & board->bitboards[p]);
+   if (piece_color(pce) == WHITE) {
+       return CNT((se_shift(tmp) | sw_shift(tmp)) & board->bitboards[pce]);
    } else {
-       return CNT((ne_shift(tmp) | nw_shift(tmp)) & board->bitboards[p]);
+       return CNT((ne_shift(tmp) | nw_shift(tmp)) & board->bitboards[pce]);
    }
 }
 
@@ -337,8 +337,8 @@ inline int is_supported(const board_t *board, const square_t sq) {
 // of a pawn on square sq
 inline bool is_opposed(const board_t *board, const square_t sq) {
     // TODO: Collapse implementation for white and black with flip_colour()
-    const piece_t &p = board->pieces[sq];
-    if (piece_color(p) == WHITE) {
+    const piece_t &pce = board->pieces[sq];
+    if (piece_color(pce) == WHITE) {
        return (wPassedMask[sq] & fileBBMask[SQUARE_FILE(sq)]) &
               board->bitboards[p];
     } else {
@@ -349,13 +349,23 @@ inline bool is_opposed(const board_t *board, const square_t sq) {
 
 // Whether the pawn on sq is connected to other friendly pawns, and if yes,
 // a score. We award supported pawns more than phalanx pawns and
-// discourage opposed pawns. We reward pawns pushed further more
-inline int connected(const board_t *board, const square_t sq) {
-    const static int bonuses[] = {0, 5, 10, 15, 20, 25, 30, 0};
+// discourage opposed pawns. We reward pawns pushed further more.
+// Note that friendly pawns cannot be on RANK0 and cannot be
+// supported by any other pawn on RANK1, hence the zeroes in the bonuses array
+inline int pawn_struct_score(const board_t *board, const square_t sq) {
+    const static int bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
+
     const piece_t &p = board->pieces[sq];
-    return pawn_supported * is_supported(board, sq) +
+
+    int supporting = is_supported(board, sq);
+    int phalanx = is_phalanx(board, sq);
+
+    // If the pawn is disconnected from other friendly pawns on the board
+    if (supporting + phalanx == 0) return 0;
+
+    return pawn_supported * supporting +
            bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
-               (2 + is_phalanx(board, sq) - is_opposed(board, sq));
+               (2 + phalanx - is_opposed(board, sq));
 }
 
 // Originally from sjeng 11.2 (adapted from Vice 1.1)
@@ -459,9 +469,9 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
-        int connected_bonus = connected(board, sq);
-        eval->middlegame += connected_bonus;
-        eval->endgame    += connected_bonus;
+        //int connected_bonus = pawn_struct_score(board, sq);
+        //eval->middlegame += connected_bonus;
+        //eval->endgame    += connected_bonus;
     }
 
     // (Black pawns)
@@ -501,9 +511,9 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
-        int connected_bonus = connected(board, sq);
-        eval->middlegame -= connected_bonus;
-        eval->endgame    -= connected_bonus;
+        //int connected_bonus = pawn_struct_score(board, sq);
+        //eval->middlegame -= connected_bonus;
+        //eval->endgame    -= connected_bonus;
     }
 
     /* Major pieces */
@@ -631,11 +641,11 @@ int evaluate(const board_t *board, eval_t * eval) {
         }
     }
 
-    // Tempo score (small bonus for the side to move)
-    score += (board->turn == WHITE) ? tempo_bonus : -tempo_bonus;
-
     /* Tapered evaluation */
     score = eval->get_tapered_score();
+
+    // Tempo score (small bonus for the side to move)
+    score += board->turn ? tempo_bonus : -tempo_bonus;
 
     // We return the score relative to the side playing
     return board->turn ? score : -score;
