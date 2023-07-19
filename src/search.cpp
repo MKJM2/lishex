@@ -10,68 +10,6 @@
 #include "transposition.h"
 
 
-namespace {
-
-// For maintaining the principal variation in the triangular array (debug)
-// Copies up to n moves from p_src to p_tgt, kind of like memcpy
-// Adapted from https://www.chessprogramming.org/Triangular_PV-Table
-void movcpy(move_t *p_tgt, move_t *p_src, int n) {
-    while (n-- && (*p_tgt++ = *p_src++));
-}
-
-/* Principal Variation
-
-Triangular table layout:
-
-ply  maxLengthPV
-    +--------------------------------------------+
-0   |N                                           |
-    +------------------------------------------+-+
-1   |N-1                                       |
-    +----------------------------------------+-+
-2   |N-2                                     |
-    +--------------------------------------+-+
-3   |N-3                                   |
-    +------------------------------------+-+
-4   |N-4                                 |
-...                        /
-N-4 |4      |
-    +-----+-+
-N-3 |3    |
-    +---+-+
-N-2 |2  |
-    +-+-+
-N-1 |1|
-    +-+
-*/
-typedef struct pv_line {
-    move_t moves[MAX_DEPTH] = {};
-    size_t size = 0;
-    void push_back(const move_t m) {
-        assert(size < MAX_DEPTH);
-        *last++ = m;
-    }
-    void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
-
-    move_t operator[](int i) const { assert(i < size); return moves[i]; }
-    move_t& operator[](int i) { return moves[i]; }
-
-    // Print the principal variation line
-    void print() const {
-        for (size_t i = 0; i < size; ++i) {
-            std::cout << move_to_str(moves[i]) << " ";
-        }
-    }
-
-    private:
-        move_t *last = moves;
-} pv_line;
-
-// Global PV table (quadratic approach)
-// - indexed by [ply]
-// - pv[ply] is the principal variation line for the search at depth 'ply'
-pv_line pv_tb[MAX_DEPTH];
-
 // Global evaluator (for multithreaded, we'll want to have a separate one for
 // each thread)
 eval_t eval;
@@ -175,6 +113,69 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     }
     return alpha;
 }
+
+namespace {
+
+// For maintaining the principal variation in the triangular array (debug)
+// Copies up to n moves from p_src to p_tgt, kind of like memcpy
+// Adapted from https://www.chessprogramming.org/Triangular_PV-Table
+void movcpy(move_t *p_tgt, move_t *p_src, int n) {
+    while (n-- && (*p_tgt++ = *p_src++));
+}
+
+/* Principal Variation
+
+Triangular table layout:
+
+ply  maxLengthPV
+    +--------------------------------------------+
+0   |N                                           |
+    +------------------------------------------+-+
+1   |N-1                                       |
+    +----------------------------------------+-+
+2   |N-2                                     |
+    +--------------------------------------+-+
+3   |N-3                                   |
+    +------------------------------------+-+
+4   |N-4                                 |
+...                        /
+N-4 |4      |
+    +-----+-+
+N-3 |3    |
+    +---+-+
+N-2 |2  |
+    +-+-+
+N-1 |1|
+    +-+
+*/
+typedef struct pv_line {
+    move_t moves[MAX_DEPTH] = {};
+    size_t size = 0;
+    void push_back(const move_t m) {
+        assert(size < MAX_DEPTH);
+        *last++ = m;
+    }
+    void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
+
+    move_t operator[](int i) const { assert(i < size); return moves[i]; }
+    move_t& operator[](int i) { return moves[i]; }
+
+    // Print the principal variation line
+    void print() const {
+        for (size_t i = 0; i < size; ++i) {
+            std::cout << move_to_str(moves[i]) << " ";
+        }
+    }
+
+    private:
+        move_t *last = moves;
+} pv_line;
+
+// Global PV table (quadratic approach)
+// - indexed by [ply]
+// - pv[ply] is the principal variation line for the search at depth 'ply'
+pv_line pv_tb[MAX_DEPTH];
+
 
 /**
  @brief Alpha-Beta search in negamax fashion.

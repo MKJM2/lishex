@@ -17,7 +17,6 @@
 #include "movegen.h"
 #include "rng.h"
 #include "threads.h"
-#include "eval.h"
 #include "see.h"
 
 #ifdef DEBUG

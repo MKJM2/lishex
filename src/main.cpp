@@ -16,7 +16,7 @@
 #include "bitboard.h"
 #include "uci.h"
 #include "attack.h"
-#include "search.h" // TODO: Debugging, remove later
+#include "tune.h"
 
 int main(int argc, char* argv[]) {
 
@@ -32,6 +32,8 @@ int main(int argc, char* argv[]) {
     init_rook_occupancies();
     init_magics<BISHOP>();
     init_magics<ROOK>();
+
+    tune();
 
     // Start UCI driver loop
     loop(argc, argv);

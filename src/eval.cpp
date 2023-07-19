@@ -16,6 +16,24 @@ constexpr int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
 constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
+// Tempo score (a small bonus for the side to move)
+int tempo_bonus = 5;
+// Pass and isolated pawn
+int isolated_pawn = -13;
+// Doubled pawn penalty
+int doubled_pawn = -8;
+// Bonus for supported pawns
+int pawn_supported = 15;
+// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+// Bonus for having two bishops on board
+int bishop_pair = 30;
+// Bonuses for rooks/queens on open/semi-open files
+int rook_open_file = 10;
+int rook_semiopen_file = 5;
+int queen_open_file = 5;
+int queen_semiopen_file = 3;
+
 namespace {
 
 /* Piece-square tables */
@@ -292,24 +310,6 @@ constexpr const int *psqt_eg[] = {
     queen_table_eg,
     king_table_eg,
 };
-
-// Tempo score (a small bonus for the side to move)
-const int tempo_bonus = 5;
-// Pass and isolated pawn
-constexpr int isolated_pawn = -13;
-// Doubled pawn penalty
-constexpr int doubled_pawn = -8;
-// Bonus for supported pawns
-constexpr int pawn_supported = 15;
-// Indexed by rank, i.e. the closer to promoting, the higher the bonus
-constexpr int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
-// Bonus for having two bishops on board
-constexpr int bishop_pair = 30;
-// Bonuses for rooks/queens on open/semi-open files
-constexpr int rook_open_file = 10;
-constexpr int rook_semiopen_file = 5;
-constexpr int queen_open_file = 5;
-constexpr int queen_semiopen_file = 3;
 
 /* Pawn structure helpers */
 

@@ -8,6 +8,16 @@
 #include "time.h"
 #include "transposition.h"
 
+
+/**
+ @brief Quiescence search
+ @param alpha the lowerbound
+ @param beta the upperbound
+ @param board the board position to search
+ @param info search info: time, depth to search, etc.
+*/
+int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info);
+
 /**
  @brief Searches the current board state for the best move
  @param board the board state to search

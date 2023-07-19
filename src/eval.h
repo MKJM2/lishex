@@ -77,8 +77,26 @@ int losing_capture(const board_t *board, move_t m, int threshold);
 
 void mirror_test(board_t *board);
 
-
 extern const int value_mg[PIECE_NO];
 extern const int value_eg[PIECE_NO];
+
+// Tempo score (a small bonus for the side to move)
+extern int tempo_bonus;
+// Pass and isolated pawn
+extern int isolated_pawn;
+// Doubled pawn penalty
+extern int doubled_pawn;
+// Bonus for supported pawns
+extern int pawn_supported;
+// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+extern int passed_pawn[RANK_NO];
+// Bonus for having two bishops on board
+extern int bishop_pair;
+// Bonuses for rooks/queens on open/semi-open files
+extern int rook_open_file;
+extern int rook_semiopen_file;
+extern int queen_open_file;
+extern int queen_semiopen_file;
+
 
 #endif // EVAL_H_
