@@ -16,7 +16,7 @@
 #include "bitboard.h"
 #include "uci.h"
 #include "attack.h"
-#include "tune.h"
+//#include "tune.h"
 
 int main(int argc, char* argv[]) {
 
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     init_magics<BISHOP>();
     init_magics<ROOK>();
 
-    tune();
+    //tune();
 
     // Start UCI driver loop
     loop(argc, argv);

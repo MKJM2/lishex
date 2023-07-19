@@ -90,6 +90,8 @@ extern int doubled_pawn;
 extern int pawn_supported;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 extern int passed_pawn[RANK_NO];
+// Indexed by rank, bonus for good pawn structure
+extern int pawn_bonuses[RANK_NO];
 // Bonus for having two bishops on board
 extern int bishop_pair;
 // Bonuses for rooks/queens on open/semi-open files

@@ -16,20 +16,42 @@ constexpr int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
 constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
-// Tempo score (a small bonus for the side to move)
-int tempo_bonus = 5;
+//// Tempo score (a small bonus for the side to move)
+//int tempo_bonus = 5;
+//// Pass and isolated pawn
+//int isolated_pawn = -13;
+//// Doubled pawn penalty
+//int doubled_pawn = -8;
+//// Bonus for supported pawns
+//int pawn_supported = 15;
+//// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+//int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+//// Indexed by rank, bonus for good pawn structure
+//int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
+//// Bonus for having two bishops on board
+//int bishop_pair = 30;
+//// Bonuses for rooks/queens on open/semi-open files
+//int rook_open_file = 10;
+//int rook_semiopen_file = 5;
+//int queen_open_file = 5;
+//int queen_semiopen_file = 3;
+
+// REVIEW: Tempo score (a small bonus for the side to move)
+int tempo_bonus = 25;
 // Pass and isolated pawn
-int isolated_pawn = -13;
+int isolated_pawn = -5;
 // Doubled pawn penalty
-int doubled_pawn = -8;
-// Bonus for supported pawns
-int pawn_supported = 15;
+int doubled_pawn = -10;
+// REVIEW: Bonus for supported pawns
+int pawn_supported = 5;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+// REVIEW: Indexed by rank, bonus for good pawn structure
+int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
 // Bonus for having two bishops on board
 int bishop_pair = 30;
 // Bonuses for rooks/queens on open/semi-open files
-int rook_open_file = 10;
+int rook_open_file = 7;
 int rook_semiopen_file = 5;
 int queen_open_file = 5;
 int queen_semiopen_file = 3;
@@ -351,21 +373,21 @@ inline bool is_opposed(const board_t *board, const square_t sq) {
 // a score. We award supported pawns more than phalanx pawns and
 // discourage opposed pawns. We reward pawns pushed further more.
 // Note that friendly pawns cannot be on RANK0 and cannot be
-// supported by any other pawn on RANK1, hence the zeroes in the bonuses array
+// supported by any other pawn on RANK1, hence the zeroes in the pawn_bonuses
+// array
 inline int pawn_struct_score(const board_t *board, const square_t sq) {
-    const static int bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
+  const piece_t &p = board->pieces[sq];
 
-    const piece_t &p = board->pieces[sq];
+  int supporting = is_supported(board, sq);
+  int phalanx = is_phalanx(board, sq);
 
-    int supporting = is_supported(board, sq);
-    int phalanx = is_phalanx(board, sq);
+  // If the pawn is disconnected from other friendly pawns on the board
+  if (supporting + phalanx == 0)
+    return 0;
 
-    // If the pawn is disconnected from other friendly pawns on the board
-    if (supporting + phalanx == 0) return 0;
-
-    return pawn_supported * supporting +
-           bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
-               (2 + phalanx - is_opposed(board, sq));
+  return pawn_supported * supporting +
+         pawn_bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
+             (2 + phalanx - is_opposed(board, sq));
 }
 
 // Originally from sjeng 11.2 (adapted from Vice 1.1)
