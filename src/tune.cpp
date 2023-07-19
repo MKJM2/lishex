@@ -137,16 +137,21 @@ void initialize(std::vector<particle>& particles, int params_no) {
         particles[i] = particle(params_no);
         // Initialize the particle's position with a uniformly distributed random vector
         // (within parameter bounds)
+        auto &p = particles[i];
         for (int j = 0; j < params_no; ++j) {
-            particles[i].position[j].value = rand_within(bounds[j].first, bounds[j].second);
-            particles[i].position[j].lowerbound = bounds[j].first;
-            particles[i].position[j].upperbound = bounds[j].second;
-            particles[i].velocity[j] =
+            auto &pos = p.position[j];
+            pos = {
+                .value = static_cast<int>(rand_within(bounds[j].first, bounds[j].second)),
+                .lowerbound = bounds[j].first,
+                .upperbound = bounds[j].second
+            };
+
+            p.velocity[j] =
                 rand_within(-std::abs(bounds[j].second - bounds[j].first),
                             +std::abs(bounds[j].second - bounds[j].first));
         }
         // Initialize the best position
-        particles[i].best_position = particles[i].position;
+        p.best_position = p.position;
     }
 }
 
@@ -154,11 +159,11 @@ void initialize(std::vector<particle>& particles, int params_no) {
 // Update a particle's position (taking care to handle bounds)
 inline void update_particle(particle& p) {
     for (size_t i = 0; i < p.position.size(); ++i) {
-        p.position[i].value += p.velocity[i];
+        auto &pos = p.position[i];
+        pos.value += p.velocity[i];
 
         // Ensure the parameter value stays within the bounds
-        p.position[i].value = std::max(p.position[i].value, p.position[i].lowerbound);
-        p.position[i].value = std::min(p.position[i].value, p.position[i].upperbound);
+        pos.value = std::clamp(pos.value, pos.lowerbound, pos.upperbound);
     }
 }
 
