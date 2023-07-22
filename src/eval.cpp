@@ -36,25 +36,46 @@ constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
 //int queen_open_file = 5;
 //int queen_semiopen_file = 3;
 
-// REVIEW: Tempo score (a small bonus for the side to move)
-int tempo_bonus = 5;
-// Pass and isolated pawn
+// review: tempo score (a small bonus for the side to move)
+//int tempo_bonus = 5;
+//// pass and isolated pawn
+//int isolated_pawn = -10;
+//// doubled pawn penalty
+//int doubled_pawn = -8;
+//// review: bonus for supported pawns
+//int pawn_supported = 10;
+//// indexed by rank, i.e. the closer to promoting, the higher the bonus
+//int passed_pawn[rank_no] = { 0, 5, 10, 20, 35, 60, 100, 200 };
+//// review: indexed by rank, bonus for good pawn structure
+//int pawn_bonuses[rank_no] = { 0, 0, 1, 2, 3, 4, 5, 6 };
+//// bonus for having two bishops on board
+//int bishop_pair = 30;
+//// bonuses for rooks/queens on open/semi-open files
+//int rook_open_file = 7;
+//int rook_semiopen_file = 5;
+//int queen_open_file = 5;
+//int queen_semiopen_file = 3;
+
+// REVIEW: 3rd tuning iteration parameters
+//Tempo score (a small bonus for the side to move)
+int tempo_bonus = 2;
+//// Pass and isolated pawn
 int isolated_pawn = -10;
-// Doubled pawn penalty
-int doubled_pawn = -8;
-// REVIEW: Bonus for supported pawns
-int pawn_supported = 10;
-// Indexed by rank, i.e. the closer to promoting, the higher the bonus
-int passed_pawn[RANK_NO] = { 0, 5, 10, 20, 35, 60, 100, 200 };
-// REVIEW: Indexed by rank, bonus for good pawn structure
-int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 3, 4, 5, 6 };
-// Bonus for having two bishops on board
-int bishop_pair = 30;
-// Bonuses for rooks/queens on open/semi-open files
-int rook_open_file = 7;
-int rook_semiopen_file = 5;
-int queen_open_file = 5;
-int queen_semiopen_file = 3;
+//// Doubled pawn penalty
+int doubled_pawn = -17;
+//// REVIEW: Bonus for supported pawns
+int pawn_supported = 13;
+//// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+//// REVIEW: Indexed by rank, bonus for good pawn structure
+int pawn_bonuses[RANK_NO] = { 0, 0, 5, 15, 12, 27, 21, 37 };
+//// Bonus for having two bishops on board
+int bishop_pair = 21;
+//// Bonuses for rooks/queens on open/semi-open files
+int rook_open_file = 11;
+int rook_semiopen_file = 1;
+int queen_open_file = 1;
+int queen_semiopen_file = 1;
 
 /* King safety parameters */
 

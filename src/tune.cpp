@@ -19,15 +19,16 @@
 namespace {
 
 // PSO parameters
-constexpr size_t particles_no = 100;
-constexpr int max_iter = 20;
+constexpr size_t particles_no = 500;
+constexpr int max_iter = 50;
 constexpr int entries_no = 2'000'000;
 constexpr double inertia_weight = 0.8;
 constexpr double cognitive_weight = 0.2;
-constexpr double social_weight = 0.3;
+constexpr double social_weight = 0.1;
 
 board_t *bench_board = nullptr;
 searchinfo_t *bench_info = nullptr;
+
 
 /* We utilize the Particle Swarm Optimization technique */
 
@@ -68,11 +69,11 @@ std::vector<std::pair<int, int>> bounds = {
     {0, 70},
     {0, 80},
     {0, 90},
-    {0, 35},
-    {0, 15},
-    {0, 12},
-    {0, 15},
-    {0, 12},
+    {1, 35},
+    {1, 15},
+    {1, 12},
+    {1, 15},
+    {1, 12},
 };
 
 std::vector<param_t> best_params(tunable_params.size());
@@ -103,6 +104,13 @@ inline double rand_within(int lower, int upper) {
     return unif(gen);
 }
 
+// TODO: https://www.chessprogramming.org/Pawn_Advantage,_Win_Percentage,_and_Elo
+// Sigmoid(s)=1/(1+10^(-K/400))
+// where K is a scaling constant minimizing MSE
+inline double winning_prob(double score) {
+    return 1.0 / (1.0 + std::pow(10.0, -static_cast<double>(score) / 4.0));
+}
+
 // Fast sigmoid function approximation
 double sigmoid(double x) {
     return 0.5 * ((x / (1 + std::fabs(x))) + 1);
@@ -128,7 +136,8 @@ double MSE(std::vector<double>& predicted, std::vector<double>& observed) {
 }
 
 inline double evaluate_particle([[maybe_unused]] particle& p) {
-    return sigmoid(scale_score(quiescence(-oo, +oo, bench_board, bench_info)));
+    //return sigmoid(scale_score(quiescence(-oo, +oo, bench_board, bench_info)));
+    return winning_prob(scale_score(quiescence(-oo, +oo, bench_board, bench_info)));
 }
 
 // Initialize the swarm of particles for PSO
@@ -146,9 +155,7 @@ void initialize(std::vector<particle>& particles, int params_no) {
                 .upperbound = bounds[j].second
             };
 
-            p.velocity[j] =
-                rand_within(-std::abs(bounds[j].second - bounds[j].first),
-                            +std::abs(bounds[j].second - bounds[j].first));
+            p.velocity[j] = rand_within(-1.0, 1.0);
         }
         // Initialize the best position
         p.best_position = p.position;
@@ -186,16 +193,15 @@ void tune() {
 
     // Each test position is represented by a fen
     std::vector<std::string> positions;
-    std::vector<int> evals;
-
-    std::vector<double> observed;  // Populated with the dataset evals, passed through sigmoid
+    std::vector<double> observed;  // Populated with the dataset outcomes
     std::vector<double> predicted; // Populated with engine's evals, also passed through sigmoid
+                                   // to get a win probability
 
     // Read in the input .csv file (the two columns should be a FEN string, and an evaluation score)
     std::string filename;
     std::cout << "Enter the dataset filename: ";
     //std::cin >> filename;
-    filename = "/home/mkjm/Downloads/evals/dataset.csv";
+    filename = "/home/mkjm/Projects/lishex/tune/dataset.csv";
     std::fstream file(filename, std::ios::in);
 
     if (!file.is_open()) {
@@ -210,8 +216,8 @@ void tune() {
     size_t count = 0;
     // For each line, parse the FEN and the corresponding eval score
     while (std::getline(file, line)) {
-        count++;
         if (count >= entries_no) break;
+        count++;
         std::cout << "Reading entry " << count << "\r";
         std::cout.flush();
 
@@ -226,10 +232,11 @@ void tune() {
             continue;
         }
         std::string fen = tokens[0];
-        int evaluation = std::stoi(tokens[1]);
+        // 1 for Won, 0.5 for draw, 0 for Lost
+        double outcome = std::stod(tokens[1]);
 
         positions.push_back(fen);
-        evals.push_back(evaluation);
+        observed.push_back(outcome);
 
     }
     file.close();
@@ -237,11 +244,12 @@ void tune() {
     std::cout << "File '" << filename << "' opened successfully" << std::endl;
 
     // For each position we get the corresponding value
-    observed.resize(positions.size());
     predicted.resize(positions.size());
     for (size_t i = 0; i < positions.size(); ++i) {
-        observed[i] = sigmoid(scale_score(evals[i]));
+        //observed[i] = sigmoid(scale_score(outcomes[i]));
+        //std::cout << observed[i] << " ";
     }
+    //std::cout << std::endl;
 
     std::cout << count << " observed values initialized" << std::endl;
 
@@ -260,18 +268,6 @@ void tune() {
         for (size_t i = 0; i < particles_no; ++i) {
             std::cout << "Processing particle " << i << "\r";
             std::cout.flush();
-            // Update the velocities in each direction
-            for (int k = 0; k < params_no; ++k) {
-                double r1 = rand_within(0.0, 1.0);
-                double r2 = rand_within(0.0, 1.0);
-
-                // Update particle's velocity
-                particles[i].velocity[k] = inertia_weight * particles[i].velocity[k] +
-                                        cognitive_weight * r1 * (particles[i].best_position[k].value - particles[i].position[k].value) +
-                                        social_weight * r2 * (best_params[k].value - particles[i].position[k].value);
-            }
-            // Update particle's position (bounded)
-            update_particle(particles[i]);
 
             // Update the parameters of the engine according to the best particle's parameters
             update_engine_params(particles[i]);
@@ -280,10 +276,24 @@ void tune() {
             for (size_t pos_idx = 0; pos_idx < positions.size(); ++pos_idx) {
                 setup(bench_board, positions[pos_idx]);
                 predicted[pos_idx] = evaluate_particle(particles[i]);
+                //std::cout << predicted[pos_idx] << ' ';
             }
+            //std::cout << std::endl;
 
             // Calculate the mean squared error
             particles[i].mse = MSE(predicted, observed);
+
+            // Update the user with some info
+            std::cout << "Particles " << i << " MSE " << particles[i].mse << " with parameters ";
+            for (int k = 0; k < params_no; ++k) {
+                std::cout << particles[i].position[k].value << ' ';
+            }
+            std::cout << std::endl;
+            std::cout << "                         and velocity ";
+            for (int k = 0; k < params_no; ++k) {
+                std::cout << particles[i].velocity[k] << ' ';
+            }
+            std::cout << std::endl;
 
             // Update personal best position if necessary
             if (particles[i].mse < particles[i].best_mse) {
@@ -296,6 +306,19 @@ void tune() {
                     best_params = particles[i].position;
                 }
             }
+
+            // Update the velocities in each direction
+            for (int k = 0; k < params_no; ++k) {
+                double r1 = rand_within(0.0, 1.0);
+                double r2 = rand_within(0.0, 1.0);
+
+                // Update particle's velocity
+                particles[i].velocity[k] = inertia_weight * particles[i].velocity[k] +
+                                        cognitive_weight * r1 * (particles[i].best_position[k].value - particles[i].position[k].value) +
+                                        social_weight * r2 * (best_params[k].value - particles[i].position[k].value);
+            }
+            // Update particle's position (bounded)
+            update_particle(particles[i]);
         }
         std::cout << "[Iteration " << iter << "] MSE = " << best_mse << ", best parameters: ";
         for (int idx = 0; idx < params_no; ++idx) {
