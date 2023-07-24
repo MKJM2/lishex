@@ -11,6 +11,7 @@
 #include "threads.h"
 #include "order.h"
 #include "eval.h"
+#include "transposition.h"
 
 namespace {
 
@@ -138,6 +139,7 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
     } else if (token == "isready")  {
         std::cout << "readyok" << std::endl;
     } else if (token == "ucinewgame") {
+        tt.clear();
         parse_position(board, "position startpos\n");
     } else if (token == "stop") {
         search_stop(search_thread, info);

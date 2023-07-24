@@ -17,6 +17,8 @@ A UCI chess-engine built in C++.
   - [Transposition tables](https://www.chessprogramming.org/Transposition_Table) to store results of previously performed searches (based on [Zobrist](https://www.chessprogramming.org/Zobrist_Hashing) hashes)
   - [Late move reduction](https://www.chessprogramming.org/Late_Move_Reductions)
   - [Futility pruning](https://www.chessprogramming.org/Futility_Pruning)
+  - Razoring
+  - Basic king safety (king danger zone, pawn shield)
   - Check extension
 - Tapered [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages
 - Static Exchange Evaluation (SEE) to detect losing captures
@@ -57,11 +59,10 @@ in the project root.
 - More [search extensions](https://www.chessprogramming.org/Extensions): extending search depth in specific subtrees to combat the [horizon effect](https://www.chessprogramming.org/Horizon_Effect)
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (Texel's tuning method)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads
-- Razoring
-- King tropism
+- More sophisticated king safety (including pawn storms, queen distance, tropism)
 - Extension limiting
 - Smarter time control logic, estimated time to finish search
 - UCI Engine options
 
 ### Acknowledgments
-I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration.
+I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, PGG106 (Alexandria), Richard Delorme (Dumb engine), Bruce Moreland, Code Monkey King (Bitboard Chess Engine), Peter Österlund (Texel), the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration. I have made every effort to include proper links to articles & other sources of inspiration in the source code. However, if by any chance I have unintentionally omitted acknowledging someone's work or utilized code without due credit, I sincerely apologize. Please do not hesitate to contact me with any concerns, suggestions, or ideas, and I will gladly address them promptly.

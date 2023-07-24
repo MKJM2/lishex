@@ -20,12 +20,20 @@ typedef struct alignas(16) tt_entry {
     uint64_t key = 0ULL;
     // Depth the position was searched to
     uint8_t depth = 0;
-    // Type of entry
-    uint8_t flags = BAD;
+    // Type of entry (flag) + age
+    // We use the two lsb for the hash entry flag and the rest for age
+    uint8_t info = BAD;
     // Best move in the current node
     uint16_t move = NULLMV;
     // Stored value in this node (either exact or lower/upperbound)
     int32_t score = 0;
+    // Helpers
+    uint8_t get_flag() const {
+        return info & 0b11;
+    }
+    uint8_t get_age() const {
+        return (info >> 2) & 0b111111;
+    }
 } tt_entry;
 
 
@@ -49,13 +57,18 @@ class TT {
     // VICE inspired: retrievews pv line from the transposition table
     int get_pv_line(board_t *board, const int depth);
     // Returns the hashfull info in permilles
-    inline int hashfull() {
+    inline int hashfull() const {
         return writes * 1000 / size;
+    }
+    // Ages the table by one generation
+    inline void age() {
+        this->gen++;
     }
 
   private:
     tt_entry *table = nullptr;
     size_t size = 0;
+    unsigned gen = 0; // Current age of most recent search's entries
     // Statistics
     unsigned writes = 0;
     unsigned overwrites = 0;

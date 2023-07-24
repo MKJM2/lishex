@@ -542,6 +542,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     // Clear search info, like # nodes searched
     info->clear();
 
+    // Increment the transposition table's age
+    tt.age();
+
     // Reset statistics for the transposition table
     tt.reset_stats();
 }
