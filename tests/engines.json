@@ -1,0 +1,30 @@
+[
+	{
+		"name": "Lishex_v2",
+		"command": "./lishex",
+		"workingDirectory": "/home/mkjm/Projects/lishex2",
+		"protocol": "uci",
+        "ponder": "false"
+	},
+	{
+		"name": "Vice_1.1",
+		"command": "./vice",
+		"workingDirectory": "/home/mkjm/Projects/vice/Vice11/src/",
+		"protocol": "uci",
+        "ponder": "false"
+	},
+	{
+		"name": "TSCP_1.82",
+		"command": "./tscp",
+		"workingDirectory": "/home/mkjm/Downloads/tscp182/",
+		"protocol": "xboard",
+        "ponder": "false"
+	},
+	{
+		"name": "Lishex_v1",
+		"command": "./lishex",
+		"workingDirectory": "/home/mkjm/Projects/lishex/",
+		"protocol": "uci",
+        "ponder": "false"
+	}
+]

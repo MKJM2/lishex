@@ -1,21 +1,30 @@
 CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -std=c++17
+CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
+# For faster compilation
+CPUS := $(shell nproc)
+MAKEFLAGS += --jobs=$(CPUS)
+
 SRC_DIR = src
-INCLUDE_DIR = include
 BUILD_DIR = build
 TARGET = lishex
 
 ### Debugging (gdb)
 debug ?= no
 ifeq ($(debug),yes)
-	CXXFLAGS += -O2 -ggdb -DDEBUG -w #-DNO_TT -DNO_NMH
+	CXXFLAGS += -ggdb -DDEBUG -w
+endif
+
+### Sanitizers
+sanitize ?= no
+ifeq ($(sanitize),yes)
+	CXXFLAGS += -fsanitize=thread
 endif
 
 ### Optimizations (on by default)
 optimize ?= yes
 ifeq ($(optimize),yes)
 	ifneq ($(debug),yes)
-		CXXFLAGS += -Ofast -fno-exceptions # -DNO_TT # -DNO_NMH
+		CXXFLAGS += -Ofast -fno-exceptions -pipe -flto=auto
 	endif
 endif
 
@@ -25,14 +34,13 @@ SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 # List of object files
 OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
-# Include directories
-INC_DIRS = -I$(INCLUDE_DIR)
-
 all: $(TARGET)
 
 # Compile source files into object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(INC_DIRS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+### $(CXX) $(CXXFLAGS) $(INC_DIRS) -c $< -o $@
 
 # Link object files into executable
 $(TARGET): $(OBJS)
@@ -53,3 +61,5 @@ help:
 	@echo "make"
 	@echo "To compile with debug options, type: "
 	@echo "make debug=yes"
+	@echo "To compile without optimizations, type: "
+	@echo "make optimize=no"
