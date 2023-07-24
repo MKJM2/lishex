@@ -86,7 +86,7 @@ int PAWN_SHIELD2_BONUS = 10;
 int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
 // 49 is the max size of the king zone (refer to get_king_zone())
 // We use the weighted number of attackers onto the king zone
-// as an index into this array as a heuristic
+// as an index into this array as a predictor
 // of how dangerous the opponent's attack is
 int KING_SAFETY_TABLE[50] = {
     0,   1,   2,   3,   5,   7,   9,   12,  15,  18,

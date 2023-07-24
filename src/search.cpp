@@ -177,6 +177,10 @@ typedef struct pv_line {
 pv_line pv_tb[MAX_DEPTH];
 
 
+// TODO: Use Unicode chars in source code? Compiler compatibility?
+// int α = alpha;
+// int β = beta;
+
 /**
  @brief Alpha-Beta search in negamax fashion.
  @param alpha the lowerbound
@@ -211,7 +215,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // If not at root of the search, check for repetitions
     if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
-        return 0; // Draw score
+        //return 0; // Draw score
+        return -2 + (info->nodes & 0x3);
     }
 
     // Are we too deep into the search tree?
@@ -297,13 +302,26 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             }
         }
         */
+
+        /* Razoring */
+        // Inspired by Dumb
+        // https://github.com/abulmo/Dumb/blob/master/src/search.d
+        int razor = alpha - 100 * depth + 30;
+        if (score <= razor) {
+            if (depth <= 2) {
+                return quiescence(alpha, beta, board, info);
+            }
+            else if (quiescence(razor, razor + 1, board, info) <= razor) {
+                return alpha;
+            }
+        }
     }
 
     /* Move generation, ordering, and move loop */
 
     // Bruce Moreland's trick for storing entries in the TT
-    // - unless we get a cut-off, the score is an upperbound of
-    //   the actual score
+    // - unless we get a cut-off or improve our alpha, the score is an
+    // upperbound of the actual score
     int type = UPPER;
 
     // Generate pseudolegal moves
@@ -356,7 +374,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             // - sufficient depth to reduce
             // - the move is quiet (we don't want to reduce on captures/promotions)
             // - not in check
-            // If all of the above are satisfied, we reduce the search by 2 plies
+            // If all of the above are satisfied, we reduce the search by 1 ply
             if ( !pv_node &&
                  moves_searched >= lmr_fully_searched_req &&
                  depth >= lmr_limit  &&
@@ -465,6 +483,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     } else if (type == LOWER) {
         bestscore = beta;
         tt.store(board, bestmove, bestscore, type, depth);
+        // Fail-hard beta cutoff
         return beta;
     }
 
@@ -587,14 +606,25 @@ void search(board_t *board, searchinfo_t *info) {
     init_search(board, info);
 
     int curr_depth_nodes = 0;
+    int curr_depth_time = 0;
+
+    std::cout << "Starting search: ";
+    std::cout << "time allocated: " << info->end - now();
+    std::cout << " time start: " << info->start;
+    std::cout << " time end: " << info->end << std::endl;
+
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {
         // For calculating the branching factor
         curr_depth_nodes = info->nodes;
 
+        // For time management
+        curr_depth_time = now();
+
         best_score = aspiration_window_search(board, info, best_score, depth, USE_NULL);
 
         curr_depth_nodes = info->nodes - curr_depth_nodes;
+        curr_depth_time = now() - curr_depth_time;
 
         if (search_stopped(info)) {
             break;
@@ -622,6 +652,14 @@ void search(board_t *board, searchinfo_t *info) {
             << " deltacut " << info->deltacut \
             << " seecut " << info->seecut \
         );
+
+        // We try to estimate if we have enough time to search the next depth,
+        // and if not, we cut the search short to not waste the time
+        // (REVIEW: This might be suboptimal since we could be filling in the TT)
+        if (info->time_set && 3.5 * (now() - info->start) >= info->end) {
+            std::cout << "Time end!\n";
+            break;
+        }
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;

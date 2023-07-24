@@ -9,6 +9,7 @@
 #include "types.h"
 #include "board.h"
 #include "search.h"
+#include "time.h" // now()
 
 enum { ENGINE_SEARCHING, ENGINE_PONDERING, ENGINE_STOPPED, ENGINE_QUIT };
 

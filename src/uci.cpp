@@ -52,7 +52,7 @@ void parse_position(board_t *board, const std::string& pos_str) {
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
-    int movestogo = 30, movetime = -1;
+    int movestogo = 35, movetime = -1;
     int time = -1, inc = 0;
     info->time_set = false;
     info->depth = -1;
@@ -65,11 +65,11 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
         }
         else if (token == "wtime") {
             iss >> time; // Consume the token
-            if (board->turn) info->time = time;
+            if (board->turn == WHITE) info->time = time;
         }
         else if (token == "btime") {
             iss >> time; // Consume the token
-            if (!board->turn) info->time = time;
+            if (board->turn == BLACK) info->time = time;
         }
         else if (token == "winc") {
             iss >> inc;
@@ -110,12 +110,12 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
     // Time management
     if (time != -1) {
         info->time_set = true;
-        time /= movestogo;
+        info->time /= movestogo;
 
         // to be safe we don't run out of time
-        time -= 50;
-        time = std::abs(time);
-        info->end = info->start + time + inc;
+        info->time -= 50;
+        info->time = MAX(info->time, 0);
+        info->end = info->start + info->time + inc;
     }
 
     if (info->depth == -1) {
@@ -273,8 +273,47 @@ void process_file(const std::string &filename, searchinfo_t *info, std::thread &
     }
 }
 
+std::string opt_type_to_str[] = {
+    "check", "spin", "combo", "button", "string"
+};
+
 
 } // namespace
+
+/* Options need to be non-static, since they influence
+ * other parts of the engine (like search) */
+option_t options[] = {
+    {"HashSize", OPT_TYPE::SPIN, 0, 128, 65536, -1},
+    {"Ponder", OPT_TYPE::CHECK, 0, 0, 1, -1}, // TODO
+    {"Move Safety Overhead", OPT_TYPE::SPIN, 0, 10, 50, -1},
+    {"Threads", OPT_TYPE::SPIN, 0, 1, 128, -1},
+    {"Use Book", OPT_TYPE::CHECK, 0, 0, 0, -1}, // TODO
+    {"Book path", OPT_TYPE::STRING, 0, 0, 0, -1}, // TODO
+};
+
+// Prints all available UCI options
+void print_options() {
+    for (option_t& opt : options) {
+        std::cout << "option name " << opt.name \
+            << " type" << opt_type_to_str[(int)opt.type];
+
+        switch (opt.type) {
+            case OPT_TYPE::CHECK:
+                std::cout << "default " <<
+                    (opt.def ? "true" : "false"); break;
+            case OPT_TYPE::SPIN:
+                std::cout << "default " << opt.def
+                    << " min " << opt.min
+                    << " max " << opt.max; break;
+            case OPT_TYPE::COMBO:
+            case OPT_TYPE::BUTTON:
+            case OPT_TYPE::STRING:
+                //TODO:
+                break;
+        }
+        std::cout << std::endl;
+    }
+}
 
 
 /* UCI driver loop (Stockfish inspired) */

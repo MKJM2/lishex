@@ -372,7 +372,7 @@ typedef struct searchinfo_t {
     std::atomic_int state; // see src/threads.h
     int depth = MAX_DEPTH;
     int seldepth = 0;
-    uint64_t time;
+    int64_t time;
     uint64_t inc;
     uint64_t start;
     uint64_t end;

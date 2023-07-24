@@ -5,6 +5,20 @@
 #include "board.h"
 #include "movegen.h"
 
+// Option types
+enum class OPT_TYPE : int { CHECK, SPIN, COMBO, BUTTON, STRING };
+
+/* A struct representing an option type in UCI mode */
+typedef struct option_t {
+    std::string name;
+    OPT_TYPE type;
+    int min, def, max;
+    int value;
+} option_t;
+
+// Global array storing UCI engine options
+extern option_t options[];
+
 /**
  * @brief UCI driver loop
  *

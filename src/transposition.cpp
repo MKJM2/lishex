@@ -5,6 +5,7 @@
 
 #include "search.h"
 #include "movegen.h"
+#include "uci.h"
 
 #ifdef TRACE_TT_ENABLE
 #define TRACE_TT(str) LOG(str)
@@ -12,14 +13,13 @@
 #define TRACE_TT(str)
 #endif
 
-
 // Default TT size in MB
-constexpr int TTSIZEMB = 64;
+constexpr int DEFAULTTTSIZEMB = 128;
 
 // Global transposition table
-TT tt(TTSIZEMB);
+TT tt(DEFAULTTTSIZEMB);
 
-TT::TT(const int MB) : size{(0x100000 * MB / sizeof(tt_entry)) - 2} {
+TT::TT(const int MB) : size{(0x100000 * MB / sizeof(tt_entry))} {
 
     table = new tt_entry[size];
     if (table == nullptr) {
@@ -40,6 +40,8 @@ TT::~TT() {
     // delete is safe to use on nullptrs
     delete[] table;
 }
+
+// TODO: void TT::resize(int new_size_MB);
 
 void TT::reset_stats() {
     overwrites = hit = cut = 0U;
