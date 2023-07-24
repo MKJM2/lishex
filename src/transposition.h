@@ -22,25 +22,27 @@ typedef struct alignas(16) tt_entry {
     uint8_t depth = 0;
     // Type of entry (flag) + age
     // We use the two lsb for the hash entry flag and the rest for age
-    uint8_t info = BAD;
+    //uint8_t info = BAD;
+    uint8_t flags = BAD;
+    uint8_t age = 0;
     // Best move in the current node
     uint16_t move = NULLMV;
     // Stored value in this node (either exact or lower/upperbound)
     int32_t score = 0;
     // Helpers
-    uint8_t get_flag() const {
-        return info & 0b11;
-    }
-    uint8_t get_age() const {
-        return (info >> 2) & 0b111111;
-    }
+    //uint8_t get_flag() const {
+        //return info & 0b11;
+    //}
+    //uint8_t get_age() const {
+        //return (info >> 2) & 0b111111;
+    //}
 } tt_entry;
 
 
 class TT {
   public:
     // Constructor & Destructor
-    TT(const int MB = 64);
+    TT(const int MB = 128);
     ~TT();
 
     // Clears the transposition table
@@ -61,15 +63,15 @@ class TT {
         return writes * 1000 / size;
     }
     // Ages the table by one generation
-    inline void age() {
-        this->gen++;
-    }
+    // inline void age() {
+        // this->gen++;
+    // }
 
   private:
     tt_entry *table = nullptr;
     size_t size = 0;
-    unsigned gen = 0; // Current age of most recent search's entries
-    // Statistics
+    // unsigned gen = 0; // Current age of most recent search's entries
+    /* Statistics */
     unsigned writes = 0;
     unsigned overwrites = 0;
     unsigned hit = 0;

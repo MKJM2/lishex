@@ -54,12 +54,14 @@ void TT::clear() {
     for (entry = table; entry < table + size; ++entry) {
         entry->key = 0ULL;
         entry->depth = 0;
-        entry->info = 0; // age = 0, flag = BAD = 0
+        // entry->info = 0; // age = 0, flag = BAD = 0
+        entry->flags = BAD;
+        // entry->age = 0;
         entry->move = NULLMV;
         entry->score = 0;
     }
     this->writes = 0;
-    this->gen = 0;
+    // this->gen = 0;
     reset_stats();
 }
 
@@ -128,7 +130,8 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
      * */
 
     /* The entry can be useful. Check it's type */
-    switch (static_cast<int>(entry->get_flag())) { // the 2 lsb store the entry flag
+    ///switch (static_cast<int>(entry->get_flag())) { // the 2 lsb store the entry flag
+    switch (static_cast<int>(entry->flags)) {
         case LOWER:
             if (score < beta) return TTMISS;
             score = beta; break;
@@ -156,15 +159,14 @@ void TT::store(const board_t *board, move_t move, int score,
     assert(depth >= 1);
     assert(BAD <= flags && flags <= EXACT);
 
-    if (entry->key == 0ULL)
+    if (entry->key == 0ULL) {
         ++writes;
-    else {
-        // We only store entries if they contain newer information /
+    } else {
+        // TODO: We only store entries if they contain newer information /
         // better information (higher depth). Otherwise, we don't overwrite
         // TODO: if (entry->get_age() > this->gen || entry->depth > depth) return;
         ++overwrites;
     }
-
 
     // Mate score logic for returning how many plies from mate
     if (score > +oo - MAX_DEPTH) score += board->ply;
@@ -177,8 +179,9 @@ void TT::store(const board_t *board, move_t move, int score,
     /* Finally, store the entry in the transposition table */
     entry->key   = board->key;
     entry->depth = static_cast<uint8_t>(depth);
-    //entry->flags = static_cast<uint8_t>(flags);
-    entry->info = static_cast<uint8_t>(((this->gen << 2) & UINT8_MAX) | (flags & 0b11));
+    entry->flags = static_cast<uint8_t>(flags);
+    // entry->info = static_cast<uint8_t>(((this->gen << 2) & UINT8_MAX) | (flags & 0b11));
+    // entry->age = this->gen;
     entry->move  = static_cast<uint16_t>(move & UINT16_MAX); // only store the 16 least-significant bits
     entry->score = static_cast<int32_t>(score);
 
@@ -188,8 +191,8 @@ void TT::store(const board_t *board, move_t move, int score,
     // Debug: assert the casts are correct
     assert(entry->key == board->key);
     assert(entry->depth == depth);
-    assert(entry->info >> 2 == this->gen);
-    assert((entry->info & 0b11) == flags);
+    //assert(entry->info >> 2 == this->gen);
+    //assert((entry->info & 0b11) == flags);
     assert(entry->move == move);
     assert(entry->score == score);
 }

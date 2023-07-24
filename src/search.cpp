@@ -196,7 +196,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(depth >= 0);
 
     // [PVS] Check if in pv node (credit: Pedro Castro)
-    int pv_node = beta - alpha > 1;
+    int pv_node = alpha + 1 < beta;
 
     // PV for the current search ply
     pv_line &pv = pv_tb[board->ply];
@@ -543,7 +543,7 @@ void init_search(board_t *board, searchinfo_t *info) {
     info->clear();
 
     // Increment the transposition table's age
-    tt.age();
+    // tt.age();
 
     // Reset statistics for the transposition table
     tt.reset_stats();
