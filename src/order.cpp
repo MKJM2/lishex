@@ -21,7 +21,7 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = INT_MAX-1;
+constexpr int PV_BONUS = 100'000'000;
 constexpr int GOOD_PROMO_BONUS = 50'000'000;
 constexpr int CAPTURE_BONUS = 20'000'000;
 constexpr int KILLER1_BONUS = 10'000'000;
@@ -166,7 +166,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
         } else {
-            move.score = board->history_h[board->pieces[from]][to];
+            move.score = MAX(0, board->history_h[board->pieces[from]][to]);
         }
 
         /* TODO: Additional small bonuses

@@ -437,10 +437,14 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                             board->killer1[board->ply] = move;
                         }
 
-
                         // Move causes a cutoff, hence update the search history tables
                         // (History heuristic)
-                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth;
+                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth * depth;
+
+                        // Penalize all the previous quiet moves that *didn't* cause a cut-off
+                        for (scored_move_t* it = moves.begin(); *it != move; ++it) {
+                            it->score -= depth * depth;
+                        }
                     }
 
                     /* The move caused a beta cutoff, hence we get a lowerbound score */
@@ -522,10 +526,10 @@ inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
 
 void init_search(board_t *board, searchinfo_t *info) {
 
-    // Clear tables used for the history heuristic
+    // Scale tables used for the history heuristic
     for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
         for (square_t sq = A1; sq <= H8; ++sq) {
-            board->history_h[p][sq] = 0;
+            board->history_h[p][sq] /= 16;
         }
     }
 
