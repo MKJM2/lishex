@@ -589,7 +589,6 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
             // We found a score within the window!
             break;
         }
-        //aw_delta *= 1.44;
         aw_delta <<= 1;
     }
     return score;
