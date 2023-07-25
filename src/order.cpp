@@ -166,7 +166,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
         } else {
-            move.score = MAX(0, board->history_h[board->pieces[from]][to]);
+            move.score = MAX(0, 100'000 + board->history_h[board->pieces[from]][to]);
         }
 
         /* TODO: Additional small bonuses

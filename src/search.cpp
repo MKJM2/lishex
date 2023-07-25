@@ -14,112 +14,6 @@
 // each thread)
 eval_t eval;
 
-/**
- @brief Quiescence search - we only search 'quiet' (non-tactical)
- positions to get a reliable score from our static evaluation function
- @param alpha the lowerbound
- @param beta the upperbound
- @param board the board position to search
- @param info search info: time, depth to search, etc.
-*/
-int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
-    assert(check(board));
-    assert(alpha < beta);
-
-    ++info->nodes;
-
-    // Position encountered previously?
-    // TODO: In Qsearch we should only be checking for material draws,
-    // not 3fold repetitions
-    //if (is_repetition(board) || board->fifty_move >= 100) {
-        //return 0; // Draw score
-    //}
-
-    if (board->ply > info->seldepth)
-        info->seldepth = board->ply - 1;
-
-    /* Stand-pat score */
-    int score = evaluate(board, &eval);
-
-    assert(-oo < score && score < +oo);
-
-    // Are we too deep into the search tree?
-    if (board->ply >= MAX_DEPTH - 1) {
-        return score;
-    }
-
-    if (score >= beta) { // fail-high
-        return beta;
-    }
-
-    if (score > alpha) { // PV-node
-        alpha = score;
-    }
-
-    movelist_t noisy;
-    generate_noisy(board, &noisy);
-
-    // Move ordering           // PV move, if any
-    score_moves(board, &noisy, NULLMV);
-
-    #ifdef DEBUG
-    int moves_searched = 0;
-    #endif
-
-    // Iterate over the pseudolegal moves in the current position
-    move_t move;
-    while ((move = next_best(&noisy, board->ply)) != NULLMV) {
-
-        /* We perform a couple quick checks to see if the move can be
-         * safely pruned */
-        piece_t& captured = board->pieces[get_to(move)];
-
-        if (!is_promotion(move)) {
-            // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
-                ++info->deltacut;
-                continue;
-            }
-            // SEE pruning: we prune the move if the capture is clearly losing
-            if (losing_capture(board, move, -value_eg[PAWN])) {
-                ++info->seecut;
-                continue;
-            }
-        }
-
-        /* All pruning checks failed, hence the move is promising and we try making it */
-
-        // Pseudo-legal move generation
-        if (!make_move(board, move))
-            continue;
-
-        #ifdef DEBUG
-        ++moves_searched;
-        #endif
-        score = -quiescence(-beta, -alpha, board, info);
-
-        undo_move(board, move);
-
-        if (search_stopped(info)) {
-            return 0;
-        }
-
-        if (score >= beta) { // fail-high
-            #ifdef DEBUG
-            if (moves_searched == 1) {
-                info->fail_high_first++;
-            }
-            info->fail_high++;
-            #endif
-            return beta;
-        }
-
-        if (score > alpha) { // PV-node
-            alpha = score;
-        }
-    }
-    return alpha;
-}
 
 
 namespace {
@@ -184,6 +78,9 @@ typedef struct pv_line {
 // - indexed by [ply]
 // - pv[ply] is the principal variation line for the search at depth 'ply'
 pv_line pv_tb[MAX_DEPTH];
+
+// Reduction plies for LMR (Dumb engine inspired)
+int lmr_depth_reduction[MAX_DEPTH][MAX_MOVES];
 
 
 // TODO: Use Unicode chars in source code? Compiler compatibility?
@@ -283,7 +180,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             return beta;
         }
 
-        int R = 2 + depth / 4 + MIN(2, (score - beta) / 200);
+        const int R = 2 + depth / 4 + MIN(2, (score - beta) / 200);
 
         /* Null move pruning */
         if (depth >= R + 1 && score >= beta) {
@@ -398,8 +295,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                  !is_promotion(move) &&
                  !in_check
             ) {
-                const int R = (depth / lmr_depth_req) +
-                              (moves_searched / (2 * lmr_fully_searched_req));
+                //const int R = (depth / 3) +
+                              //(moves_searched / 6);
+                const int R = lmr_depth_reduction[depth][moves_searched];
                 score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
                                  USE_NULL);
             } else {
@@ -463,7 +361,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                         // Penalize all the previous quiet moves that *didn't* cause a cut-off
                         for (scored_move_t* it = moves.begin(); *it != move; ++it) {
-                            it->score -= depth * depth;
+                            board->history_h[board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
                         }
                     }
 
@@ -621,6 +519,121 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
 
 } // namespace
 
+void init_reductions() {
+    for (size_t ply = 0; ply < MAX_DEPTH; ++ply) {
+        for (size_t move_idx = 0; move_idx < MAX_MOVES; ++move_idx) {
+            lmr_depth_reduction[ply][move_idx] = 0.85*(sqrt(ply-1)+sqrt(move_idx-1)-1);
+        }
+    }
+}
+
+
+/**
+ @brief Quiescence search - we only search 'quiet' (non-tactical)
+ positions to get a reliable score from our static evaluation function
+ @param alpha the lowerbound
+ @param beta the upperbound
+ @param board the board position to search
+ @param info search info: time, depth to search, etc.
+*/
+int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
+    assert(check(board));
+    assert(alpha < beta);
+
+    ++info->nodes;
+
+    // Position encountered previously?
+    // TODO: In Qsearch we should only be checking for material draws,
+    // not 3fold repetitions
+    //if (is_repetition(board) || board->fifty_move >= 100) {
+        //return 0; // Draw score
+    //}
+
+    if (board->ply > info->seldepth)
+        info->seldepth = board->ply - 1;
+
+    /* Stand-pat score */
+    int score = evaluate(board, &eval);
+
+    assert(-oo < score && score < +oo);
+
+    // Are we too deep into the search tree?
+    if (board->ply >= MAX_DEPTH - 1) {
+        return score;
+    }
+
+    if (score >= beta) { // fail-high
+        return beta;
+    }
+
+    if (score > alpha) { // PV-node
+        alpha = score;
+    }
+
+    movelist_t noisy;
+    generate_noisy(board, &noisy);
+
+    // Move ordering           // PV move, if any
+    score_moves(board, &noisy, NULLMV);
+
+    #ifdef DEBUG
+    int moves_searched = 0;
+    #endif
+
+    // Iterate over the pseudolegal moves in the current position
+    move_t move;
+    while ((move = next_best(&noisy, board->ply)) != NULLMV) {
+
+        /* We perform a couple quick checks to see if the move can be
+         * safely pruned */
+        piece_t& captured = board->pieces[get_to(move)];
+
+        if (!is_promotion(move)) {
+            // Try Delta pruning (TODO: insufficient material issues in the endgame)
+            if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
+                ++info->deltacut;
+                continue;
+            }
+            // SEE pruning: we prune the move if the capture is clearly losing
+            if (losing_capture(board, move, -value_eg[PAWN])) {
+                ++info->seecut;
+                continue;
+            }
+        }
+
+        /* All pruning checks failed, hence the move is promising and we try making it */
+
+        // Pseudo-legal move generation
+        if (!make_move(board, move))
+            continue;
+
+        #ifdef DEBUG
+        ++moves_searched;
+        #endif
+        score = -quiescence(-beta, -alpha, board, info);
+
+        undo_move(board, move);
+
+        if (search_stopped(info)) {
+            return 0;
+        }
+
+        if (score >= beta) { // fail-high
+            #ifdef DEBUG
+            if (moves_searched == 1) {
+                info->fail_high_first++;
+            }
+            info->fail_high++;
+            #endif
+            return beta;
+        }
+
+        if (score > alpha) { // PV-node
+            alpha = score;
+        }
+    }
+    return alpha;
+}
 
 /* Search the tree starting from the root node (current board state) */
 void search(board_t *board, searchinfo_t *info) {

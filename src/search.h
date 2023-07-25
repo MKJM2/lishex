@@ -25,6 +25,12 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info);
 */
 void search(board_t *board, searchinfo_t *info);
 
+/**
+ @brief Initializes the values used for various reductions,
+ like the Late Move Reduction
+*/
+void init_reductions();
+
 // Constants / parameters
 // [LMR]
 constexpr int lmr_fully_searched_req = 4;
