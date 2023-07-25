@@ -16,7 +16,7 @@ eval_t eval;
 
 /**
  @brief Quiescence search - we only search 'quiet' (non-tactical)
- moves to get a reliable score from our static evaluation function
+ positions to get a reliable score from our static evaluation function
  @param alpha the lowerbound
  @param beta the upperbound
  @param board the board position to search
@@ -244,7 +244,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     if (tthit) {
        ++info->hashcut;
        return score;
-    } else if (depth > irr_depth_req) {
+    } else if (depth > iir_depth_req) {
         // Internal iterative reduction, as discussed in
         // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769&sid=64085e3396554f0fba414404445b3120
         --depth;
@@ -281,7 +281,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             return beta;
         }
 
-        int R = 2 + depth / 4 + std::min(2, (score - beta) / 200);
+        int R = 2 + depth / 4 + MIN(2, (score - beta) / 200);
 
         /* Null move pruning */
         if (depth >= R + 1 && score >= beta) {
@@ -378,12 +378,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             // searched
             if ( !pv_node &&
                  moves_searched >= lmr_fully_searched_req &&
-                 depth >= lmr_limit  &&
+                 depth >= lmr_depth_req  &&
                  !is_capture(move)   &&
                  !is_promotion(move) &&
                  !in_check
             ) {
-                const int R = (depth / lmr_limit) +
+                const int R = (depth / lmr_depth_req) +
                               (moves_searched / (2 * lmr_fully_searched_req));
                 score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
                                  USE_NULL);
@@ -589,7 +589,8 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
             // We found a score within the window!
             break;
         }
-        aw_delta *= 1.44;
+        //aw_delta *= 1.44;
+        aw_delta <<= 1;
     }
     return score;
 }

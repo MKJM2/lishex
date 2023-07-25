@@ -28,7 +28,7 @@ void search(board_t *board, searchinfo_t *info);
 // Constants / parameters
 // [LMR]
 constexpr int lmr_fully_searched_req = 4;
-constexpr int lmr_limit = 3;
-constexpr int irr_depth_req = 6;
+constexpr int lmr_depth_req = 3;
+constexpr int iir_depth_req = 6;
 
 #endif // SEARCH_H_
