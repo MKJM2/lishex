@@ -15,7 +15,8 @@
 eval_t eval;
 
 /**
- @brief Quiescence search
+ @brief Quiescence search - we only search 'quiet' (non-tactical)
+ moves to get a reliable score from our static evaluation function
  @param alpha the lowerbound
  @param beta the upperbound
  @param board the board position to search
@@ -58,10 +59,12 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     movelist_t noisy;
     generate_noisy(board, &noisy);
 
-    // Move ordering              // PV move, if any
+    // Move ordering           // PV move, if any
     score_moves(board, &noisy, NULLMV);
 
+    #ifdef DEBUG
     int moves_searched = 0;
+    #endif
 
     // Iterate over the pseudolegal moves in the current position
     move_t move;
@@ -77,20 +80,22 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
                 ++info->deltacut;
                 continue;
             }
-
+            // SEE pruning: we prune the move if the capture is clearly losing
             if (losing_capture(board, move, -value_eg[PAWN])) {
                 ++info->seecut;
                 continue;
             }
         }
 
-        /* All checks failed, hence the move is promising and we try making it */
+        /* All pruning checks failed, hence the move is promising and we try making it */
 
         // Pseudo-legal move generation
-        if (!make_move(board, move)) //
+        if (!make_move(board, move))
             continue;
 
+        #ifdef DEBUG
         ++moves_searched;
+        #endif
         score = -quiescence(-beta, -alpha, board, info);
 
         undo_move(board, move);
@@ -100,10 +105,12 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         }
 
         if (score >= beta) { // fail-high
+            #ifdef DEBUG
             if (moves_searched == 1) {
                 info->fail_high_first++;
             }
             info->fail_high++;
+            #endif
             return beta;
         }
 
@@ -114,9 +121,10 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
     return alpha;
 }
 
+
 namespace {
 
-// For maintaining the principal variation in the triangular array (debug)
+// For maintaining the principal variation in the triangular array
 // Copies up to n moves from p_src to p_tgt, kind of like memcpy
 // Adapted from https://www.chessprogramming.org/Triangular_PV-Table
 void movcpy(move_t *p_tgt, move_t *p_src, int n) {
@@ -148,6 +156,7 @@ N-2 |2  |
 N-1 |1|
     +-+
 */
+
 typedef struct pv_line {
     move_t moves[MAX_DEPTH] = {};
     size_t size = 0;
@@ -351,22 +360,12 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         // we are in a PV node. Thus we want to prove that all the remaining
         // moves are bad. If we were wrong and managed to find a better move,
         // we need to do a research
-        //if (type == EXACT) {
-            //score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
-            //if (score > alpha && score < beta) {
-                //// Perform a full window research
-                //score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
-            //}
-        //} else {
-            //score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
-        //}
-
-        /* [LMR] Late Move Reduction */
         if (moves_searched == 0) {
             // We assume, given good move ordering, that the first move
             // is a PV move (leading to a PV node) so we perform a full search
             score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
         } else {
+            /* [LMR] Late Move Reduction */
             // We check whether to consider a reduction or not. We do so if:
             // - not in a pv node
             // - enough moves searched already
@@ -374,7 +373,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             // - sufficient depth to reduce
             // - the move is quiet (we don't want to reduce on captures/promotions)
             // - not in check
-            // If all of the above are satisfied, we reduce the search by 1 ply
+            // If all of the above are satisfied, we reduce the search depth
+            // by an amount dependent on a) current depth and b) # of moves already
+            // searched
             if ( !pv_node &&
                  moves_searched >= lmr_fully_searched_req &&
                  depth >= lmr_limit  &&
@@ -382,7 +383,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                  !is_promotion(move) &&
                  !in_check
             ) {
-                score = -negamax(-alpha - 1, -alpha, depth - 2, board, info, USE_NULL);
+                const int R = (depth / lmr_limit) +
+                              (moves_searched / (2 * lmr_fully_searched_req));
+                score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
+                                 USE_NULL);
             } else {
                 // Trick to ensure a full-depth search is done
                 // credit: https://web.archive.org/web/20071028123254/http://www.glaurungchess.com/lmr.html
@@ -390,19 +394,15 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             }
 
             if (score > alpha) {
-                // [PVS] Principal variation search
-                // We assume that given good move ordering, if we found a PV move
-                // we are in a PV node. Thus we want to prove that all the remaining
-                // moves are bad. If we were wrong and managed to find a better move,
-                // we need to do a research
+                // [PVS] We first search the remaining moves with a zero window
                 score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
                 if (score > alpha && score < beta) {
-                    // Perform a full window re-search
+                    // If the score we got was outside of our window,
+                    // we perform a full window re-search
                     score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
                 }
             }
         }
-
         undo_move(board, move);
 
         if (search_stopped(info))
@@ -417,10 +417,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                 // Update the PV
                 pv[board->ply] = bestmove;
-                //movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                for (size_t next = board->ply + 1; next < new_pv.size; ++next) {
-                    pv[next] = new_pv[next];
-                }
+                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
+                //for (size_t next = board->ply + 1; next < new_pv.size; ++next) {
+                    //pv[next] = new_pv[next];
+                //}
                 pv.size = new_pv.size;
 
                 if (score >= beta) { // Fail-high node
@@ -448,11 +448,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                     }
 
                     /* The move caused a beta cutoff, hence we get a lowerbound score */
-                    // tt.store(board, bestmove, beta, LOWER, depth);
-                    // fail hard beta-cutoff (fail-high)
-                    // return beta;
                     type = LOWER;
-                    //bestscore = beta;
                     break;
                 }
 
@@ -463,25 +459,23 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 alpha = score;
             }
         }
-        /* Fail low: simply search the next move */
+        /* The move fails low: simply search the next move */
     }
 
-    // If no legal moves, then check if we're in check
-    // If not, it's a stalemate
+    // If no legal moves could be performed, then check if we're in check:
+    // if not, it's a stalemate. Otherwise we've been mated!
     if (!moves_searched) {
                             // Mate score      // Stalemate
         return (in_check) ? -oo + board->ply : 0;
     }
 
 
-    /* Store the best move (+ corresponding score & type, either EXACT or UPPER)
-     * in the transposition table. If we couldn't beat alpha, the move stored is
-     * an empty move with the flag UPPER */
+    /* Store the best move (+ corresponding score & bound type)
+     * in the transposition table.*/
     assert((type == LOWER && bestscore >= beta) ||
            (type == UPPER && bestscore <= alpha) || (type == EXACT));
 
-    // We don't want to store a score outside of the window
-    // Fail-hard: we don't want to report scores outside of the search window
+    // Fail-hard: we don't report scores outside of the search window
     if (type == UPPER) {
         bestscore = alpha;
     } else if (type == LOWER) {
@@ -505,6 +499,7 @@ inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
   std::cout << "info depth " << d << " seldepth " << sd \
             << " score ";
 
+  // Print mate distance info if a player is being mated
   if (std::abs(s) >= +oo - MAX_DEPTH) {
      std::cout << "mate " \
           << (s > 0 ? +oo - s + 1 : -oo - s + 1) / 2;
@@ -577,6 +572,7 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
     }
 
     // We keep retrying the search with larger and larger windows
+    // (window widening code inspired by the Alexandria engine)
     for (;;) {
         score = negamax(alpha, beta, depth, board, info, do_null);
 
