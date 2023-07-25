@@ -148,7 +148,7 @@ inline int piece_type(const piece_t p) {
    return p & ~(0b1000);
 }
 
-// Determining whether a piece is sliding
+// Determining whether a piece is sliding or not
 constexpr bool is_sliding_arr[] = { 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0 };
 
 template<piece_t PIECE_T>
@@ -244,6 +244,12 @@ inline int get_flags(const move_t move) {
 
 inline int is_promotion(const move_t move) {
     return ((move >> 12) & 0b1000);
+}
+
+inline int get_promotion_type(const move_t move) {
+    // Clear the capture bit if set
+    piece_t promoted_to = (get_flags(move) & ~CAPTURE) - KNIGHTPROMO + KNIGHT;
+    return promoted_to < 0 ? 0 : promoted_to;
 }
 
 inline int is_capture(const move_t move) {

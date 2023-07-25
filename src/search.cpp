@@ -244,11 +244,14 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     if (tthit) {
        ++info->hashcut;
        return score;
-    } else if (depth > iir_depth_req) {
+    } else if (!pv_node && depth >= iir_depth_req) {
         // Internal iterative reduction, as discussed in
         // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769&sid=64085e3396554f0fba414404445b3120
         --depth;
     }
+
+    /* Get a static evaluation of the current position */
+    score = evaluate(board, &eval);
 
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
@@ -271,7 +274,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         CNT(board->sides_pieces[board->turn] ^
                     board->bitboards[board->turn ? P : p]) > 1
     ) {
-        score = evaluate(board, &eval);
 
         /* Reverse futility pruning */
         static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
@@ -342,6 +344,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     score_moves(board, &moves, ttmove);
 
     size_t moves_searched = 0;
+    size_t quiet_moves_searched = 0;
     int bestscore = score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
@@ -349,11 +352,23 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     move_t move, bestmove = NULLMV;
     while ((move = next_best(&moves, board->ply)) != NULLMV) {
 
+        /* Forward futility pruning */
+        // the material gain a move can generate is the biggest if we promote to a piece
+        // while capturing an enemy piece. In addition, quiet moves have an
+        // estimated gain of zero, a fact which we utilize when performing reductions
+        int est_gain = value_eg[get_promotion_type(move)] +
+                       value_eg[board->pieces[get_to(move)]];
+        if (depth < 8 &&
+            !in_check &&
+            move != ttmove &&
+            moves_searched &&
+            score + est_gain + (depth << 7) <= alpha) {
+            break; // Fail-low and fail hard
+        }
+
         // Pseudo-legal move generation
         if (!make_move(board, move))
             continue;
-
-        ++moves_searched;
 
         // [PVS] Principal variation search
         // We assume that given good move ordering, if we found a PV move
@@ -389,7 +404,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                                  USE_NULL);
             } else {
                 // Trick to ensure a full-depth search is done
-                // credit: https://web.archive.org/web/20071028123254/http://www.glaurungchess.com/lmr.html
+                // credit to Tord Romstad:
+                // https://web.archive.org/web/20071028123254/http://www.glaurungchess.com/lmr.html
                 score = alpha + 1;
             }
 
@@ -407,6 +423,10 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
         if (search_stopped(info))
             return 0;
+
+        ++moves_searched;
+        if (est_gain == 0)
+            ++quiet_moves_searched;
 
         assert(info->state == ENGINE_SEARCHING);
 
@@ -459,7 +479,11 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 alpha = score;
             }
         }
-        /* The move fails low: simply search the next move */
+        /* The move failed low, we check if we can prune the tree here [Late Move Pruning] */
+        //if (!pv_node &&
+            //!in_check &&
+            //quiet_moves_searched > 4 + depth * depth)
+            //break;
     }
 
     // If no legal moves could be performed, then check if we're in check:
@@ -481,7 +505,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     } else if (type == LOWER) {
         bestscore = beta;
         tt.store(board, bestmove, bestscore, type, depth);
-        // Fail-hard beta cutoff
         return beta;
     }
 
@@ -489,6 +512,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     assert(check(board));
 
+    //return bestscore;
     return alpha;
 }
 

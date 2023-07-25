@@ -18,12 +18,12 @@
 */
 typedef struct board_t {
     // We store a separate bitboard for each piece (type, color)
-    bb_t bitboards[PIECE_NO];
+    bb_t bitboards[PIECE_NO] = {};
     // In addition to bitboards, we store a regular 8x8 array
     // for quick piece lookups during move-making
-    piece_t pieces[SQUARE_NO];
+    piece_t pieces[SQUARE_NO] = {};
     // Additionally, we store bitboards of all pieces for a given side
-    bb_t sides_pieces[BOTH];
+    bb_t sides_pieces[BOTH] = {};
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Ply of the game in the current search
