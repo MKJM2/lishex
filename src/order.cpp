@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /**
  * Implementation of move ordering logic
 */
@@ -21,7 +39,7 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = INT_MAX-1;
+constexpr int PV_BONUS = 100'000'000;
 constexpr int GOOD_PROMO_BONUS = 50'000'000;
 constexpr int CAPTURE_BONUS = 20'000'000;
 constexpr int KILLER1_BONUS = 10'000'000;
@@ -166,7 +184,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
         } else {
-            move.score = board->history_h[board->pieces[from]][to];
+            move.score = MAX(0, 100'000 + board->history_h[board->pieces[from]][to]);
         }
 
         /* TODO: Additional small bonuses

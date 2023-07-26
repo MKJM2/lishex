@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /* Transposition table code */
 #include "transposition.h"
 
@@ -195,39 +213,4 @@ void TT::store(const board_t *board, move_t move, int score,
     //assert((entry->info & 0b11) == flags);
     assert(entry->move == move);
     assert(entry->score == score);
-}
-
-
-/* Adapted from VICE by Bluefever Software */
-
-move_t TT::probe_pv(const board_t *board) {
-    size_t idx = board->key % this->size;
-    tt_entry *entry = &table[idx];
-
-    if (entry->key == board->key) {
-        return entry->move;
-    }
-    return NULLMV;
-}
-
-
-int TT::get_pv_line(board_t *board, const int depth) {
-
-    move_t move = NULLMV;
-    int count = 0;
-
-    while ((move = probe_pv(board)) != NULLMV && count < depth) {
-        if (move_exists(board, move)) {
-            make_move(board, move);
-            board->pv[count++] = move;
-        } else {
-            break;
-        }
-    }
-
-    while (board->ply > 0) {
-        undo_move(board);
-    }
-
-    return count;
 }

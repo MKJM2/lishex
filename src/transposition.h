@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef TRANSPOSITION_H_
 #define TRANSPOSITION_H_
 
@@ -54,10 +72,6 @@ class TT {
     // Stores an entry in our transposition table
     void store(const board_t *board, move_t move, int score,
                const int flags, const int depth);
-    // Returns the pv move for the current board state, if any
-    move_t probe_pv(const board_t *board);
-    // VICE inspired: retrievews pv line from the transposition table
-    int get_pv_line(board_t *board, const int depth);
     // Returns the hashfull info in permilles
     inline int hashfull() const {
         return writes * 1000 / size;

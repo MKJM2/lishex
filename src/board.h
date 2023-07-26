@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef BOARD_H_
 #define BOARD_H_
 
@@ -18,12 +36,12 @@
 */
 typedef struct board_t {
     // We store a separate bitboard for each piece (type, color)
-    bb_t bitboards[PIECE_NO];
+    bb_t bitboards[PIECE_NO] = {};
     // In addition to bitboards, we store a regular 8x8 array
     // for quick piece lookups during move-making
-    piece_t pieces[SQUARE_NO];
+    piece_t pieces[SQUARE_NO] = {};
     // Additionally, we store bitboards of all pieces for a given side
-    bb_t sides_pieces[BOTH];
+    bb_t sides_pieces[BOTH] = {};
     // Side to play (Black = 0, White = 1)
     int turn = 1;
     // Ply of the game in the current search
@@ -44,9 +62,7 @@ typedef struct board_t {
     move_t killer1[MAX_DEPTH] = {};
     move_t killer2[MAX_DEPTH] = {};
     // History heuristic, table indexed by [piece][to square]
-    unsigned history_h[PIECE_NO][SQUARE_NO] = {};
-    // TODO: Temporary
-    move_t pv[MAX_DEPTH] = {};
+    int32_t history_h[PIECE_NO][SQUARE_NO] = {};
 } board_t;
 
 #ifdef DEBUG

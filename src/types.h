@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef TYPES_H_
 #define TYPES_H_
 
@@ -148,7 +166,7 @@ inline int piece_type(const piece_t p) {
    return p & ~(0b1000);
 }
 
-// Determining whether a piece is sliding
+// Determining whether a piece is sliding or not
 constexpr bool is_sliding_arr[] = { 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0 };
 
 template<piece_t PIECE_T>
@@ -246,6 +264,12 @@ inline int is_promotion(const move_t move) {
     return ((move >> 12) & 0b1000);
 }
 
+inline int get_promotion_type(const move_t move) {
+    // Clear the capture bit if set
+    piece_t promoted_to = (get_flags(move) & ~CAPTURE) - KNIGHTPROMO + KNIGHT;
+    return promoted_to < 0 ? 0 : promoted_to;
+}
+
 inline int is_capture(const move_t move) {
     return ((move >> 12) & 0b0100);
 }
@@ -287,6 +311,9 @@ typedef struct scored_move_t {
 typedef struct movelist_t {
     const scored_move_t* begin() const { return movelist; }
     const scored_move_t* end() const { return last; }
+    scored_move_t* begin() { return movelist; }
+    scored_move_t  operator[](int i) const { assert(i < size()); return movelist[i]; }
+    scored_move_t& operator[](int i) { return movelist[i]; }
     size_t size() const { return static_cast<size_t>(last - movelist); }
     void push_back(const move_t& m) {
         assert(size() < MAX_MOVES);
