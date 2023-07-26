@@ -648,10 +648,12 @@ void search(board_t *board, searchinfo_t *info) {
     int curr_depth_nodes = 0;
     int curr_depth_time = 0;
 
+    /*
     std::cout << "Starting search: ";
     std::cout << "time allocated: " << info->end - now();
     std::cout << " time start: " << info->start;
     std::cout << " time end: " << info->end << std::endl;
+    */
 
     // Iterative deepening
     for (int depth = 1; depth <= info->depth; ++depth) {

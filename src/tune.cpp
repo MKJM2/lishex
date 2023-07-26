@@ -51,13 +51,15 @@ std::vector<int*> tunable_params = {
     &pawn_bonuses[5],
     &pawn_bonuses[6],
     &pawn_bonuses[7],
-    &bishop_pair,
+    &bishop_pair_mg,
+    &bishop_pair_eg,
     &rook_open_file,
     &rook_semiopen_file,
     &queen_open_file,
     &queen_semiopen_file,
 };
 
+/*
 std::vector<std::pair<int, int>> bounds = {
     {0, 25},
     {-25, 0},
@@ -70,10 +72,30 @@ std::vector<std::pair<int, int>> bounds = {
     {0, 80},
     {0, 90},
     {1, 35},
+    {15, 65},
     {1, 15},
     {1, 12},
     {1, 15},
     {1, 12},
+};
+*/
+std::vector<std::pair<int, int>> bounds = {
+    {2, 15},
+    {-15, 0},
+    {-25, -5},
+    {0, 25},
+    {0, 10},
+    {0, 12},
+    {15, 45},
+    {10, 70},
+    {45, 85},
+    {45, 90},
+    {1, 35},
+    {15, 65},
+    {3, 15},
+    {2, 10},
+    {3, 15},
+    {2, 10},
 };
 
 std::vector<param_t> best_params(tunable_params.size());
@@ -260,6 +282,7 @@ void tune() {
 
     // Initialize the global best position and MSE
     double best_mse = std::numeric_limits<double>::max();
+    double prev_best_mse = best_mse;
 
     std::cout << "Starting the particle swarm loop..."<< std::endl;
     // PSO loop
@@ -302,6 +325,7 @@ void tune() {
 
                 // Update the swarm's best known position
                 if (particles[i].mse < best_mse) {
+                    std::cout << "New best MSE: " << particles[i].mse << std::endl;
                     best_mse = particles[i].mse;
                     best_params = particles[i].position;
                 }
@@ -325,6 +349,13 @@ void tune() {
             std::cout << best_params[idx].value << ' ';
         }
         std::cout << std::endl;
+
+        if (prev_best_mse - best_mse < 0.000001) {
+            std::cout << "MSE hasn't improved since last iteration, terminating..." << std::endl;
+            break;
+        }
+
+        prev_best_mse = best_mse;
     }
 
     std::cout << "Done! Best parameters found:" << std::endl;

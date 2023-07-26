@@ -16,66 +16,27 @@ constexpr int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
 constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
-//// Tempo score (a small bonus for the side to move)
-//int tempo_bonus = 5;
-//// Pass and isolated pawn
-//int isolated_pawn = -13;
-//// Doubled pawn penalty
-//int doubled_pawn = -8;
-//// Bonus for supported pawns
-//int pawn_supported = 15;
-//// Indexed by rank, i.e. the closer to promoting, the higher the bonus
-//int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
-//// Indexed by rank, bonus for good pawn structure
-//int pawn_bonuses[RANK_NO] = { 0, 0, 1, 2, 4, 6, 10, 20 };
-//// Bonus for having two bishops on board
-//int bishop_pair = 30;
-//// Bonuses for rooks/queens on open/semi-open files
-//int rook_open_file = 10;
-//int rook_semiopen_file = 5;
-//int queen_open_file = 5;
-//int queen_semiopen_file = 3;
-
-// review: tempo score (a small bonus for the side to move)
-//int tempo_bonus = 5;
-//// pass and isolated pawn
-//int isolated_pawn = -10;
-//// doubled pawn penalty
-//int doubled_pawn = -8;
-//// review: bonus for supported pawns
-//int pawn_supported = 10;
-//// indexed by rank, i.e. the closer to promoting, the higher the bonus
-//int passed_pawn[rank_no] = { 0, 5, 10, 20, 35, 60, 100, 200 };
-//// review: indexed by rank, bonus for good pawn structure
-//int pawn_bonuses[rank_no] = { 0, 0, 1, 2, 3, 4, 5, 6 };
-//// bonus for having two bishops on board
-//int bishop_pair = 30;
-//// bonuses for rooks/queens on open/semi-open files
-//int rook_open_file = 7;
-//int rook_semiopen_file = 5;
-//int queen_open_file = 5;
-//int queen_semiopen_file = 3;
-
 // REVIEW: 3rd tuning iteration parameters
 //Tempo score (a small bonus for the side to move)
-int tempo_bonus = 2;
+int tempo_bonus = 5;
 //// Pass and isolated pawn
-int isolated_pawn = -10;
+int isolated_pawn = -8;
 //// Doubled pawn penalty
-int doubled_pawn = -17;
+int doubled_pawn = -12;
 //// REVIEW: Bonus for supported pawns
-int pawn_supported = 13;
+int pawn_supported = 0;
 //// Indexed by rank, i.e. the closer to promoting, the higher the bonus
 int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 //// REVIEW: Indexed by rank, bonus for good pawn structure
-int pawn_bonuses[RANK_NO] = { 0, 0, 5, 15, 12, 27, 21, 37 };
+int pawn_bonuses[RANK_NO] = { 0, 0, 0, 5, 22, 42, 50, 65 };
 //// Bonus for having two bishops on board
-int bishop_pair = 21;
+int bishop_pair_mg = 3;
+int bishop_pair_eg = 53;
 //// Bonuses for rooks/queens on open/semi-open files
 int rook_open_file = 11;
-int rook_semiopen_file = 1;
-int queen_open_file = 1;
-int queen_semiopen_file = 1;
+int rook_semiopen_file = 5;
+int queen_open_file = 8;
+int queen_semiopen_file = 2;
 
 /* King safety parameters */
 
@@ -597,9 +558,9 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
-        //int connected_bonus = pawn_struct_score(board, sq);
-        //eval->middlegame += connected_bonus;
-        //eval->endgame    += connected_bonus;
+        int connected_bonus = pawn_struct_score(board, sq);
+        eval->middlegame += connected_bonus;
+        eval->endgame    += connected_bonus;
     }
 
     // (Black pawns)
@@ -639,9 +600,9 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
-        //int connected_bonus = pawn_struct_score(board, sq);
-        //eval->middlegame -= connected_bonus;
-        //eval->endgame    -= connected_bonus;
+        int connected_bonus = pawn_struct_score(board, sq);
+        eval->middlegame -= connected_bonus;
+        eval->endgame    -= connected_bonus;
     }
 
 
@@ -755,6 +716,7 @@ int evaluate(const board_t *board, eval_t * eval) {
     }
 
     /* Bishop pair bonus */
+    // We make sure the bishops are of opposite colors
 
     // White
     bb = board->bitboards[B];
@@ -768,8 +730,8 @@ int evaluate(const board_t *board, eval_t * eval) {
             }
         }
         if (on_white >= 1 && on_black >= 1) {
-            eval->middlegame += bishop_pair;
-            eval->endgame    += bishop_pair;
+            eval->middlegame += bishop_pair_mg;
+            eval->endgame    += bishop_pair_eg;
         }
     }
 
@@ -785,8 +747,8 @@ int evaluate(const board_t *board, eval_t * eval) {
             }
         }
         if (on_white >= 1 && on_black >= 1) {
-            eval->middlegame -= bishop_pair;
-            eval->endgame    -= bishop_pair;
+            eval->middlegame -= bishop_pair_mg;
+            eval->endgame    -= bishop_pair_eg;
         }
     }
 

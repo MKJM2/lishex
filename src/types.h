@@ -294,7 +294,7 @@ typedef struct movelist_t {
     const scored_move_t* begin() const { return movelist; }
     const scored_move_t* end() const { return last; }
     scored_move_t* begin() { return movelist; }
-    scored_move_t  operator[](int i) const { assert(i < size); return movelist[i]; }
+    scored_move_t  operator[](int i) const { assert(i < size()); return movelist[i]; }
     scored_move_t& operator[](int i) { return movelist[i]; }
     size_t size() const { return static_cast<size_t>(last - movelist); }
     void push_back(const move_t& m) {
