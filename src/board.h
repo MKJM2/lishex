@@ -45,8 +45,6 @@ typedef struct board_t {
     move_t killer2[MAX_DEPTH] = {};
     // History heuristic, table indexed by [piece][to square]
     int32_t history_h[PIECE_NO][SQUARE_NO] = {};
-    // TODO: Temporary
-    move_t pv[MAX_DEPTH] = {};
 } board_t;
 
 #ifdef DEBUG

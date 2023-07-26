@@ -54,10 +54,6 @@ class TT {
     // Stores an entry in our transposition table
     void store(const board_t *board, move_t move, int score,
                const int flags, const int depth);
-    // Returns the pv move for the current board state, if any
-    move_t probe_pv(const board_t *board);
-    // VICE inspired: retrievews pv line from the transposition table
-    int get_pv_line(board_t *board, const int depth);
     // Returns the hashfull info in permilles
     inline int hashfull() const {
         return writes * 1000 / size;

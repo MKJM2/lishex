@@ -196,38 +196,3 @@ void TT::store(const board_t *board, move_t move, int score,
     assert(entry->move == move);
     assert(entry->score == score);
 }
-
-
-/* Adapted from VICE by Bluefever Software */
-
-move_t TT::probe_pv(const board_t *board) {
-    size_t idx = board->key % this->size;
-    tt_entry *entry = &table[idx];
-
-    if (entry->key == board->key) {
-        return entry->move;
-    }
-    return NULLMV;
-}
-
-
-int TT::get_pv_line(board_t *board, const int depth) {
-
-    move_t move = NULLMV;
-    int count = 0;
-
-    while ((move = probe_pv(board)) != NULLMV && count < depth) {
-        if (move_exists(board, move)) {
-            make_move(board, move);
-            board->pv[count++] = move;
-        } else {
-            break;
-        }
-    }
-
-    while (board->ply > 0) {
-        undo_move(board);
-    }
-
-    return count;
-}

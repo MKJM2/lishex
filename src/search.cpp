@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 
 #include "eval.h"
 #include "threads.h"
@@ -281,15 +282,24 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             // - not in check
             // If all of the above are satisfied, we reduce the search depth
             // by an amount dependent on a) current depth and b) # of moves already
-            // searched. In addition, we reduce 1 ply less if in a pv-node
-            // TODO: Clamp the reduction
+            // searched. In addition, we reduce 1 ply less if in a pv-node, and
+            // 1 ply more if the move is a bad quiet move (according to history)
             if ( moves_searched >= lmr_fully_searched_req &&
                  depth >= lmr_depth_req  &&
                  !is_capture(move)   &&
                  !is_promotion(move) &&
                  !in_check
             ) {
-                const int R = lmr_depth_reduction[depth][moves_searched] - pv_node;
+                int R = lmr_depth_reduction[depth][moves_searched];
+
+                // Reduce less if we are in a PV node
+                R -= pv_node;
+
+                // Reduce more on bad moves according to the history
+                //R += (board->history_h[board->pieces[get_from(move)]][get_to(move)] < 0);
+
+                // Clamp the reduction so we don't drop into negative depths
+                R = std::clamp(R, 0, depth - 1);
                 score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
                                  USE_NULL);
             } else {
@@ -345,6 +355,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                         // Penalize all the previous quiet moves that *didn't* cause a cut-off
                         for (scored_move_t* it = moves.begin(); *it != move; ++it) {
+                            if (get_flags(move) != QUIET) continue; // REVIEW: Might be unnecessary
                             board->history_h[board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
                         }
                     }
@@ -407,7 +418,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 }
 
 inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
-                              const pv_line &pv, board_t *board) {
+                              const pv_line &pv, [[maybe_unused]] board_t *board) {
 
   // Print the info line
   std::cout << "info depth " << d << " seldepth " << sd \
@@ -424,11 +435,6 @@ inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
             << " hashfull " << tt.hashfull() << " pv ";
 
   pv.print();
-  //std::cout << "tt ";
-  //int ttmoves = tt.get_pv_line(board, d);
-  //for (int i = 0; i < ttmoves; ++i) {
-      //std::cout << move_to_str(board->pv[i]) << ' ';
-  //}
   std::cout << std::endl;
 }
 
@@ -667,7 +673,6 @@ void search(board_t *board, searchinfo_t *info) {
         assert(info->state == ENGINE_SEARCHING);
 
         best_move = pv_tb[0][0];
-        //best_move = board->pv[0];
 
         print_search_info(best_score,
                           depth,
@@ -690,10 +695,11 @@ void search(board_t *board, searchinfo_t *info) {
         // We try to estimate if we have enough time to search the next depth,
         // and if not, we cut the search short to not waste the time
         // (REVIEW: This might be suboptimal since we could be filling the TT)
-        if (info->time_set && 3.5 * (now() - info->start) >= info->end) {
-            std::cout << "info string Engine won't have enough time to search the next depth!\n";
-            break;
-        }
+        // REVIEW: Need to tune the coefficient here
+        //if (info->time_set && 3.5 * (now() - info->start) >= info->end - info->start) {
+            //std::cout << "info string Engine won't have enough time to search the next depth!\n";
+            //break;
+        //}
     }
 
     std::cout << "bestmove " << move_to_str(best_move) << std::endl;
