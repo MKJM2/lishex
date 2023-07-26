@@ -1,3 +1,21 @@
+/*
+ Lishex (codename 1F98A), a UCI chess engine built in C++
+ Copyright (C) 2023 Michal Kurek
+
+ Lishex is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Lishex is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 /* Iterative deepening alpha-beta in negamax fashion */
 #include "search.h"
 
@@ -91,13 +109,13 @@ int lmr_depth_reduction[MAX_DEPTH][MAX_MOVES];
  @param do_null whether to perform a null move or not
  @param pv reference to a table storing the (depth - 1) principal variation
 */
-int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, bool do_null) {
+int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool do_null) {
     assert(check(board));
-    assert(alpha < beta);
+    assert(α < β);
     assert(depth >= 0);
 
     // [PVS] Check if in pv node (credit: Pedro Castro)
-    int pv_node = alpha + 1 < beta;
+    int pv_node = α + 1 < β;
 
     // PV for the current search ply
     pv_line &pv = pv_tb[board->ply];
@@ -109,7 +127,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     /* Recursion base case */
     if (depth <= 0) {
-        return quiescence(alpha, beta, board, info);
+        return quiescence(α, β, board, info);
     }
 
     ++info->nodes;
@@ -131,7 +149,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     /* Transposition table probing */
     tt_entry entry[1];
-    int tthit = tt.probe(board, entry, ttmove, score, alpha, beta, depth);
+    int tthit = tt.probe(board, entry, ttmove, score, α, β, depth);
 
     // Check if can get a cutoff
     if (!pv_node && tthit) {
@@ -171,28 +189,28 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         /* Reverse futility pruning */
         static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
-        if (depth <= 3 && std::abs(beta) < +oo - MAX_DEPTH && score - margins[depth] >= beta) {
+        if (depth <= 3 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
             // Fail-hard
-            return beta;
+            return β;
         }
 
-        const int R = 2 + depth / 4 + MIN(2, (score - beta) / 200);
+        const int R = 2 + depth / 4 + MIN(2, (score - β) / 200);
 
         /* Null move pruning */
-        if (depth >= R + 1 && score >= beta) {
+        if (depth >= R + 1 && score >= β) {
             make_null(board);
             // do_null is now set to false, since we don't want to do two null moves
             // in a row
-            score = -negamax(-beta, -beta + 1, depth - 1 - R, board, info, false);
+            score = -negamax(-β, -β + 1, depth - 1 - R, board, info, false);
             undo_null(board);
 
             if (search_stopped(info))
                 return 0;
 
-            if (score >= beta && std::abs(score) < +oo - MAX_DEPTH) {
+            if (score >= β && std::abs(score) < +oo - MAX_DEPTH) {
                 ++info->nullcut;
                 // fail-hard beta cutoff
-                return beta;
+                return β;
             }
         }
         /* // TODO: Null move reduction in endgames
@@ -210,13 +228,13 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         /* Razoring */
         // Inspired by Dumb
         // https://github.com/abulmo/Dumb/blob/master/src/search.d
-        int razor = alpha - 100 * depth + 30;
+        int razor = α - 100 * depth + 30;
         if (score <= razor) {
             if (depth <= 2) {
-                return quiescence(alpha, beta, board, info);
+                return quiescence(α, β, board, info);
             }
             else if (quiescence(razor, razor + 1, board, info) <= razor) {
-                return alpha;
+                return α;
             }
         }
     }
@@ -255,7 +273,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             !in_check &&
             move != ttmove &&
             moves_searched &&
-            score + est_gain + (depth << 7) <= alpha) {
+            score + est_gain + (depth << 7) <= α) {
             break; // Fail-low and fail hard
         }
 
@@ -271,7 +289,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         if (moves_searched == 0) {
             // We assume, given good move ordering, that the first move
             // is a PV move (leading to a PV node) so we perform a full search
-            score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+            score = -negamax(-β, -α, depth - 1, board, info, USE_NULL);
         } else {
             /* [LMR] Late Move Reduction */
             // We check whether to consider a reduction or not. We do so if:
@@ -300,22 +318,22 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                 // Clamp the reduction so we don't drop into negative depths
                 R = std::clamp(R, 0, depth - 1);
-                score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
+                score = -negamax(-α - 1, -α, depth - 1 - R, board, info,
                                  USE_NULL);
             } else {
                 // Trick to ensure a full-depth search is done
                 // credit to Tord Romstad:
                 // https://web.archive.org/web/20071028123254/http://www.glaurungchess.com/lmr.html
-                score = alpha + 1;
+                score = α + 1;
             }
 
-            if (score > alpha) {
+            if (score > α) {
                 // [PVS] We first search the remaining moves with a zero window
-                score = -negamax(-alpha - 1, -alpha, depth - 1, board, info, USE_NULL);
-                if (score > alpha && score < beta) {
+                score = -negamax(-α - 1, -α, depth - 1, board, info, USE_NULL);
+                if (score > α && score < β) {
                     // If the score we got was outside of our window,
                     // we perform a full window re-search
-                    score = -negamax(-beta, -alpha, depth - 1, board, info, USE_NULL);
+                    score = -negamax(-β, -α, depth - 1, board, info, USE_NULL);
                 }
             }
         }
@@ -334,8 +352,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             bestscore = score;
             bestmove = move;
             // Check if PV or fail-high node
-            if (score > alpha) {
-                if (score >= beta) { // Fail-high node
+            if (score > α) {
+                if (score >= β) { // Fail-high node
                     if (moves_searched == 1) {
                         info->fail_high_first++;
                     }
@@ -377,7 +395,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
                 // Update the search window lowerbound
                 type = EXACT;
-                alpha = score;
+                α = score;
             }
         }
         /* The move failed low, we check if we can prune the tree here [Late Move Pruning] */
@@ -397,16 +415,16 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     /* Store the best move (+ corresponding score & bound type)
      * in the transposition table.*/
-    assert((type == LOWER && bestscore >= beta) ||
-           (type == UPPER && bestscore <= alpha) || (type == EXACT));
+    assert((type == LOWER && bestscore >= β) ||
+           (type == UPPER && bestscore <= α) || (type == EXACT));
 
     // Fail-hard: we don't report scores outside of the search window
     if (type == UPPER) {
-        bestscore = alpha;
+        bestscore = α;
     } else if (type == LOWER) {
-        bestscore = beta;
+        bestscore = β;
         tt.store(board, bestmove, bestscore, type, depth);
-        return beta;
+        return β;
     }
 
     tt.store(board, bestmove, bestscore, type, depth);
@@ -414,7 +432,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     assert(check(board));
 
     //return bestscore;
-    return alpha;
+    return α;
 }
 
 inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
@@ -483,28 +501,28 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
     int aw_delta = 35;
     int score = prev_score;
 
-    int alpha = -oo, beta = +oo;
+    int α = -oo, β = +oo;
 
     // If the search depth is low, we want to search with wider windows
     if (depth >= 3) {
-        alpha = MAX(-oo, score - aw_delta);
-        beta  = MIN(+oo, score + aw_delta);
+        α = MAX(-oo, score - aw_delta);
+        β = MIN(+oo, score + aw_delta);
     }
 
     // We keep retrying the search with larger and larger windows
     // (window widening code inspired by the Alexandria engine)
     for (;;) {
-        score = negamax(alpha, beta, depth, board, info, do_null);
+        score = negamax(α, β, depth, board, info, do_null);
 
         if (search_stopped(info)) break;
 
         /* Check if we fell outside of the window */
-        if (score <= alpha) {
+        if (score <= α) {
             // We failed low, hence decrease the alpha
-            alpha = MAX(-oo, score - aw_delta);
-        } else if (score >= beta) {
+            α = MAX(-oo, score - aw_delta);
+        } else if (score >= β) {
             // We failed high, hence increase the beta
-            beta = MIN(+oo, score + aw_delta);
+            β = MIN(+oo, score + aw_delta);
         } else {
             // We found a score within the window!
             break;
@@ -534,9 +552,9 @@ void init_reductions() {
  @param board the board position to search
  @param info search info: time, depth to search, etc.
 */
-int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
+int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     assert(check(board));
-    assert(alpha < beta);
+    assert(α < β);
 
     ++info->nodes;
 
@@ -560,12 +578,12 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         return score;
     }
 
-    if (score >= beta) { // fail-high
-        return beta;
+    if (score >= β) { // fail-high
+        return β;
     }
 
-    if (score > alpha) { // PV-node
-        alpha = score;
+    if (score > α) { // PV-node
+        α = score;
     }
 
     movelist_t noisy;
@@ -588,7 +606,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 2 * value_eg[PAWN] < alpha) {
+            if (score + value_mg[captured] + 2 * value_eg[PAWN] < α) {
                 ++info->deltacut;
                 continue;
             }
@@ -608,7 +626,7 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
         #ifdef DEBUG
         ++moves_searched;
         #endif
-        score = -quiescence(-beta, -alpha, board, info);
+        score = -quiescence(-β, -α, board, info);
 
         undo_move(board, move);
 
@@ -616,21 +634,21 @@ int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info) {
             return 0;
         }
 
-        if (score >= beta) { // fail-high
+        if (score >= β) { // fail-high
             #ifdef DEBUG
             if (moves_searched == 1) {
                 info->fail_high_first++;
             }
             info->fail_high++;
             #endif
-            return beta;
+            return β;
         }
 
-        if (score > alpha) { // PV-node
-            alpha = score;
+        if (score > α) { // PV-node
+            α = score;
         }
     }
-    return alpha;
+    return α;
 }
 
 /* Search the tree starting from the root node (current board state) */

@@ -1,4 +1,5 @@
 # Lishex (codename 1F98A)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 A UCI chess-engine built in C++.
 ### Features 
 - Universal Chess Interface (UCI) compatible.
@@ -60,9 +61,11 @@ in the project root.
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (Texel's tuning method)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads
 - More sophisticated king safety (including pawn storms, queen distance, tropism)
+- Endgame tablebase probing
 - Extension limiting
 - Smarter time control logic, estimated time to finish search
 - UCI Engine options
+- NNUE
 
 ### Acknowledgments
 I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, PGG106 (Alexandria), Richard Delorme (Dumb engine), Bruce Moreland, Code Monkey King (Bitboard Chess Engine), Peter Österlund (Texel), kz04px (4ku), the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration. I have made every effort to include proper links to articles & other sources of inspiration in the source code. However, if by any chance I have unintentionally omitted acknowledging someone's work or utilized code without due credit, I sincerely apologize. Please do not hesitate to contact me with any concerns, suggestions, or ideas, and I will gladly address them promptly.
