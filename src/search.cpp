@@ -9,11 +9,9 @@
 #include "order.h"
 #include "transposition.h"
 
-
-// Global evaluator (for multithreaded, we'll want to have a separate one for
+// Global evaluation struct (for multithreaded, we'll want to have a separate one for
 // each thread)
 eval_t eval;
-
 
 
 namespace {
@@ -54,14 +52,10 @@ N-1 |1|
 typedef struct pv_line {
     move_t moves[MAX_DEPTH] = {};
     size_t size = 0;
-    void push_back(const move_t m) {
-        assert(size < MAX_DEPTH);
-        *last++ = m;
-    }
     void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
 
     move_t operator[](int i) const { assert(i < size); return moves[i]; }
-    move_t& operator[](int i) { return moves[i]; }
+    move_t& operator[](int i)      { assert(i < size); return moves[i]; }
 
     // Print the principal variation line
     void print() const {
@@ -77,7 +71,7 @@ typedef struct pv_line {
 // Global PV table (quadratic approach)
 // - indexed by [ply]
 // - pv[ply] is the principal variation line for the search at depth 'ply'
-pv_line pv_tb[MAX_DEPTH];
+pv_line pv_tb[MAX_DEPTH+1];
 
 // Reduction plies for LMR (Dumb engine inspired)
 int lmr_depth_reduction[MAX_DEPTH][MAX_MOVES];
@@ -107,7 +101,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     // PV for the current search ply
     pv_line &pv = pv_tb[board->ply];
     // PV for the next search ply
-    pv_line &new_pv = pv_tb[board->ply + 1];
+    pv_line &next_pv = pv_tb[board->ply + 1];
 
     // Set principal variation line size for the current search ply
     pv.size = board->ply;
@@ -121,7 +115,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
 
     // If not at root of the search, check for repetitions
     if (board->ply && (is_repetition(board) || board->fifty_move >= 100)) {
-        //return 0; // Draw score
+        //return 0;
+        // Randomized draw score
         return -2 + (info->nodes & 0x3);
     }
 
@@ -137,8 +132,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
     tt_entry entry[1];
     int tthit = tt.probe(board, entry, ttmove, score, alpha, beta, depth);
 
-    // Check if can get a cutoff (a root node is by def. a pv node)
-    if (tthit) {
+    // Check if can get a cutoff
+    if (!pv_node && tthit) {
        ++info->hashcut;
        return score;
     } else if (!pv_node && depth >= iir_depth_req) {
@@ -294,8 +289,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                  !is_promotion(move) &&
                  !in_check
             ) {
-                //const int R = (depth / 3) +
-                              //(moves_searched / 6);
                 const int R = lmr_depth_reduction[depth][moves_searched] - pv_node;
                 score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
                                  USE_NULL);
@@ -330,13 +323,8 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         if (score > bestscore) {
             bestscore = score;
             bestmove = move;
-            if (score > alpha) { // PV or fail-high node
-
-                // Update the PV
-                pv[board->ply] = bestmove;
-                movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                pv.size = new_pv.size;
-
+            // Check if PV or fail-high node
+            if (score > alpha) {
                 if (score >= beta) { // Fail-high node
                     if (moves_searched == 1) {
                         info->fail_high_first++;
@@ -367,6 +355,14 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 }
 
                 /* Otherwise if no fail-high occured but we beat alpha, we are in a PV node */
+
+                // Update the PV
+                pv[board->ply] = bestmove;
+                //movcpy(&pv[board->ply + 1], &next_pv[board->ply + 1], next_pv.size);
+                for (size_t next = board->ply + 1; next < next_pv.size; ++next) {
+                    pv[next] = next_pv[next];
+                }
+                pv.size = next_pv.size;
 
                 // Update the search window lowerbound
                 type = EXACT;
@@ -427,12 +423,12 @@ inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
   std::cout << " nodes " << n << " time " << t \
             << " hashfull " << tt.hashfull() << " pv ";
 
-  //pv.print();
-  // std::cout << " tt ";
-  int ttmoves = tt.get_pv_line(board, d);
-  for (int i = 0; i < ttmoves; ++i) {
-      std::cout << move_to_str(board->pv[i]) << ' ';
-  }
+  pv.print();
+  //std::cout << "tt ";
+  //int ttmoves = tt.get_pv_line(board, d);
+  //for (int i = 0; i < ttmoves; ++i) {
+      //std::cout << move_to_str(board->pv[i]) << ' ';
+  //}
   std::cout << std::endl;
 }
 
@@ -670,8 +666,8 @@ void search(board_t *board, searchinfo_t *info) {
 
         assert(info->state == ENGINE_SEARCHING);
 
-        //best_move = pv_tb[0][0];
-        best_move = board->pv[0];
+        best_move = pv_tb[0][0];
+        //best_move = board->pv[0];
 
         print_search_info(best_score,
                           depth,
