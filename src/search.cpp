@@ -279,7 +279,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
         } else {
             /* [LMR] Late Move Reduction */
             // We check whether to consider a reduction or not. We do so if:
-            // - not in a pv node
             // - enough moves searched already
             //    - we require that number to be larger if in a PV node
             // - sufficient depth to reduce
@@ -287,9 +286,9 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             // - not in check
             // If all of the above are satisfied, we reduce the search depth
             // by an amount dependent on a) current depth and b) # of moves already
-            // searched
-            if ( !pv_node &&
-                 moves_searched >= lmr_fully_searched_req &&
+            // searched. In addition, we reduce 1 ply less if in a pv-node
+            // TODO: Clamp the reduction
+            if ( moves_searched >= lmr_fully_searched_req &&
                  depth >= lmr_depth_req  &&
                  !is_capture(move)   &&
                  !is_promotion(move) &&
@@ -297,7 +296,7 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
             ) {
                 //const int R = (depth / 3) +
                               //(moves_searched / 6);
-                const int R = lmr_depth_reduction[depth][moves_searched];
+                const int R = lmr_depth_reduction[depth][moves_searched] - pv_node;
                 score = -negamax(-alpha - 1, -alpha, depth - 1 - R, board, info,
                                  USE_NULL);
             } else {
@@ -336,9 +335,6 @@ int negamax(int alpha, int beta, int depth, board_t *board, searchinfo_t *info, 
                 // Update the PV
                 pv[board->ply] = bestmove;
                 movcpy(&pv[board->ply + 1], &new_pv[board->ply + 1], new_pv.size);
-                //for (size_t next = board->ply + 1; next < new_pv.size; ++next) {
-                    //pv[next] = new_pv[next];
-                //}
                 pv.size = new_pv.size;
 
                 if (score >= beta) { // Fail-high node
@@ -697,9 +693,9 @@ void search(board_t *board, searchinfo_t *info) {
 
         // We try to estimate if we have enough time to search the next depth,
         // and if not, we cut the search short to not waste the time
-        // (REVIEW: This might be suboptimal since we could be filling in the TT)
+        // (REVIEW: This might be suboptimal since we could be filling the TT)
         if (info->time_set && 3.5 * (now() - info->start) >= info->end) {
-            std::cout << "Time end!\n";
+            std::cout << "info string Engine won't have enough time to search the next depth!\n";
             break;
         }
     }

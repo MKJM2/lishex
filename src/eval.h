@@ -100,6 +100,8 @@ extern int rook_open_file;
 extern int rook_semiopen_file;
 extern int queen_open_file;
 extern int queen_semiopen_file;
+// Mobility weights
+extern int mobility_weights[PIECE_NO];
 
 
 #endif // EVAL_H_

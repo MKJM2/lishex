@@ -22,6 +22,7 @@ A UCI chess-engine built in C++.
   - Check extension
 - Tapered [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages
 - Static Exchange Evaluation (SEE) to detect losing captures
+- [Mobility scores](https://www.chessprogramming.org/Mobility)
 
 ### How to 
 Lishex does not come with its own grapical user interface (GUI).  Instead, it implements the [UCI](https://www.chessprogramming.org/UCI) protocol making it compatible with most popular chess GUIs such as:
@@ -55,7 +56,6 @@ doxygen
 in the project root.
 
 ### TODOs
-- [Mobility scores](https://www.chessprogramming.org/Mobility)
 - More [search extensions](https://www.chessprogramming.org/Extensions): extending search depth in specific subtrees to combat the [horizon effect](https://www.chessprogramming.org/Horizon_Effect)
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (Texel's tuning method)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads

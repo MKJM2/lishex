@@ -39,6 +39,8 @@ int rook_open_file = 11;
 int rook_semiopen_file = 5;
 int queen_open_file = 8;
 int queen_semiopen_file = 2;
+// Mobility weights depending on the piece type
+int mobility_weights[PIECE_NO] = {0, 0, 2, 2, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 0};
 
 /* King safety parameters */
 
@@ -669,9 +671,10 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Mobility and attacks on the enemy king
         attacks_bb = attacks(pce, sq, occupied);
-        // Can get mobility with CNT(attacks_bb);
         king_attacks_score[BLACK] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
+        eval->middlegame += CNT(attacks_bb) * mobility_weights[pce];
+        eval->endgame    += CNT(attacks_bb) * mobility_weights[pce];
     }
 
     // Black
@@ -723,9 +726,11 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Mobility and attacks on the enemy king
         attacks_bb = attacks(pce, sq, occupied);
-        // Can get mobility with CNT(attacks_bb);
         king_attacks_score[WHITE] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
+
+        eval->middlegame -= CNT(attacks_bb) * mobility_weights[pce];
+        eval->endgame    -= CNT(attacks_bb) * mobility_weights[pce];
     }
 
     /* Bishop pair bonus */
