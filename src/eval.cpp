@@ -17,22 +17,24 @@ constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
 // REVIEW: 3rd tuning iteration parameters
-//Tempo score (a small bonus for the side to move)
+// Tempo score (a small bonus for the side to move)
 int tempo_bonus = 5;
-//// Pass and isolated pawn
+// Pass and isolated pawn
 int isolated_pawn = -8;
 //// Doubled pawn penalty
 int doubled_pawn = -12;
-//// REVIEW: Bonus for supported pawns
+// REVIEW: Bonus for supported pawns
 int pawn_supported = 0;
-//// Indexed by rank, i.e. the closer to promoting, the higher the bonus
+// Bonus for pieces supported by pawns
+int pawn_protected_bonus = 2;
+// Indexed by rank, i.e. the closer to promoting, the higher the bonus
 int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
-//// REVIEW: Indexed by rank, bonus for good pawn structure
+// REVIEW: Indexed by rank, bonus for good pawn structure
 int pawn_bonuses[RANK_NO] = { 0, 0, 0, 5, 22, 42, 50, 65 };
-//// Bonus for having two bishops on board
+// Bonus for having two bishops on board
 int bishop_pair_mg = 3;
 int bishop_pair_eg = 53;
-//// Bonuses for rooks/queens on open/semi-open files
+// Bonuses for rooks/queens on open/semi-open files
 int rook_open_file = 11;
 int rook_semiopen_file = 5;
 int queen_open_file = 8;
@@ -613,12 +615,20 @@ int evaluate(const board_t *board, eval_t * eval) {
     /* Setup for king safety eval */
     // King zone of the king we're attacking
     bb_t king_zone = get_king_zone(board, BLACK);
-    bb_t king_attacks_score[2] = {0, 0};
+    bb_t king_attacks_score[BOTH] = {0, 0};
+
+    /* Setup for pawn protected pieces */
+    bb_t pawn_protected[BOTH] = {se_shift(black_pawns) | sw_shift(black_pawns),
+                                 ne_shift(white_pawns) | nw_shift(white_pawns)};
 
     // PSQTs + Material value
     bb  = board->sides_pieces[WHITE];
     bb ^= white_pawns;
     bb ^= board->bitboards[K];
+
+    // We give a small bonus for each piece protected by a pawn
+    eval->middlegame += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
+    eval->endgame    += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
 
     piece_t pce;
     bb_t attacks_bb;
@@ -662,7 +672,6 @@ int evaluate(const board_t *board, eval_t * eval) {
         // Can get mobility with CNT(attacks_bb);
         king_attacks_score[BLACK] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
-
     }
 
     // Black
@@ -672,6 +681,10 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb  = board->sides_pieces[BLACK];
     bb ^= black_pawns;
     bb ^= board->bitboards[k];
+
+    // We give a small bonus for each piece protected by a pawn
+    eval->middlegame -= CNT(bb & pawn_protected[BLACK]) * pawn_protected_bonus;
+    eval->endgame    -= CNT(bb & pawn_protected[BLACK]) * pawn_protected_bonus;
 
     while (bb) {
         sq = POPLSB(bb);
