@@ -69,7 +69,7 @@ constexpr bool bmi2 = false;
 #define MIN(x, y) (((x) <= (y)) ? (x) : (y))
 #define MAX(x, y) (((x) >= (y)) ? (x) : (y))
 
-// Whether to use the null move heuristic
+// Whether to use the null move pruning
 constexpr bool USE_NULL = true;
 
 

@@ -31,7 +31,48 @@
 #include "eval.h"
 #include "transposition.h"
 
+
+/* Options need to be non-static, since they influence
+ * other parts of the engine (like search) */
+option_t options[] = {
+        {"Hash", OPT_TYPE::SPIN, 0, 128, 65536, -1},
+//TODO: {"Ponder", OPT_TYPE::CHECK, 0, 0, 1, -1},
+        {"Move Safety Overhead", OPT_TYPE::SPIN, 0, 10, 50, -1},
+        {"Threads", OPT_TYPE::SPIN, 1, 1, 1, -1},
+//TODO: {"Use Book", OPT_TYPE::CHECK, 0, 0, 0, -1},
+//TODO: {"Book path", OPT_TYPE::STRING, 0, 0, 0, -1},
+};
+
+
 namespace {
+
+std::string opt_type_to_str[] = {
+    "check", "spin", "combo", "button", "string"
+};
+
+// Prints all available UCI options
+void print_options() {
+    for (option_t& opt : options) {
+        std::cout << "option name " << opt.name \
+            << " type " << opt_type_to_str[(int)opt.type];
+
+        switch (opt.type) {
+            case OPT_TYPE::CHECK:
+                std::cout << " default " <<
+                    (opt.def ? "true" : "false"); break;
+            case OPT_TYPE::SPIN:
+                std::cout << " default " << opt.def
+                    << " min " << opt.min
+                    << " max " << opt.max; break;
+            case OPT_TYPE::COMBO:
+            case OPT_TYPE::BUTTON:
+            case OPT_TYPE::STRING:
+                //TODO:
+                break;
+        }
+        std::cout << std::endl;
+    }
+}
 
 // TODO: Pass the istringstream from the UCI loop by reference
 void parse_position(board_t *board, const std::string& pos_str) {
@@ -153,6 +194,7 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
     if (token == "uci") {
         std::cout << "id name " << NAME << std::endl;
         std::cout << "id author " << AUTHOR << std::endl;
+        print_options();
         std::cout << "uciok" << std::endl;
     } else if (token == "isready")  {
         std::cout << "readyok" << std::endl;
@@ -293,47 +335,8 @@ void process_file(const std::string &filename, searchinfo_t *info, std::thread &
     }
 }
 
-std::string opt_type_to_str[] = {
-    "check", "spin", "combo", "button", "string"
-};
-
 
 } // namespace
-
-/* Options need to be non-static, since they influence
- * other parts of the engine (like search) */
-option_t options[] = {
-    {"HashSize", OPT_TYPE::SPIN, 0, 128, 65536, -1},
-    {"Ponder", OPT_TYPE::CHECK, 0, 0, 1, -1}, // TODO
-    {"Move Safety Overhead", OPT_TYPE::SPIN, 0, 10, 50, -1},
-    {"Threads", OPT_TYPE::SPIN, 0, 1, 128, -1},
-    {"Use Book", OPT_TYPE::CHECK, 0, 0, 0, -1}, // TODO
-    {"Book path", OPT_TYPE::STRING, 0, 0, 0, -1}, // TODO
-};
-
-// Prints all available UCI options
-void print_options() {
-    for (option_t& opt : options) {
-        std::cout << "option name " << opt.name \
-            << " type" << opt_type_to_str[(int)opt.type];
-
-        switch (opt.type) {
-            case OPT_TYPE::CHECK:
-                std::cout << "default " <<
-                    (opt.def ? "true" : "false"); break;
-            case OPT_TYPE::SPIN:
-                std::cout << "default " << opt.def
-                    << " min " << opt.min
-                    << " max " << opt.max; break;
-            case OPT_TYPE::COMBO:
-            case OPT_TYPE::BUTTON:
-            case OPT_TYPE::STRING:
-                //TODO:
-                break;
-        }
-        std::cout << std::endl;
-    }
-}
 
 
 /* UCI driver loop (Stockfish inspired) */

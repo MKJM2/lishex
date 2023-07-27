@@ -187,14 +187,14 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
     ) {
 
         /* Reverse futility pruning */
-        static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
+        static const int margins[] = {value_mg[NO_PIECE], value_mg[PAWN], 2*value_mg[PAWN], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
-        if (depth <= 3 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
+        if (depth <= 5 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
             // Fail-hard
             return β;
         }
 
-        const int R = 2 + depth / 4 + MIN(2, (score - β) / 200);
+        const int R = 2 + depth / 4 + MIN(3, (score - β) / 200);
 
         /* Null move pruning */
         if (depth >= R + 1 && score >= β) {
@@ -401,6 +401,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         /* The move failed low, we check if we can prune the tree here [Late Move Pruning] */
         //if (!pv_node &&
             //!in_check &&
+            //depth >= 4 &&
             //quiet_moves_searched > 4 + depth * depth)
             //break;
     }
