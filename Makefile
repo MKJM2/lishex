@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CXX = g++
-CXXFLAGS = -march=native -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
+CXX ?= g++
+CXXFLAGS ?= -march=native -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
 # For faster compilation
 CPUS := $(shell nproc)
 MAKEFLAGS += --jobs=$(CPUS)
@@ -23,6 +23,16 @@ MAKEFLAGS += --jobs=$(CPUS)
 SRC_DIR = src
 BUILD_DIR = build
 TARGET = lishex
+
+ifeq ($(OS), Windows_NT)
+	SUFFIX := .exe
+	CXXFLAGS += -static
+	CXX = x86_64-w64-mingw32-c++.exe
+else
+	SUFFIX :=
+endif
+
+EXE := $(TARGET)$(SUFFIX)
 
 ### Debugging (gdb)
 debug ?= no
@@ -60,13 +70,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 # Link object files into executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $(EXE)
 
 .PHONY: help run clean
 
 # Clean the build directory
 clean:
-	rm -f $(BUILD_DIR)/*.o $(TARGET)
+	rm -f $(BUILD_DIR)/*.o $(EXE)
 
 # Run the executable
 run: $(TARGET)
