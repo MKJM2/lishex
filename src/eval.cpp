@@ -80,6 +80,13 @@ int KING_SAFETY_TABLE[50] = {
     287, 301, 315, 330, 345, 360, 376, 392, 408, 425
 };
 
+// REVIEW: These need to be tuned
+int KING_PAWN_DIST_BONUS = 2;
+int SAFE_PAWN_ATTACK = 100;
+// Knight outpost bonuses
+int KNIGHT_OUTPOST_MG = 5;
+int KNIGHT_OUTPOST_EG = 2;
+
 namespace {
 
 /* Piece-square tables */
@@ -320,6 +327,29 @@ int king_table_eg[SQUARE_NO] = {
     17,  38,  23,  11,  -74, -35, -18, -18, -11, 15,  4,  -17
 };
 
+// TOGA Log Manual inspired
+int knight_outposts_mg[SQUARE_NO] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 3, 4, 4, 3, 0, 0,
+    0, 2, 4, 8, 8, 4, 2, 0,
+    0, 2, 4, 8, 8, 4, 2, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+int knight_outposts_eg[SQUARE_NO] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 2, 3, 3, 2, 0, 0,
+    0, 1, 2, 4, 4, 2, 1, 0,
+    0, 1, 2, 4, 4, 2, 1, 0,
+    0, 0, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+};
+
 // Array of pointers to arrays
 constexpr const int *psqt_mg[] = {
     nullptr, // NO_PIECE
@@ -492,6 +522,21 @@ int king_safety_score(const board_t *board, const int colour, int attackers) {
     return score;
 }
 
+
+// Returns the minimum distance of 'colour' king to its pawns
+int king_pawn_distance(const board_t *board, const int colour) {
+    bb_t friendly_pawns = board->bitboards[set_colour(P, colour)];
+    const square_t king_sq = king_square(board, colour);
+
+    // The king can be at most 6 units away (Chebyshev distance)
+    int min_distance = 6;
+    while (friendly_pawns) {
+        min_distance = MIN(min_distance, dist(king_sq, POPLSB(friendly_pawns)));
+    }
+    return min_distance;
+}
+
+
 // Originally from sjeng 11.2 (adapted from Vice 1.1)
 int material_draw(const board_t *board) {
     assert(check(board));
@@ -550,6 +595,8 @@ int evaluate(const board_t *board, eval_t * eval) {
     }
 
     square_t sq;
+    // During evaluation we incrementally build up the attack maps for both sides
+    bb_t sides_attacks[BOTH] = {0ULL, 0ULL};
 
     /* Pawn structure */
 
@@ -581,6 +628,11 @@ int evaluate(const board_t *board, eval_t * eval) {
         if ((black_pawns & wPassedMask[sq]) == 0) {
             eval->middlegame += passed_pawn[SQUARE_RANK(sq)];
             eval->endgame    += passed_pawn[SQUARE_RANK(sq)];
+
+            // In addition, in the endgame we encourage the king to protect the pawn
+            eval->endgame +=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
+            // ...we also give a bonus for how far away from the pawn the enemy king is
+            eval->endgame += -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
         }
 
         // Doubled pawn penalty
@@ -623,6 +675,11 @@ int evaluate(const board_t *board, eval_t * eval) {
         if ((white_pawns & bPassedMask[sq]) == 0) {
             eval->middlegame -= passed_pawn[SQUARE_RANK(mirror(sq))];
             eval->endgame    -= passed_pawn[SQUARE_RANK(mirror(sq))];
+
+            // In addition, in the endgame we encourage the king to protect the pawn
+            eval->endgame -=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
+            // ...we also give a bonus for how far away from the pawn the enemy king is
+            eval->endgame -= -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
         }
 
         // Doubled pawn penalty
@@ -665,6 +722,10 @@ int evaluate(const board_t *board, eval_t * eval) {
     eval->middlegame += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
     eval->endgame    += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
 
+    // Include opponent's pawn attacks in their incrementally updated attack bitboard
+    sides_attacks[BLACK] |= pawn_protected[BLACK];
+    sides_attacks[WHITE] |= pawn_protected[WHITE];
+
     piece_t pce;
     bb_t attacks_bb;
     while (bb) {
@@ -704,6 +765,8 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Mobility and attacks on the enemy king
         attacks_bb = attacks(pce, sq, occupied);
+        sides_attacks[WHITE] |= attacks_bb;
+
         king_attacks_score[BLACK] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
         eval->middlegame += CNT(attacks_bb) * mobility_weights[pce];
@@ -759,6 +822,8 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         // Mobility and attacks on the enemy king
         attacks_bb = attacks(pce, sq, occupied);
+        sides_attacks[BLACK] |= attacks_bb;
+
         king_attacks_score[WHITE] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
 
@@ -806,6 +871,40 @@ int evaluate(const board_t *board, eval_t * eval) {
     // King safety in the middle game:
     eval->middlegame += king_safety_score(board, WHITE, king_attacks_score[WHITE]);
     eval->middlegame -= king_safety_score(board, BLACK, king_attacks_score[BLACK]);
+
+    // REVIEW: Seems not to be gaining any Elo in self-testing
+    // King pawn distance in the end game
+    //eval->endgame += KING_PAWN_DIST_BONUS * king_pawn_distance(board, WHITE);
+    //eval->endgame -= KING_PAWN_DIST_BONUS * king_pawn_distance(board, BLACK);
+
+    // We give a relatively large bonus for safe pawns threatening to capture an enemy piece
+    bb_t safe_pawns[BOTH] = {sides_attacks[WHITE] & black_pawns, sides_attacks[BLACK] & white_pawns};
+    //-- White
+    eval->middlegame += SAFE_PAWN_ATTACK*CNT((ne_shift(safe_pawns[WHITE]) | nw_shift(safe_pawns[WHITE])) & (board->sides_pieces[BLACK] ^ black_pawns));
+    eval->endgame    += SAFE_PAWN_ATTACK*CNT((ne_shift(safe_pawns[WHITE]) | nw_shift(safe_pawns[WHITE])) & (board->sides_pieces[BLACK] ^ black_pawns));
+    //-- Black
+    eval->middlegame -= SAFE_PAWN_ATTACK*CNT((se_shift(safe_pawns[BLACK]) | sw_shift(safe_pawns[BLACK])) & (board->sides_pieces[WHITE] ^ white_pawns));
+    eval->endgame    -= SAFE_PAWN_ATTACK*CNT((se_shift(safe_pawns[BLACK]) | sw_shift(safe_pawns[BLACK])) & (board->sides_pieces[WHITE] ^ white_pawns));
+
+    // Knight outposts:
+    // - knight is protected by friendly pawn
+    // - not attacked by enemy
+    //-- White
+    /* REVIEW: Seem to be loosing Elo
+    bb = board->bitboards[N] & ~sides_attacks[BLACK] & pawn_protected[WHITE];
+    while (bb) {
+        sq = POPLSB(bb);
+        eval->middlegame += knight_outposts_mg[sq];
+        eval->endgame    += knight_outposts_eg[sq];
+    }
+    //-- Black
+    bb = board->bitboards[n] & ~sides_attacks[WHITE] & pawn_protected[BLACK];
+    while (bb) {
+        sq = mirror(POPLSB(bb));
+        eval->middlegame -= knight_outposts_mg[sq];
+        eval->endgame    -= knight_outposts_eg[sq];
+    }
+    */
 
     /* Tapered evaluation */
     score = eval->get_tapered_score();

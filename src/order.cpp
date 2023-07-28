@@ -45,7 +45,7 @@ constexpr int CAPTURE_BONUS = 20'000'000;
 constexpr int KILLER1_BONUS = 10'000'000;
 constexpr int KILLER2_BONUS = 9'000'000;
 
-// Penalty for 'bad' (very rare) promotions like knight/rook
+// Penalty for 'bad' (very rare) promotions like e.g. bishop
 constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
 
 // Small bonuses for promoting & castling

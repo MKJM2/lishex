@@ -605,7 +605,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     generate_noisy(board, &noisy);
 
     // Move ordering           // PV move, if any
-    score_moves(board, &noisy, NULLMV);
+    score_moves(board, &noisy, ttmove);
 
     #ifdef DEBUG
     int moves_searched = 0;
