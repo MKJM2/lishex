@@ -559,9 +559,11 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
 
     ++info->nodes;
 
+    int pv_node = α + 1 < β;
+
     // Position encountered previously?
-    // TODO: In Qsearch we should only be checking for material draws,
-    // not 3fold repetitions
+    // TODO: In Qsearch should we be only checking for material draws,
+    // not 3fold repetitions ?
     //if (is_repetition(board) || board->fifty_move >= 100) {
         //return 0; // Draw score
     //}
@@ -569,8 +571,20 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     if (board->ply > info->seldepth)
         info->seldepth = board->ply - 1;
 
+    /* Transposition table probing */
+    int score = -oo;
+    move_t ttmove = NULLMV;
+    tt_entry entry[1];
+    int tthit = tt.probe(board, entry, ttmove, score, α, β, 0);
+
+    // Check if can get a cutoff (don't cutoff on PV nodes)
+    if (!pv_node && tthit) {
+       ++info->hashcut;
+       return score;
+    }
+
     /* Stand-pat score */
-    int score = evaluate(board, &eval);
+    score = evaluate(board, &eval);
 
     assert(-oo < score && score < +oo);
 
@@ -598,7 +612,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     #endif
 
     // Iterate over the pseudolegal moves in the current position
-    move_t move;
+    move_t move = NULLMV, bestmove = NULLMV;
     while ((move = next_best(&noisy, board->ply)) != NULLMV) {
 
         /* We perform a couple quick checks to see if the move can be
@@ -607,7 +621,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 2 * value_eg[PAWN] < α) {
+            if (score + value_mg[captured] + value_eg[PAWN] < α) {
                 ++info->deltacut;
                 continue;
             }
@@ -642,13 +656,17 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
             }
             info->fail_high++;
             #endif
+            tt.store(board, move, β, LOWER, 0); // qs tt entries are easily overrideable
             return β;
         }
 
         if (score > α) { // PV-node
+            bestmove = move;
             α = score;
         }
     }
+
+    tt.store(board, bestmove, α, UPPER, 0); // qs tt entries are easily overrideable
     return α;
 }
 

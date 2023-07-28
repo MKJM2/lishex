@@ -343,7 +343,7 @@ void process_file(const std::string &filename, searchinfo_t *info, std::thread &
 void loop(int argc, char* argv[]) {
 
     board_t board[1];
-    setup(board, test1_FEN);
+    setup(board, start_FEN);
 
     searchinfo_t info[1];
 
