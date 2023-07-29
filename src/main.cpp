@@ -43,6 +43,7 @@ int main(int argc, char* argv[]) {
 
     // Print ASCII logo
     std::cout \
+        << "                                                                    \n" \
         << "                      (%       ((((                                 \n" \
         << "                      (((((((  ((((((                               \n" \
         << "                      %(    ((((((#(((                              \n" \

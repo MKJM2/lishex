@@ -51,7 +51,8 @@ TT::~TT() {
 }
 
 void TT::resize(const int new_size_MB) {
-    std::cout << "Resizing TT to " << new_size_MB << "MB\n";
+    TRACE_TT("Allocating TT of size " << new_size_MB << "MB");
+
     delete[] table;
     this->size = (0x100000 * new_size_MB) / sizeof(tt_entry);
     table = new tt_entry[size];
@@ -61,6 +62,7 @@ void TT::resize(const int new_size_MB) {
         this->resize(new_size_MB / 2);
     }
     this->clear();
+
     TRACE_TT("Transposition table successfully resized to " << new_size_MB << "MB!");
 }
 
