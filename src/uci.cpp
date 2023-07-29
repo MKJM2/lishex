@@ -204,7 +204,7 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
     std::string token;
     iss >> std::skipws >> token;
     if (token == "uci") {
-        std::cout << "id name " << NAME << std::endl;
+        std::cout << "id name " << NAME << " " << VERSION << std::endl;
         std::cout << "id author " << AUTHOR << std::endl;
         print_options();
         std::cout << "uciok" << std::endl;
