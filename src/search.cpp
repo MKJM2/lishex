@@ -73,8 +73,8 @@ typedef struct pv_line {
     size_t size = 0;
     void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
 
-    move_t operator[](int i) const { assert(i < size); return moves[i]; }
-    move_t& operator[](int i)      { assert(i < size); return moves[i]; }
+    move_t operator[](int i) const { return moves[i]; }
+    move_t& operator[](int i)      { return moves[i]; }
 
     // Print the principal variation line
     void print() const {
@@ -314,7 +314,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
                 R -= pv_node;
 
                 // Reduce more on bad moves according to the history
-                //R += (board->history_h[board->pieces[get_from(move)]][get_to(move)] < 0);
+                //R += (board->history_h[board->turn][board->pieces[get_from(move)]][get_to(move)] < 0);
 
                 // Clamp the reduction so we don't drop into negative depths
                 R = std::clamp(R, 0, depth - 1);
@@ -369,12 +369,12 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
                         // Move causes a cutoff, hence update the search history tables
                         // (History heuristic)
-                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth * depth;
+                        board->history_h[board->turn][board->pieces[get_from(move)]][get_to(move)] += depth * depth;
 
                         // Penalize all the previous quiet moves that *didn't* cause a cut-off
                         for (scored_move_t* it = moves.begin(); *it != move; ++it) {
                             if (get_flags(move) != QUIET) continue; // REVIEW: Might be unnecessary
-                            board->history_h[board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
+                            board->history_h[board->turn][board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
                         }
                     }
 
@@ -387,10 +387,10 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
                 // Update the PV
                 pv[board->ply] = bestmove;
-                //movcpy(&pv[board->ply + 1], &next_pv[board->ply + 1], next_pv.size);
-                for (size_t next = board->ply + 1; next < next_pv.size; ++next) {
-                    pv[next] = next_pv[next];
-                }
+                movcpy(&pv[board->ply + 1], &next_pv[board->ply + 1], next_pv.size);
+                //for (size_t next = board->ply + 1; next < next_pv.size; ++next) {
+                    //pv[next] = next_pv[next];
+                //}
                 pv.size = next_pv.size;
 
                 // Update the search window lowerbound
@@ -463,7 +463,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     // Scale tables used for the history heuristic
     for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
         for (square_t sq = A1; sq <= H8; ++sq) {
-            board->history_h[p][sq] /= 16;
+            for (int colour : {BLACK, WHITE}) {
+                board->history_h[colour][p][sq] /= 16;
+            }
         }
     }
 
