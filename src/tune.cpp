@@ -59,61 +59,23 @@ typedef struct param_t {
 
 // A list of all tunnable parameters with lower and upper bounds for their values
 std::vector<int*> tunable_params = {
-    &tempo_bonus,
-    &isolated_pawn,
-    &doubled_pawn,
-    &pawn_supported,
-    &pawn_bonuses[2],
-    &pawn_bonuses[3],
-    &pawn_bonuses[4],
-    &pawn_bonuses[5],
-    &pawn_bonuses[6],
-    &pawn_bonuses[7],
-    &bishop_pair_mg,
-    &bishop_pair_eg,
-    &rook_open_file,
-    &rook_semiopen_file,
-    &queen_open_file,
-    &queen_semiopen_file,
+    &tempo_bonus_mg,
+    &tempo_bonus_eg,
+    &PAWN_SHIELD1_BONUS,
+    &PAWN_SHIELD2_BONUS,
+    &PAWN_STORM_PENALTY,
+    &KING_PAWN_DIST_BONUS,
+    &SAFE_PAWN_ATTACK
 };
 
-/*
 std::vector<std::pair<int, int>> bounds = {
-    {0, 25},
-    {-25, 0},
-    {-25, 0},
-    {0, 25},
     {0, 15},
-    {0, 25},
-    {0, 45},
-    {0, 70},
-    {0, 80},
-    {0, 90},
-    {1, 35},
-    {15, 65},
-    {1, 15},
-    {1, 12},
-    {1, 15},
-    {1, 12},
-};
-*/
-std::vector<std::pair<int, int>> bounds = {
-    {2, 15},
-    {-15, 0},
-    {-25, -5},
-    {0, 25},
-    {0, 10},
-    {0, 12},
-    {15, 45},
-    {10, 70},
-    {45, 85},
-    {45, 90},
-    {1, 35},
-    {15, 65},
-    {3, 15},
-    {2, 10},
-    {3, 15},
-    {2, 10},
+    {0, 8},
+    {0, 8},
+    {3, 13},
+    {6, 16},
+    {8, 18},
+    {18, 28}
 };
 
 std::vector<param_t> best_params(tunable_params.size());

@@ -99,7 +99,8 @@ extern const int value_mg[PIECE_NO];
 extern const int value_eg[PIECE_NO];
 
 // Tempo score (a small bonus for the side to move)
-extern int tempo_bonus;
+extern int tempo_bonus_mg;
+extern int tempo_bonus_eg;
 // Pass and isolated pawn
 extern int isolated_pawn;
 // Doubled pawn penalty
@@ -120,6 +121,12 @@ extern int queen_open_file;
 extern int queen_semiopen_file;
 // Mobility weights
 extern int mobility_weights[PIECE_NO];
+// King safety parameters
+extern int PAWN_SHIELD1_BONUS;
+extern int PAWN_SHIELD2_BONUS;
+extern int PAWN_STORM_PENALTY;
+extern int KING_PAWN_DIST_BONUS;
+extern int SAFE_PAWN_ATTACK;
 
 
 #endif // EVAL_H_
