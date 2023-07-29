@@ -38,16 +38,7 @@ constexpr int DEFAULTTTSIZEMB = 128;
 TT tt(DEFAULTTTSIZEMB);
 
 TT::TT(const int MB) : size{(0x100000 * MB / sizeof(tt_entry))} {
-
-    table = new tt_entry[size];
-    if (table == nullptr) {
-        std::cerr << "Transposition table allocation failed!\n";
-        assert(false);
-    }
-    this->clear();
-    TRACE_TT("Allocated TT of size " << MB << "MB "
-                                << "with " << size << " entries (entry size is "
-                                << sizeof(tt_entry) << ')');
+    this->resize(MB);
 }
 
 TT::~TT() {
@@ -59,7 +50,21 @@ TT::~TT() {
     delete[] table;
 }
 
-// TODO: void TT::resize(int new_size_MB);
+void TT::resize(const int new_size_MB) {
+    TRACE_TT("Allocating TT of size " << new_size_MB << "MB");
+
+    delete[] table;
+    this->size = (0x100000 * new_size_MB) / sizeof(tt_entry);
+    table = new tt_entry[size];
+    if (table == nullptr) {
+        std::cerr << "Transposition table allocation failed! Retrying with size "
+            << new_size_MB / 2 << std::endl;
+        this->resize(new_size_MB / 2);
+    }
+    this->clear();
+
+    TRACE_TT("Transposition table successfully resized to " << new_size_MB << "MB!");
+}
 
 void TT::reset_stats() {
     overwrites = hit = cut = 0U;
@@ -92,7 +97,7 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
     *entry = table[idx];
 
     assert(0 <= idx && idx <= this->size - 1);
-    assert(1 <= depth && depth < MAX_DEPTH);
+    assert(0 <= depth && depth < MAX_DEPTH);
     assert(alpha < beta);
     assert(-oo <= alpha && alpha <= +oo);
     assert(-oo <= beta && beta <= +oo);
@@ -116,7 +121,7 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
         return TTMISS;
     }
 
-    assert(1 <= entry->depth && entry->depth < MAX_DEPTH);
+    assert(0 <= entry->depth && entry->depth < MAX_DEPTH);
 
     // Otherwise, we've hit a valid entry!
     ++hit;
@@ -174,7 +179,7 @@ void TT::store(const board_t *board, move_t move, int score,
 
     assert(0 <= idx && idx <= this->size - 1);
     assert(board->key == generate_pos_key(board));
-    assert(depth >= 1);
+    assert(depth >= 0);
     assert(BAD <= flags && flags <= EXACT);
 
     if (entry->key == 0ULL) {

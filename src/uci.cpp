@@ -31,7 +31,60 @@
 #include "eval.h"
 #include "transposition.h"
 
+
+/* Options need to be non-static, since they influence
+ * other parts of the engine (like search) */
+option_t options[] = {
+        {"Hash", OPT_TYPE::SPIN, 0, 128, 2047, -1},
+//TODO: {"Ponder", OPT_TYPE::CHECK, 0, 0, 1, -1},
+        {"Move Safety Overhead", OPT_TYPE::SPIN, 0, 10, 50, -1},
+        {"Threads", OPT_TYPE::SPIN, 1, 1, 1, -1},
+//TODO: {"Use Book", OPT_TYPE::CHECK, 0, 0, 0, -1},
+//TODO: {"Book path", OPT_TYPE::STRING, 0, 0, 0, -1},
+};
+
+
 namespace {
+
+std::string opt_type_to_str[] = {
+    "check", "spin", "combo", "button", "string"
+};
+
+// Prints all available UCI options
+void print_options() {
+    for (option_t& opt : options) {
+        std::cout << "option name " << opt.name \
+            << " type " << opt_type_to_str[(int)opt.type];
+
+        switch (opt.type) {
+            case OPT_TYPE::CHECK:
+                std::cout << " default " <<
+                    (opt.def ? "true" : "false"); break;
+            case OPT_TYPE::SPIN:
+                std::cout << " default " << opt.def
+                    << " min " << opt.min
+                    << " max " << opt.max; break;
+            case OPT_TYPE::COMBO:
+            case OPT_TYPE::BUTTON:
+            case OPT_TYPE::STRING:
+                //TODO:
+                break;
+        }
+        std::cout << std::endl;
+    }
+}
+
+// TODO: onChangedHandler
+void set_option(std::string name, int value) {
+    std::cout << "Setting option " << name << " to " << value << std::endl;
+    for (auto opt : options) {
+        if (opt.name != name) continue;
+
+        opt.value = value;
+        // Temporary, need to improve this
+        if (name == "Hash") tt.resize(MIN(opt.max, value));
+    }
+}
 
 // TODO: Pass the istringstream from the UCI loop by reference
 void parse_position(board_t *board, const std::string& pos_str) {
@@ -153,6 +206,7 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
     if (token == "uci") {
         std::cout << "id name " << NAME << std::endl;
         std::cout << "id author " << AUTHOR << std::endl;
+        print_options();
         std::cout << "uciok" << std::endl;
     } else if (token == "isready")  {
         std::cout << "readyok" << std::endl;
@@ -195,6 +249,16 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
     } else if (token == "test") {
         test(board);
         //perft_test(board, "/home/mkjm/Downloads/Arena/kaufman.epd");
+    } else if (token == "setoption") {
+        // setoption name <id> [value <x>]
+        std::string opt_name = "";
+        std::string tmp;
+        int opt_val = 0;
+        iss >> opt_name; // skips the "name" token
+        iss >> opt_name; // TODO: Options can have whitespaces in them
+        iss >> tmp; // skips the "value" token
+        iss >> opt_val;
+        set_option(opt_name, opt_val);
     } else if (token == "perft") {
         // Get user argument
         std::string depth_str;
@@ -259,10 +323,18 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
         evaluate(board, eval);
         eval->print();
     } else if (token == "dumphistory") {
+        std::cout << "White:\n";
         for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
             for (square_t sq = A1; sq <= H8; ++sq) {
                 std::cout << piece_to_ascii[p] << " to " << square_to_str(sq) \
-                        << ": " << board->history_h[p][sq] << std::endl;
+                        << ": " << board->history_h[WHITE][p][sq] << std::endl;
+            }
+        }
+        std::cout << "Black:\n";
+        for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
+            for (square_t sq = A1; sq <= H8; ++sq) {
+                std::cout << piece_to_ascii[p] << " to " << square_to_str(sq) \
+                        << ": " << board->history_h[BLACK][p][sq] << std::endl;
             }
         }
     } else if (token == "execute") {
@@ -293,54 +365,15 @@ void process_file(const std::string &filename, searchinfo_t *info, std::thread &
     }
 }
 
-std::string opt_type_to_str[] = {
-    "check", "spin", "combo", "button", "string"
-};
-
 
 } // namespace
-
-/* Options need to be non-static, since they influence
- * other parts of the engine (like search) */
-option_t options[] = {
-    {"HashSize", OPT_TYPE::SPIN, 0, 128, 65536, -1},
-    {"Ponder", OPT_TYPE::CHECK, 0, 0, 1, -1}, // TODO
-    {"Move Safety Overhead", OPT_TYPE::SPIN, 0, 10, 50, -1},
-    {"Threads", OPT_TYPE::SPIN, 0, 1, 128, -1},
-    {"Use Book", OPT_TYPE::CHECK, 0, 0, 0, -1}, // TODO
-    {"Book path", OPT_TYPE::STRING, 0, 0, 0, -1}, // TODO
-};
-
-// Prints all available UCI options
-void print_options() {
-    for (option_t& opt : options) {
-        std::cout << "option name " << opt.name \
-            << " type" << opt_type_to_str[(int)opt.type];
-
-        switch (opt.type) {
-            case OPT_TYPE::CHECK:
-                std::cout << "default " <<
-                    (opt.def ? "true" : "false"); break;
-            case OPT_TYPE::SPIN:
-                std::cout << "default " << opt.def
-                    << " min " << opt.min
-                    << " max " << opt.max; break;
-            case OPT_TYPE::COMBO:
-            case OPT_TYPE::BUTTON:
-            case OPT_TYPE::STRING:
-                //TODO:
-                break;
-        }
-        std::cout << std::endl;
-    }
-}
 
 
 /* UCI driver loop (Stockfish inspired) */
 void loop(int argc, char* argv[]) {
 
     board_t board[1];
-    setup(board, test1_FEN);
+    setup(board, start_FEN);
 
     searchinfo_t info[1];
 

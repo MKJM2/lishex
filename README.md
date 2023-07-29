@@ -1,5 +1,4 @@
 # Lishex (codename 1F98A)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 A UCI chess-engine built in C++.
 ### Features 
 - Universal Chess Interface (UCI) compatible.
@@ -19,9 +18,9 @@ A UCI chess-engine built in C++.
   - [Late move reduction](https://www.chessprogramming.org/Late_Move_Reductions)
   - [Futility pruning](https://www.chessprogramming.org/Futility_Pruning)
   - Razoring
-  - Basic king safety (king danger zone, pawn shield)
+  - Basic king safety (king danger zone, pawn shield, pawn storm)
   - Check extension
-- Tapered [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages
+- Tapered PeSTO's [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages 
 - Static Exchange Evaluation (SEE) to detect losing captures
 - [Mobility scores](https://www.chessprogramming.org/Mobility)
 
@@ -60,7 +59,7 @@ in the project root.
 - More [search extensions](https://www.chessprogramming.org/Extensions): extending search depth in specific subtrees to combat the [horizon effect](https://www.chessprogramming.org/Horizon_Effect)
 - [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (Texel's tuning method)
 - [LazySMP](https://www.chessprogramming.org/Parallel_Search) for parallel searching on multiple threads
-- More sophisticated king safety (including pawn storms, queen distance, tropism)
+- More sophisticated king safety (including queen distance, tropism)
 - Endgame tablebase probing
 - Extension limiting
 - Smarter time control logic, estimated time to finish search

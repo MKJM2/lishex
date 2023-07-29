@@ -408,6 +408,12 @@ void test(board_t *board) {
     mirror_test(board);
     print(board);
     mirror_test(board);
+
+    // Knight outpost on Nd5
+    setup(board, "r4rk1/ppp2ppp/3p2n1/8/4P3/2N5/PPP2PPP/2KRR3 w - - 0 1");
+    mirror_test(board);
+    print(board);
+    mirror_test(board);
 }
 
 

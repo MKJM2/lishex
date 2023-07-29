@@ -45,7 +45,7 @@ constexpr int CAPTURE_BONUS = 20'000'000;
 constexpr int KILLER1_BONUS = 10'000'000;
 constexpr int KILLER2_BONUS = 9'000'000;
 
-// Penalty for 'bad' (very rare) promotions like knight/rook
+// Penalty for 'bad' (very rare) promotions like e.g. bishop
 constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
 
 // Small bonuses for promoting & castling
@@ -184,7 +184,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
         } else {
-            move.score = MAX(0, 100'000 + board->history_h[board->pieces[from]][to]);
+            move.score = MAX(0, 100'000 + board->history_h[board->turn][board->pieces[from]][to]);
         }
 
         /* TODO: Additional small bonuses

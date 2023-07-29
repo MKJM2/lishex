@@ -73,8 +73,8 @@ typedef struct pv_line {
     size_t size = 0;
     void clear() { last = moves; size = 0; memset(moves, 0, sizeof(moves)); }
 
-    move_t operator[](int i) const { assert(i < size); return moves[i]; }
-    move_t& operator[](int i)      { assert(i < size); return moves[i]; }
+    move_t operator[](int i) const { return moves[i]; }
+    move_t& operator[](int i)      { return moves[i]; }
 
     // Print the principal variation line
     void print() const {
@@ -187,14 +187,14 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
     ) {
 
         /* Reverse futility pruning */
-        static const int margins[] = {value_mg[NO_PIECE], value_mg[BISHOP],
+        static const int margins[] = {value_mg[NO_PIECE], value_mg[PAWN], 2*value_mg[PAWN], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
-        if (depth <= 3 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
+        if (depth <= 5 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
             // Fail-hard
             return β;
         }
 
-        const int R = 2 + depth / 4 + MIN(2, (score - β) / 200);
+        const int R = 2 + depth / 4 + MIN(3, (score - β) / 200);
 
         /* Null move pruning */
         if (depth >= R + 1 && score >= β) {
@@ -314,7 +314,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
                 R -= pv_node;
 
                 // Reduce more on bad moves according to the history
-                //R += (board->history_h[board->pieces[get_from(move)]][get_to(move)] < 0);
+                //R += (board->history_h[board->turn][board->pieces[get_from(move)]][get_to(move)] < 0);
 
                 // Clamp the reduction so we don't drop into negative depths
                 R = std::clamp(R, 0, depth - 1);
@@ -369,12 +369,12 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
                         // Move causes a cutoff, hence update the search history tables
                         // (History heuristic)
-                        board->history_h[board->pieces[get_from(move)]][get_to(move)] += depth * depth;
+                        board->history_h[board->turn][board->pieces[get_from(move)]][get_to(move)] += depth * depth;
 
                         // Penalize all the previous quiet moves that *didn't* cause a cut-off
                         for (scored_move_t* it = moves.begin(); *it != move; ++it) {
                             if (get_flags(move) != QUIET) continue; // REVIEW: Might be unnecessary
-                            board->history_h[board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
+                            board->history_h[board->turn][board->pieces[get_from(*it)]][get_to(*it)] -= depth * depth;
                         }
                     }
 
@@ -387,10 +387,10 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
                 // Update the PV
                 pv[board->ply] = bestmove;
-                //movcpy(&pv[board->ply + 1], &next_pv[board->ply + 1], next_pv.size);
-                for (size_t next = board->ply + 1; next < next_pv.size; ++next) {
-                    pv[next] = next_pv[next];
-                }
+                movcpy(&pv[board->ply + 1], &next_pv[board->ply + 1], next_pv.size);
+                //for (size_t next = board->ply + 1; next < next_pv.size; ++next) {
+                    //pv[next] = next_pv[next];
+                //}
                 pv.size = next_pv.size;
 
                 // Update the search window lowerbound
@@ -401,6 +401,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         /* The move failed low, we check if we can prune the tree here [Late Move Pruning] */
         //if (!pv_node &&
             //!in_check &&
+            //depth >= 4 &&
             //quiet_moves_searched > 4 + depth * depth)
             //break;
     }
@@ -462,7 +463,9 @@ void init_search(board_t *board, searchinfo_t *info) {
     // Scale tables used for the history heuristic
     for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
         for (square_t sq = A1; sq <= H8; ++sq) {
-            board->history_h[p][sq] /= 16;
+            for (int colour : {BLACK, WHITE}) {
+                board->history_h[colour][p][sq] /= 16;
+            }
         }
     }
 
@@ -558,9 +561,11 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
 
     ++info->nodes;
 
+    int pv_node = α + 1 < β;
+
     // Position encountered previously?
-    // TODO: In Qsearch we should only be checking for material draws,
-    // not 3fold repetitions
+    // TODO: In Qsearch should we be only checking for material draws,
+    // not 3fold repetitions ?
     //if (is_repetition(board) || board->fifty_move >= 100) {
         //return 0; // Draw score
     //}
@@ -568,8 +573,20 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     if (board->ply > info->seldepth)
         info->seldepth = board->ply - 1;
 
+    /* Transposition table probing */
+    int score = -oo;
+    move_t ttmove = NULLMV;
+    tt_entry entry[1];
+    int tthit = tt.probe(board, entry, ttmove, score, α, β, 0);
+
+    // Check if can get a cutoff (don't cutoff on PV nodes)
+    if (!pv_node && tthit) {
+       ++info->hashcut;
+       return score;
+    }
+
     /* Stand-pat score */
-    int score = evaluate(board, &eval);
+    score = evaluate(board, &eval);
 
     assert(-oo < score && score < +oo);
 
@@ -590,14 +607,14 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     generate_noisy(board, &noisy);
 
     // Move ordering           // PV move, if any
-    score_moves(board, &noisy, NULLMV);
+    score_moves(board, &noisy, ttmove);
 
     #ifdef DEBUG
     int moves_searched = 0;
     #endif
 
     // Iterate over the pseudolegal moves in the current position
-    move_t move;
+    move_t move = NULLMV, bestmove = NULLMV;
     while ((move = next_best(&noisy, board->ply)) != NULLMV) {
 
         /* We perform a couple quick checks to see if the move can be
@@ -606,7 +623,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 2 * value_eg[PAWN] < α) {
+            if (score + value_mg[captured] + value_eg[PAWN] < α) {
                 ++info->deltacut;
                 continue;
             }
@@ -641,13 +658,17 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
             }
             info->fail_high++;
             #endif
+            tt.store(board, move, β, LOWER, 0); // qs tt entries are easily overrideable
             return β;
         }
 
         if (score > α) { // PV-node
+            bestmove = move;
             α = score;
         }
     }
+
+    tt.store(board, bestmove, α, UPPER, 0); // qs tt entries are easily overrideable
     return α;
 }
 
