@@ -22,6 +22,11 @@ jobs:
         run: |
          mkdir build
          make ${{ matrix.target }} CXX=${{ matrix.compiler }}
+      - name: Upload build
+        uses: actions/upload-artifact@v3
+        with: 
+         name: lishex-linux
+         path: ./lishex    
          
   Windows:
     runs-on: windows-2022
@@ -48,3 +53,9 @@ jobs:
         run: |
          mkdir build
          make ${{ matrix.target }} CXX=${{ matrix.config.compiler }}
+ 
+      - name: Upload build
+        uses: actions/upload-artifact@v3
+        with: 
+         name: lishex-win64
+         path: ./lishex    
