@@ -891,7 +891,7 @@ int evaluate(const board_t *board, eval_t * eval) {
     // - knight is protected by friendly pawn
     // - not attacked by enemy
     //-- White
-    /* REVIEW: Seem to be loosing Elo
+    /* REVIEW: Seem to be loosing Elo */
     bb = board->bitboards[N] & ~sides_attacks[BLACK] & pawn_protected[WHITE];
     while (bb) {
         sq = POPLSB(bb);
@@ -905,7 +905,7 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame -= knight_outposts_mg[sq];
         eval->endgame    -= knight_outposts_eg[sq];
     }
-    */
+
 
     // Tempo score (small bonus for the side to move)
     eval->middlegame += board->turn ? tempo_bonus_mg : -tempo_bonus_mg;

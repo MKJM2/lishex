@@ -59,23 +59,39 @@ typedef struct param_t {
 
 // A list of all tunnable parameters with lower and upper bounds for their values
 std::vector<int*> tunable_params = {
-    &tempo_bonus_mg,
-    &tempo_bonus_eg,
-    &PAWN_SHIELD1_BONUS,
-    &PAWN_SHIELD2_BONUS,
-    &PAWN_STORM_PENALTY,
-    &KING_PAWN_DIST_BONUS,
-    &SAFE_PAWN_ATTACK
+    &isolated_pawn,
+    &doubled_pawn,
+    &pawn_supported,
+    &pawn_protected_bonus,
+    &passed_pawn[1],
+    &passed_pawn[2],
+    &passed_pawn[3],
+    &passed_pawn[4],
+    &passed_pawn[5],
+    &passed_pawn[6],
+    &rook_open_file,
+    &rook_semiopen_file,
+    &queen_open_file,
+    &queen_semiopen_file
 };
 
 std::vector<std::pair<int, int>> bounds = {
-    {0, 15},
-    {0, 8},
-    {0, 8},
-    {3, 13},
-    {6, 16},
-    {8, 18},
-    {18, 28}
+    {-9, -7},
+    {-11, -8},
+    {0, 3},
+    {0, 3},
+
+    {2, 5},
+    {7, 11},
+    {10, 20},
+    {32, 42},
+    {55, 63},
+    {80, 86},
+
+    {10, 15},
+    {0, 5},
+    {4, 7},
+    {0, 3}
 };
 
 std::vector<param_t> best_params(tunable_params.size());
@@ -331,7 +347,8 @@ void tune() {
         std::cout << std::endl;
 
         if (prev_best_mse - best_mse < 0.000001) {
-            std::cout << "MSE hasn't improved since last iteration, terminating..." << std::endl;
+            std::cout << "MSE hasn't improved since last iteration, retrying one last time..." << std::endl;
+            iter = max_iter - 1;
             break;
         }
 

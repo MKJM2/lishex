@@ -107,6 +107,7 @@ extern int isolated_pawn;
 extern int doubled_pawn;
 // Bonus for supported pawns
 extern int pawn_supported;
+extern int pawn_protected_bonus;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 extern int passed_pawn[RANK_NO];
 // Indexed by rank, bonus for good pawn structure
