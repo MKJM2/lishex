@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 CXX ?= g++
-CXXFLAGS ?= -march=native -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
+CXXFLAGS ?= -Wall -Wextra -Wpedantic -Wshadow -std=c++20 -mpopcnt -m64 -mbmi2
 # For faster compilation
 CPUS := $(shell nproc)
 MAKEFLAGS += --jobs=$(CPUS)

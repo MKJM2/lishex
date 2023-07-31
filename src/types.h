@@ -26,6 +26,7 @@
 #include <atomic> // for search
 
 #define NAME "Lishex"
+#define VERSION "v1.0.1"
 #define AUTHOR "Michal Kurek"
 
 #define SQUARE_FILE(sq) ((sq) & 7)

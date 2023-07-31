@@ -36,7 +36,8 @@ constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
 
 // REVIEW: 3rd tuning iteration parameters
 // Tempo score (a small bonus for the side to move)
-int tempo_bonus = 5;
+int tempo_bonus_mg = 6;
+int tempo_bonus_eg = 0;
 // Pass and isolated pawn
 int isolated_pawn = -8;
 //// Doubled pawn penalty
@@ -62,9 +63,9 @@ int mobility_weights[PIECE_NO] = {0, 0, 2, 2, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 0};
 
 /* King safety parameters */
 
-int PAWN_SHIELD1_BONUS = 25;
-int PAWN_SHIELD2_BONUS = 10;
-int PAWN_STORM_PENALTY = 3;
+int PAWN_SHIELD1_BONUS = 5;
+int PAWN_SHIELD2_BONUS = 4;
+int PAWN_STORM_PENALTY = 6;
 
 // Stronger pieces have a larger weight when attacking the enemy king
 int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
@@ -81,8 +82,8 @@ int KING_SAFETY_TABLE[50] = {
 };
 
 // REVIEW: These need to be tuned
-int KING_PAWN_DIST_BONUS = 2;
-int SAFE_PAWN_ATTACK = 100;
+int KING_PAWN_DIST_BONUS = 9;
+int SAFE_PAWN_ATTACK = 18;
 // Knight outpost bonuses
 int KNIGHT_OUTPOST_MG = 5;
 int KNIGHT_OUTPOST_EG = 2;
@@ -890,7 +891,7 @@ int evaluate(const board_t *board, eval_t * eval) {
     // - knight is protected by friendly pawn
     // - not attacked by enemy
     //-- White
-    /* REVIEW: Seem to be loosing Elo
+    /* REVIEW: Seem to be loosing Elo */
     bb = board->bitboards[N] & ~sides_attacks[BLACK] & pawn_protected[WHITE];
     while (bb) {
         sq = POPLSB(bb);
@@ -904,13 +905,14 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame -= knight_outposts_mg[sq];
         eval->endgame    -= knight_outposts_eg[sq];
     }
-    */
+
+
+    // Tempo score (small bonus for the side to move)
+    eval->middlegame += board->turn ? tempo_bonus_mg : -tempo_bonus_mg;
+    eval->endgame    += board->turn ? tempo_bonus_eg : -tempo_bonus_eg;
 
     /* Tapered evaluation */
     score = eval->get_tapered_score();
-
-    // Tempo score (small bonus for the side to move)
-    score += board->turn ? tempo_bonus : -tempo_bonus;
 
     // We return the score relative to the side playing
     return board->turn ? score : -score;
