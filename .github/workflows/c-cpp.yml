@@ -19,8 +19,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Create build
-        run: |
-         make ${{ matrix.target }} CXX=${{ matrix.compiler }}
+        run: make ${{ matrix.target }} CXX=${{ matrix.compiler }}
          
   Windows:
     runs-on: windows-2022
@@ -44,6 +43,4 @@ jobs:
 
       - name: Create build
         shell: msys2 {0}
-        run: |
-         cd src_files
-         make ${{ matrix.target }} CXX=${{ matrix.config.compiler }}
+        run: make ${{ matrix.target }} CXX=${{ matrix.config.compiler }}
