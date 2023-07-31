@@ -1,0 +1,49 @@
+name: C/C++ CI
+
+on:
+  push:
+  pull_request:
+  
+  workflow_dispatch:
+
+jobs:
+  Ubuntu:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        compiler: [g++-12]
+        target: [lishex]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create build
+        run: |
+         make ${{ matrix.target }} CXX=${{ matrix.compiler }}
+         
+  Windows:
+    runs-on: windows-2022
+
+    strategy:
+      matrix:
+        config:
+          - { system: mingw64, package: x86_64-gcc, compiler: g++ }
+        target: [lishex]
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{matrix.config.system}}
+          install: mingw-w64-${{matrix.config.package}} make git
+
+      - name: Add compiler to $PATH env
+        shell: bash
+        run: echo "PATH=$PATH:/c/msys64/${{ matrix.config.system }}/bin" >> $GITHUB_ENV
+
+      - name: Create build
+        shell: msys2 {0}
+        run: |
+         cd src_files
+         make ${{ matrix.target }} CXX=${{ matrix.config.compiler }}
