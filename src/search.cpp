@@ -172,6 +172,11 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
     /* Get a static evaluation of the current position */
     score = evaluate(board, &eval);
 
+    // Clear out killers for the next ply
+    // (+2 since we want to clear killer moves for the SAME side-to-move player)
+    board->killer1[board->ply + 2] = NULLMV;
+    board->killer2[board->ply + 2] = NULLMV;
+
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
     if (in_check) {

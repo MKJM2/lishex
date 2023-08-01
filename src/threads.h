@@ -29,7 +29,7 @@
 #include "search.h"
 #include "time.h" // now()
 
-enum { ENGINE_SEARCHING, ENGINE_PONDERING, ENGINE_STOPPED, ENGINE_QUIT };
+enum { ENGINE_STOPPED, ENGINE_SEARCHING, ENGINE_PONDERING, ENGINE_QUIT };
 
 // extern volatile int state;
 
