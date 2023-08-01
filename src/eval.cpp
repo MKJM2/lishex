@@ -599,6 +599,10 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb_t pawns = black_pawns | white_pawns;
     bb_t bb = white_pawns;
 
+    /* Setup for pawn protected pieces */
+    bb_t pawn_protected[BOTH] = {se_shift(black_pawns) | sw_shift(black_pawns),
+                                 ne_shift(white_pawns) | nw_shift(white_pawns)};
+
     // (White pawns)
     // Pawn values
     eval->middlegame += CNT(bb) * value_mg[P];
@@ -628,6 +632,19 @@ int evaluate(const board_t *board, eval_t * eval) {
             // ...we also give a bonus for how far away from the pawn the enemy king is
             eval->endgame += -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
         }
+
+        // Candidate pawns (defined the same was as in Toga)
+        //-if is open
+        //-if # of enemy pawns on same and neighboring files is <= than # of friendly pawns on the same files
+        //-if # of attacking pawns is less or equal to the number of protecting pawns
+        /*
+        if ((fileBBMask[SQUARE_FILE(sq)] & black_pawns) == 0 &&
+            CNT(wPassedMask[sq] & black_pawns) <= CNT(n_shift(bPassedMask[sq]) & white_pawns) &&
+            CNT(pawn_protected[WHITE] & black_pawns) <= CNT(bPassedMask[sq] & rankBBMask[SQUARE_RANK(sq) - 1])) {
+            eval->middlegame +=  5 + passed_pawn[SQUARE_RANK(sq)] / 10;
+            eval->endgame    += 10 + passed_pawn[SQUARE_RANK(sq)] / 5;
+        }
+        */
 
         // Doubled pawn penalty
         // - if there's a pawn immediatley behind this one && the pawn isn't
@@ -676,6 +693,19 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->endgame -= -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
         }
 
+        // Candidate pawns (defined the same was as in Toga)
+        //-if is open
+        //-if # of enemy pawns on same and neighboring files is <= than # of friendly pawns on the same files
+        //-if # of attacking pawns is less or equal to the number of protecting pawns
+        /*
+        if ((fileBBMask[SQUARE_FILE(sq)] & white_pawns) == 0 &&
+            CNT(bPassedMask[sq] & white_pawns) <= CNT(s_shift(wPassedMask[sq]) & black_pawns) &&
+            CNT(pawn_protected[BLACK] & white_pawns) <= CNT(wPassedMask[sq] & rankBBMask[SQUARE_RANK(sq) + 1])) {
+            eval->middlegame -=  5 + passed_pawn[SQUARE_RANK_FOR(BLACK, sq)] / 10;
+            eval->endgame    -= 10 + passed_pawn[SQUARE_RANK_FOR(BLACK, sq)] / 5;
+        }
+        */
+
         // Doubled pawn penalty
         // - if there's a pawn immediatley behind this one && the pawn isn't
         //   supported
@@ -702,10 +732,6 @@ int evaluate(const board_t *board, eval_t * eval) {
     // King zone of the king we're attacking
     bb_t king_zone = get_king_zone(board, BLACK);
     bb_t king_attacks_score[BOTH] = {0, 0};
-
-    /* Setup for pawn protected pieces */
-    bb_t pawn_protected[BOTH] = {se_shift(black_pawns) | sw_shift(black_pawns),
-                                 ne_shift(white_pawns) | nw_shift(white_pawns)};
 
     // PSQTs + Material value
     bb  = board->sides_pieces[WHITE];

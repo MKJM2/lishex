@@ -412,11 +412,11 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
             }
         }
         /* The move failed low, we check if we can prune the tree here [Late Move Pruning] */
-        //if (!pv_node &&
-            //!in_check &&
-            //depth >= 4 &&
-            //quiet_moves_searched > 4 + depth * depth)
-            //break;
+        if (α == β - 1 && // !pv_node
+            board->ply && // !root_node
+            !in_check &&
+            quiet_moves_searched > 3 + depth * depth)
+            break;
     }
 
     // If no legal moves could be performed, then check if we're in check:
