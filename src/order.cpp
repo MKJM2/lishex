@@ -119,8 +119,12 @@ inline void sort(movelist_t *moves) {
 } // namespace
 
 
-void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
+void score_moves(const board_t *board, movelist_t *moves, move_t pv_move, move_t *killers) {
+    /* Initialize move scorer */
     moves->used = 0;
+    move_t killer1 = killers != nullptr ? killers[0] : NULLMV;
+    move_t killer2 = killers != nullptr ? killers[1] : NULLMV;
+
     // For each move, we assign it a score for move ordering
     // Higher scoring moves will be explored first
     int n = moves->size();
@@ -179,10 +183,10 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
         }
 
         /* Check if killer move 1 */
-        if (board->killer1[board->ply] == move.move) {
+        if (killer1 == move.move) {
             move.score = KILLER1_BONUS;
         /* Otherwise, check if killer move 2 */
-        } else if (board->killer2[board->ply] == move.move) {
+        } else if (killer2 == move.move) {
             move.score = KILLER2_BONUS;
         /* Otherwise, order according to the move history */
         } else {
@@ -241,11 +245,6 @@ move_t next_best(movelist_t *moves, [[maybe_unused]] int ply) {
  #endif
                            // Move used, hence increase the counter
     return moves->movelist[moves->used++];
-}
-
-void score_and_sort(const board_t *board, movelist_t *moves, move_t pv_move) {
-    score_moves(board, moves, pv_move);
-    movesort(moves->movelist, moves->size());
 }
 
 // Prints out the n (default = 5) best scoring moves

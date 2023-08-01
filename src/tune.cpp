@@ -46,6 +46,7 @@ constexpr double social_weight = 0.1;
 
 board_t *bench_board = nullptr;
 searchinfo_t *bench_info = nullptr;
+stack_t *bench_stack = nullptr;
 
 
 /* We utilize the Particle Swarm Optimization technique */
@@ -155,7 +156,7 @@ double MSE(std::vector<double>& predicted, std::vector<double>& observed) {
 
 inline double evaluate_particle([[maybe_unused]] particle& p) {
     //return sigmoid(scale_score(quiescence(-oo, +oo, bench_board, bench_info)));
-    return winning_prob(scale_score(quiescence(-oo, +oo, bench_board, bench_info)));
+    return winning_prob(scale_score(quiescence(-oo, +oo, bench_board, bench_info, bench_stack)));
 }
 
 // Initialize the swarm of particles for PSO
@@ -208,6 +209,7 @@ void tune() {
     // Initialize the board
     bench_board = new board_t;
     bench_info = new searchinfo_t;
+    bench_stack = new stack_t[MAX_MOVES];
 
     // Each test position is represented by a fen
     std::vector<std::string> positions;
@@ -364,4 +366,5 @@ void tune() {
     // Cleanup
     delete bench_board;
     delete bench_info;
+    delete[] bench_stack;
 }

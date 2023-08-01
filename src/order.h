@@ -23,15 +23,14 @@
 #include "board.h"
 
 /**
- @brief Scores and sortes the movelist for move ordering purposes
+ @brief Scores the movelist for move ordering purposes
  @param board position for which the movelist was generated
- @param moves the movelist to score and sort
+ @param moves the movelist to score
  @param pv_move principal variation move to order first, if any
+ @param killers killer moves that caused a cutoff, if any
  */
-void score_and_sort(const board_t *board, movelist_t *moves, move_t pv_move);
+void score_moves(const board_t *board, movelist_t *moves, move_t pv_move, move_t *killers);
 
-// Scores the moves
-void score_moves(const board_t *board, movelist_t *moves, move_t pv_move);
 // Returns the next best move
 move_t next_best(movelist_t *moves, int ply);
 

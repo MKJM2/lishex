@@ -431,6 +431,14 @@ typedef struct searchinfo_t {
     }
 } searchinfo_t;
 
+// An element of the search stack
+// TODO: For LazySMP, each thread needs its own PV, eval, etc.
+// TT is global & shared between the threads
+typedef struct stack_t {
+    move_t killer[2] = {};
+    int32_t score = 0;
+} stack_t;
+
 // Useful test positions
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const std::string kiwipete_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";

@@ -34,7 +34,7 @@
  @param board the board position to search
  @param info search info: time, depth to search, etc.
 */
-int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info);
+int quiescence(int alpha, int beta, board_t *board, searchinfo_t *info, stack_t *stack);
 
 /**
  @brief Searches the current board state for the best move

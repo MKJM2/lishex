@@ -109,7 +109,7 @@ int lmr_depth_reduction[MAX_DEPTH][MAX_MOVES];
  @param do_null whether to perform a null move or not
  @param pv reference to a table storing the (depth - 1) principal variation
 */
-int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool do_null) {
+int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack_t *stack, bool do_null) {
     assert(check(board));
     assert(α < β);
     assert(depth >= 0);
@@ -127,7 +127,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
     /* Recursion base case */
     if (depth <= 0) {
-        return quiescence(α, β, board, info);
+        return quiescence(α, β, board, info, stack);
     }
 
     ++info->nodes;
@@ -170,12 +170,16 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
     }
 
     /* Get a static evaluation of the current position */
-    score = evaluate(board, &eval);
+    stack[board->ply].score = score = evaluate(board, &eval);
+    // Is the side-to-move improving their position?
+    const bool improving = board->ply >= 2 && score > stack[board->ply - 2].score;
 
     // Clear out killers for the next ply
     // (+2 since we want to clear killer moves for the SAME side-to-move player)
-    board->killer1[board->ply + 2] = NULLMV;
-    board->killer2[board->ply + 2] = NULLMV;
+    //board->killer1[board->ply + 2] = NULLMV;
+    //board->killer2[board->ply + 2] = NULLMV;
+    stack[board->ply + 2].killer[0] = NULLMV;
+    stack[board->ply + 2].killer[1] = NULLMV;
 
     // Check search extension
     bool in_check = is_in_check(board, board->turn);
@@ -214,7 +218,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
             make_null(board);
             // do_null is now set to false, since we don't want to do two null moves
             // in a row
-            score = -negamax(-β, -β + 1, depth - 1 - R, board, info, false);
+            score = -negamax(-β, -β + 1, depth - 1 - R, board, info, stack, false);
             undo_null(board);
 
             if (search_stopped(info))
@@ -244,9 +248,9 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         int razor = α - 100 * depth + 30;
         if (score <= razor) {
             if (depth <= 2) {
-                return quiescence(α, β, board, info);
+                return quiescence(α, β, board, info, stack);
             }
-            else if (quiescence(razor, razor + 1, board, info) <= razor) {
+            else if (quiescence(razor, razor + 1, board, info, stack) <= razor) {
                 return α;
             }
         }
@@ -265,7 +269,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
     // If following the principal variation (from a previous search at a smaller
     // depth), order the PV move higher
-    score_moves(board, &moves, ttmove);
+    score_moves(board, &moves, ttmove, stack[board->ply].killer);
 
     size_t moves_searched = 0;
     size_t quiet_moves_searched = 0;
@@ -302,7 +306,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         if (moves_searched == 0) {
             // We assume, given good move ordering, that the first move
             // is a PV move (leading to a PV node) so we perform a full search
-            score = -negamax(-β, -α, depth - 1, board, info, USE_NULL);
+            score = -negamax(-β, -α, depth - 1, board, info, stack, USE_NULL);
         } else {
             /* [LMR] Late Move Reduction */
             // We check whether to consider a reduction or not. We do so if:
@@ -326,12 +330,15 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
                 // Reduce less if we are in a PV node
                 R -= pv_node;
 
+                // Reduce more if not improving
+                R += !improving;
+
                 // Reduce more on bad moves according to the history
                 //R += (board->history_h[board->turn][board->pieces[get_from(move)]][get_to(move)] < 0);
 
                 // Clamp the reduction so we don't drop into negative depths
                 R = std::clamp(R, 0, depth - 1);
-                score = -negamax(-α - 1, -α, depth - 1 - R, board, info,
+                score = -negamax(-α - 1, -α, depth - 1 - R, board, info, stack,
                                  USE_NULL);
             } else {
                 // Trick to ensure a full-depth search is done
@@ -342,11 +349,11 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
 
             if (score > α) {
                 // [PVS] We first search the remaining moves with a zero window
-                score = -negamax(-α - 1, -α, depth - 1, board, info, USE_NULL);
+                score = -negamax(-α - 1, -α, depth - 1, board, info, stack, USE_NULL);
                 if (score > α && score < β) {
                     // If the score we got was outside of our window,
                     // we perform a full window re-search
-                    score = -negamax(-β, -α, depth - 1, board, info, USE_NULL);
+                    score = -negamax(-β, -α, depth - 1, board, info, stack, USE_NULL);
                 }
             }
         }
@@ -375,10 +382,14 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
                     // Killer moves (cause a beta cutoff but aren't captures)
                     if (!is_capture(move)) {
                         // Don't update killer moves if this would result in duplicating the move
-                        if (board->killer1[board->ply] != move) {
-                            board->killer2[board->ply] = board->killer1[board->ply];
-                            board->killer1[board->ply] = move;
-                        }
+                        // if (board->killer1[board->ply] != move) {
+                            // board->killer2[board->ply] = board->killer1[board->ply];
+                            // board->killer1[board->ply] = move;
+                        // }
+                         if (stack[board->ply].killer[0] != move) {
+                             stack[board->ply].killer[1] = stack[board->ply].killer[0];
+                             stack[board->ply].killer[0] = move;
+                         }
 
                         // Move causes a cutoff, hence update the search history tables
                         // (History heuristic)
@@ -415,7 +426,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         if (α == β - 1 && // !pv_node
             board->ply && // !root_node
             !in_check &&
-            quiet_moves_searched > 3 + depth * depth)
+            quiet_moves_searched > ((3 + depth * depth) >> !improving)) // trick from 4ku
             break;
     }
 
@@ -471,7 +482,7 @@ inline void print_search_info(int s, int d, int sd, uint64_t n, uint64_t t,
 }
 
 
-void init_search(board_t *board, searchinfo_t *info) {
+void init_search(board_t *board, searchinfo_t *info, stack_t *s) {
 
     // Scale tables used for the history heuristic
     for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
@@ -480,11 +491,6 @@ void init_search(board_t *board, searchinfo_t *info) {
                 board->history_h[colour][p][sq] /= 16;
             }
         }
-    }
-
-    // Clear tables used for the killer move heuristic
-    for (int i = 0; i < MAX_DEPTH; ++i) {
-        board->killer1[i] = board->killer2[i] = NULLMV;
     }
 
     // Clear the global pv table
@@ -500,6 +506,17 @@ void init_search(board_t *board, searchinfo_t *info) {
 
     // Reset statistics for the transposition table
     tt.reset_stats();
+
+    // Clear the search stack
+    // - killers
+    // - scores
+    for (int i = 0; i < MAX_DEPTH; ++i) {
+        s->killer[0] = s->killer[1] = NULLMV;
+        s->score = 0;
+    }
+
+    // The ply at the root of the search is 0
+    board->ply = 0;
 }
 
 /**
@@ -508,14 +525,15 @@ void init_search(board_t *board, searchinfo_t *info) {
  outside of the window, then we need to perform a research with a wider window
  @param board the board position to search
  @param info search info: time, depth to search, etc.
+ @param stack the search stack with search data like previous moves and static evaluation scores
  @param depth number of plies to search
  @param do_null whether to perform a null move or not
 */
-int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score, int depth, bool do_null) {
+int aspiration_window_search(board_t *board, searchinfo_t *info, stack_t *stack, int depth, bool do_null) {
 
     // Initialize the initial window
     int aw_delta = 35;
-    int score = prev_score;
+    int score = stack[0].score;
 
     int α = -oo, β = +oo;
 
@@ -528,7 +546,7 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, int prev_score,
     // We keep retrying the search with larger and larger windows
     // (window widening code inspired by the Alexandria engine)
     for (;;) {
-        score = negamax(α, β, depth, board, info, do_null);
+        score = negamax(α, β, depth, board, info, stack, do_null);
 
         if (search_stopped(info)) break;
 
@@ -567,8 +585,9 @@ void init_reductions() {
  @param beta the upperbound
  @param board the board position to search
  @param info search info: time, depth to search, etc.
+ @param stack the search stack
 */
-int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
+int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stack) {
     assert(check(board));
     assert(α < β);
 
@@ -599,7 +618,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     }
 
     /* Stand-pat score */
-    score = evaluate(board, &eval);
+    stack[board->ply].score = score = evaluate(board, &eval);
 
     assert(-oo < score && score < +oo);
 
@@ -619,8 +638,8 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
     movelist_t noisy;
     generate_noisy(board, &noisy);
 
-    // Move ordering           // PV move, if any
-    score_moves(board, &noisy, ttmove);
+    // Move ordering           // TT move, if any
+    score_moves(board, &noisy, ttmove, nullptr);
 
     #ifdef DEBUG
     int moves_searched = 0;
@@ -656,7 +675,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info) {
         #ifdef DEBUG
         ++moves_searched;
         #endif
-        score = -quiescence(-β, -α, board, info);
+        score = -quiescence(-β, -α, board, info, stack);
 
         undo_move(board, move);
 
@@ -691,9 +710,10 @@ void search(board_t *board, searchinfo_t *info) {
 
     move_t best_move = NULLMV;
     int best_score = 0;
+    stack_t stack[MAX_DEPTH+1] = {};
 
     // Clear for search
-    init_search(board, info);
+    init_search(board, info, stack);
 
     int curr_depth_nodes = 0;
     int curr_depth_time = 0;
@@ -713,7 +733,7 @@ void search(board_t *board, searchinfo_t *info) {
         // For time management
         curr_depth_time = now();
 
-        best_score = aspiration_window_search(board, info, best_score, depth, USE_NULL);
+        stack[0].score = best_score = aspiration_window_search(board, info, stack, depth, USE_NULL);
 
         curr_depth_nodes = info->nodes - curr_depth_nodes;
         curr_depth_time = now() - curr_depth_time;
