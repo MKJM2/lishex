@@ -39,11 +39,11 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = 100'000'000;
-constexpr int GOOD_PROMO_BONUS = 50'000'000;
-constexpr int CAPTURE_BONUS = 20'000'000;
-constexpr int KILLER1_BONUS = 10'000'000;
-constexpr int KILLER2_BONUS = 9'000'000;
+constexpr int PV_BONUS = 150'000'000;
+constexpr int GOOD_PROMO_BONUS = 100'000'000;
+constexpr int CAPTURE_BONUS = 40'000'000;
+constexpr int KILLER1_BONUS = 30'000'000;
+constexpr int KILLER2_BONUS = 29'000'000;
 
 // Penalty for 'bad' (very rare) promotions like e.g. bishop
 constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
@@ -178,11 +178,13 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
             continue;
         }
 
-        /* Check if killer move */
+        /* Check if killer move 1 */
         if (board->killer1[board->ply] == move.move) {
             move.score = KILLER1_BONUS;
+        /* Otherwise, check if killer move 2 */
         } else if (board->killer2[board->ply] == move.move) {
             move.score = KILLER2_BONUS;
+        /* Otherwise, order according to the move history */
         } else {
             move.score = MAX(0, 100'000 + board->history_h[board->turn][board->pieces[from]][to]);
         }

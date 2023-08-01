@@ -21,20 +21,13 @@
 
 /* Piece values */
 
-/*
-constexpr int value_mg[PIECE_NO] = {0, 100, 325, 330, 550, 1000, 50000,
-                              0, 0, 100, 325, 330, 550, 1000, 50000};
-constexpr int value_eg[PIECE_NO] = {0, 125, 300, 300, 600, 950, 50000,
-                              0, 0, 125, 300, 300, 600, 950, 50000};
-*/
-
 /* PESTO's piece values */
 constexpr int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
                               0, 0, 82, 337, 365, 477, 1025, 50000};
 constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
-// REVIEW: 3rd tuning iteration parameters
+// REVIEW: 4th PMO Tuning iteration parameters
 // Tempo score (a small bonus for the side to move)
 int tempo_bonus_mg = 6;
 int tempo_bonus_eg = 0;
@@ -62,13 +55,13 @@ int queen_semiopen_file = 2;
 int mobility_weights[PIECE_NO] = {0, 0, 2, 2, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 0};
 
 /* King safety parameters */
-
 int PAWN_SHIELD1_BONUS = 5;
 int PAWN_SHIELD2_BONUS = 4;
 int PAWN_STORM_PENALTY = 6;
 
 // Stronger pieces have a larger weight when attacking the enemy king
 int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
+
 // 49 is the max size of the king zone (refer to get_king_zone())
 // We use the weighted number of attackers onto the king zone
 // as an index into this array as a predictor

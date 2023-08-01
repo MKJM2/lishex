@@ -144,6 +144,14 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, bool 
         return evaluate(board, &eval);
     }
 
+    // Mate distance pruning (https://www.chessprogramming.org/Mate_Distance_Pruning)
+    if (board->ply) {
+        α = MAX(α, -oo + board->ply);
+        β = MIN(β, +oo - board->ply - 1);
+        if (α >= β)
+            return α;
+    }
+
     int score = -oo;
     move_t ttmove = NULLMV;
 
