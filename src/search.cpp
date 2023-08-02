@@ -572,7 +572,9 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, stack_t *stack,
 void init_reductions() {
     for (size_t ply = 0; ply < MAX_DEPTH; ++ply) {
         for (size_t move_idx = 0; move_idx < MAX_MOVES; ++move_idx) {
-            lmr_depth_reduction[ply][move_idx] = 0.65*(sqrt(ply-1)+sqrt(move_idx-1)-2.5);
+            //lmr_depth_reduction[ply][move_idx] = 0.65*(sqrt(ply-1)+sqrt(move_idx-1)-2.5);
+            // Formula from Berserk 3.2.0:
+            lmr_depth_reduction[ply][move_idx] = int(0.6f + log(ply) * log(1.2f * move_idx) / 2.5f);
         }
     }
 }

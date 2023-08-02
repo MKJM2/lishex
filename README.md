@@ -64,8 +64,7 @@ in the project root.
 - Endgame tablebase probing
 - Extension limiting
 - Smarter time control logic, estimated time to finish search
-- UCI Engine options
 - NNUE
 
 ### Acknowledgments
-I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, PGG106 (Alexandria), Richard Delorme (Dumb engine), Bruce Moreland, Code Monkey King (Bitboard Chess Engine), Peter Österlund (Texel), kz04px (4ku), the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration. I have made every effort to include proper links to articles & other sources of inspiration in the source code. However, if by any chance I have unintentionally omitted acknowledging someone's work or utilized code without due credit, I sincerely apologize. Please do not hesitate to contact me with any concerns, suggestions, or ideas, and I will gladly address them promptly.
+I'd like to thank BlueFeverSoft (Vice), Tom Kerrigan (TCSP), Sebastian Lague, PGG106 (Alexandria), Richard Delorme (Dumb engine), Bruce Moreland, Code Monkey King (Bitboard Chess Engine), Peter Österlund (Texel), kz04px (4ku), Jay Honnold (Berserk), the Stockfish and GNU Chess developers, as well as the entire Chess Programming community for help and inspiration. I have made every effort to include proper links to articles & other sources of inspiration in the source code. However, if by any chance I have unintentionally omitted acknowledging someone's work or utilized code without due credit, I sincerely apologize. Please do not hesitate to contact me with any concerns, suggestions, or ideas, and I will gladly address them promptly.
