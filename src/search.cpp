@@ -572,7 +572,7 @@ int aspiration_window_search(board_t *board, searchinfo_t *info, stack_t *stack,
 void init_reductions() {
     for (size_t ply = 0; ply < MAX_DEPTH; ++ply) {
         for (size_t move_idx = 0; move_idx < MAX_MOVES; ++move_idx) {
-            lmr_depth_reduction[ply][move_idx] = 0.85*(sqrt(ply-1)+sqrt(move_idx-1)-1);
+            lmr_depth_reduction[ply][move_idx] = 0.65*(sqrt(ply-1)+sqrt(move_idx-1)-2.5);
         }
     }
 }
