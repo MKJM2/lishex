@@ -16,11 +16,13 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TUNE_H_
-#define TUNE_H_
+#ifndef BENCH_H_
+#define BENCH_H_
 
 #include "types.h"
+#include "board.h"
+#include "threads.h"
 
-void tune();
+void bench(std::thread &search_thread, board_t *board, searchinfo_t *info);
 
-#endif // TUNE_H_
+#endif // BENCH_H_

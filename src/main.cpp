@@ -37,7 +37,7 @@
 #include "uci.h"
 #include "attack.h"
 #include "search.h"
-//#include "tune.h"
+//#include "sgd.h"
 
 int main(int argc, char* argv[]) {
 

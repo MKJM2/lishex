@@ -258,7 +258,7 @@ const uint64_t rand64poly[781] = {
    0xF8D626AAAF278509ULL,
 };
 
-uint64_t generate_poly_key(const board_t* board) {
+[[maybe_unused]] uint64_t generate_poly_key(const board_t* board) {
 
     uint64_t key = 0ULL;
 

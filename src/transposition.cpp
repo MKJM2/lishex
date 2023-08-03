@@ -51,11 +51,15 @@ TT::~TT() {
 }
 
 void TT::resize(const int new_size_MB) {
+    if (new_size_MB <= 0) {
+        TRACE_TT("Illegal TT size, defaulting to " << DEFAULTTTSIZEMB);
+        this->resize(DEFAULTTTSIZEMB);
+    }
     TRACE_TT("Allocating TT of size " << new_size_MB << "MB");
 
     delete[] table;
     this->size = (0x100000 * new_size_MB) / sizeof(tt_entry);
-    table = new tt_entry[size];
+    table = new tt_entry[this->size];
     if (table == nullptr) {
         std::cerr << "Transposition table allocation failed! Retrying with size "
             << new_size_MB / 2 << std::endl;

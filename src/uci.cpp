@@ -30,6 +30,7 @@
 #include "order.h"
 #include "eval.h"
 #include "transposition.h"
+#include "bench.h"
 
 
 /* Options need to be non-static, since they influence
@@ -341,6 +342,8 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
         std::string filename;
         iss >> filename;
         process_file(filename, info, search_thread, board);
+    } else if (token == "bench") {
+        bench(search_thread, board, info);
     } else {
         std::cout << "Unknown command: '" << token << "'" << std::endl;
     }

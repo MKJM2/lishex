@@ -26,7 +26,7 @@
 #include <atomic> // for search
 
 #define NAME "Lishex"
-#define VERSION "v1.0.1"
+#define VERSION "v1.1.0"
 #define AUTHOR "Michal Kurek"
 
 #define SQUARE_FILE(sq) ((sq) & 7)
@@ -430,6 +430,14 @@ typedef struct searchinfo_t {
         seldepth = 0;
     }
 } searchinfo_t;
+
+// An element of the search stack
+// TODO: For LazySMP, each thread needs its own PV, eval, etc.
+// TT is global & shared between the threads
+typedef struct stack_t {
+    move_t killer[2] = {};
+    int32_t score = 0;
+} stack_t;
 
 // Useful test positions
 const std::string start_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

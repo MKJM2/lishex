@@ -24,7 +24,8 @@
 #include "see.h"
 
 /**
- @brief This struct scores all relevant data for the evaluation of given board position
+ @brief This struct scores and stores all relevant data for the evaluation of
+ given board position
  */
 typedef struct eval_t {
     // Game phase (0, 256)
@@ -95,8 +96,22 @@ int losing_capture(const board_t *board, move_t m, int threshold);
 
 void mirror_test(board_t *board);
 
-extern const int value_mg[PIECE_NO];
-extern const int value_eg[PIECE_NO];
+//Material
+extern int value_mg[PIECE_NO];
+extern int value_eg[PIECE_NO];
+// PSQTs
+extern int pawn_table_mg[SQUARE_NO];
+extern int pawn_table_eg[SQUARE_NO];
+extern int knight_table_mg[SQUARE_NO];
+extern int knight_table_eg[SQUARE_NO];
+extern int bishop_table_mg[SQUARE_NO];
+extern int bishop_table_eg[SQUARE_NO];
+extern int rook_table_mg[SQUARE_NO];
+extern int rook_table_eg[SQUARE_NO];
+extern int queen_table_mg[SQUARE_NO];
+extern int queen_table_eg[SQUARE_NO];
+extern int king_table_mg[SQUARE_NO];
+extern int king_table_eg[SQUARE_NO];
 
 // Tempo score (a small bonus for the side to move)
 extern int tempo_bonus_mg;

@@ -39,11 +39,11 @@ namespace {
 
 // Bonuses for moves
 // PV > Capture > Killer 1 > Killer 2 > History
-constexpr int PV_BONUS = 100'000'000;
-constexpr int GOOD_PROMO_BONUS = 50'000'000;
-constexpr int CAPTURE_BONUS = 20'000'000;
-constexpr int KILLER1_BONUS = 10'000'000;
-constexpr int KILLER2_BONUS = 9'000'000;
+constexpr int PV_BONUS = 150'000'000;
+constexpr int GOOD_PROMO_BONUS = 100'000'000;
+constexpr int CAPTURE_BONUS = 40'000'000;
+constexpr int KILLER1_BONUS = 30'000'000;
+constexpr int KILLER2_BONUS = 29'000'000;
 
 // Penalty for 'bad' (very rare) promotions like e.g. bishop
 constexpr int BAD_PROMO_PENALTY = -GOOD_PROMO_BONUS;
@@ -78,7 +78,7 @@ constexpr int MVV_LVA[PIECE_NO][PIECE_NO] = {
 };
 
 // Function to sort first n moves of an array of moves using insertion sort
-void movesort(scored_move_t moves[], int n) {
+[[maybe_unused]] void movesort(scored_move_t moves[], int n) {
     int i, j;
     scored_move_t move;
     for (i = 1; i < n; i++) {
@@ -119,8 +119,12 @@ inline void sort(movelist_t *moves) {
 } // namespace
 
 
-void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
+void score_moves(const board_t *board, movelist_t *moves, move_t pv_move, move_t *killers) {
+    /* Initialize move scorer */
     moves->used = 0;
+    move_t killer1 = killers != nullptr ? killers[0] : NULLMV;
+    move_t killer2 = killers != nullptr ? killers[1] : NULLMV;
+
     // For each move, we assign it a score for move ordering
     // Higher scoring moves will be explored first
     int n = moves->size();
@@ -178,11 +182,13 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move) {
             continue;
         }
 
-        /* Check if killer move */
-        if (board->killer1[board->ply] == move.move) {
+        /* Check if killer move 1 */
+        if (killer1 == move.move) {
             move.score = KILLER1_BONUS;
-        } else if (board->killer2[board->ply] == move.move) {
+        /* Otherwise, check if killer move 2 */
+        } else if (killer2 == move.move) {
             move.score = KILLER2_BONUS;
+        /* Otherwise, order according to the move history */
         } else {
             move.score = MAX(0, 100'000 + board->history_h[board->turn][board->pieces[from]][to]);
         }
@@ -239,11 +245,6 @@ move_t next_best(movelist_t *moves, [[maybe_unused]] int ply) {
  #endif
                            // Move used, hence increase the counter
     return moves->movelist[moves->used++];
-}
-
-void score_and_sort(const board_t *board, movelist_t *moves, move_t pv_move) {
-    score_moves(board, moves, pv_move);
-    movesort(moves->movelist, moves->size());
 }
 
 // Prints out the n (default = 5) best scoring moves

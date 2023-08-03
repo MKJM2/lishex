@@ -21,20 +21,13 @@
 
 /* Piece values */
 
-/*
-constexpr int value_mg[PIECE_NO] = {0, 100, 325, 330, 550, 1000, 50000,
-                              0, 0, 100, 325, 330, 550, 1000, 50000};
-constexpr int value_eg[PIECE_NO] = {0, 125, 300, 300, 600, 950, 50000,
-                              0, 0, 125, 300, 300, 600, 950, 50000};
-*/
-
 /* PESTO's piece values */
-constexpr int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
+int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
                               0, 0, 82, 337, 365, 477, 1025, 50000};
-constexpr int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
+int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
                               0, 0, 94, 281, 297, 512, 936, 50000};
 
-// REVIEW: 3rd tuning iteration parameters
+// REVIEW: 4th PMO Tuning iteration parameters
 // Tempo score (a small bonus for the side to move)
 int tempo_bonus_mg = 6;
 int tempo_bonus_eg = 0;
@@ -62,13 +55,13 @@ int queen_semiopen_file = 2;
 int mobility_weights[PIECE_NO] = {0, 0, 2, 2, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 0};
 
 /* King safety parameters */
-
 int PAWN_SHIELD1_BONUS = 5;
 int PAWN_SHIELD2_BONUS = 4;
 int PAWN_STORM_PENALTY = 6;
 
 // Stronger pieces have a larger weight when attacking the enemy king
 int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
+
 // 49 is the max size of the king zone (refer to get_king_zone())
 // We use the weighted number of attackers onto the king zone
 // as an index into this array as a predictor
@@ -88,144 +81,7 @@ int SAFE_PAWN_ATTACK = 18;
 int KNIGHT_OUTPOST_MG = 5;
 int KNIGHT_OUTPOST_EG = 2;
 
-namespace {
-
 /* Piece-square tables */
-/*
-// We use midgame and endgame tables between which we interpolate
-constexpr int pawn_table_mg[] = {
-     0,   0,   0,   0,   0,   0,   0,   0,
-    10,  10,   0, -10, -10,   0,  10,  10,
-     5,   0,   0,   5,   5,   0,   0,   5,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     5,   5,   5,  10,  10,   5,   5,   5,
-    10,  10,  10,  20,  20,  10,  10,  10,
-    20,  20,  20,  30,  30,  20,  20,  20,
-     0,   0,   0,   0,   0,   0,   0,   0
-};
-
-constexpr int pawn_table_eg[] = {
-     0,   0,   0,   0,   0,   0,   0,   0,
-     8,   8,   5,   4,   4,   5,   8,   8,
-    -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
-     2,   0,   0,  -1,  -1,  10,   0,   2,
-    25,  10,   5,   5,   5,   5,  10,  25,
-    55,  50,  50,  45,  45,  50,  50,  55,
-   125, 120, 120, 110, 110, 120, 120, 125,
-     0,   0,   0,   0,   0,   0,   0,   0
-};
-
-constexpr int knight_table_mg[] = {
-    -5, -10,   0,   0,   0,   0, -10,  -5,
-     0,   0,   0,   5,   5,   0,   0,   0,
-     0,   0,  10,  10,  10,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   5,   0,
-     5,  10,  15,  20,  20,  15,  10,   5,
-     5,  10,  10,  20,  20,  10,  10,   5,
-     0,   0,   5,  10,  10,   5,   0,   0,
-    -5,   0,   0,   0,   0,   0,   0,  -5
-};
-
-constexpr int knight_table_eg[] = {
-     -35, -10,  -5,  -5,  -5,  -5, -10,  -35,
-     -10,   0,   5,  10,  10,   5,   0,  -10,
-     -10,  10,  10,  10,  10,  10,  10,  -10,
-     -10,  10,  10,  20,  20,  10,  10,  -10,
-     -10,  10,  15,  20,  20,  15,  10,  -10,
-     -10,  10,  10,  20,  20,  10,  10,  -10,
-     -10,   0,   5,  10,  10,   5,   0,  -10,
-     -35, -10,  -5,  -5,  -5,  -5, -10,  -35,
-};
-
-constexpr int bishop_table_mg[] = {
-     0,   0, -10,   0,   0, -10,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,  10,  15,  15,  10,   0,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,   0,  10,  15,  15,  10,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0
-};
-
-constexpr int bishop_table_eg[] = {
-   -20, -10, -10,   0,   0, -10, -10, -20,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,  10,  15,  15,  10,   0,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,  10,  15,  20,  20,  15,  10,   0,
-     0,   0,  10,  15,  15,  10,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-   -20, -10, -10,   0,   0, -10, -10, -20,
-};
-
-constexpr int rook_table_mg[] = {
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-    25,  25,  25,  25,  25,  25,  25,  25,
-     0,   0,   5,  10,  10,   5,   0,   0
-};
-
-constexpr int rook_table_eg[] = {
-     0,   0,   1,   5,   5,   1,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     5,   8,  10,  10,  10,  10,  15,  15,
-    10,  10,  12,  14,  16,  20,  17,  20
-}; // We encourage the rook to pursue last-rank mates
-
-// @TODO: tune
-constexpr int queen_table_mg[] = {
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-};
-
-constexpr int queen_table_eg[] = {
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-};
-
-constexpr int king_table_mg[] = {
-     0,   5,   5, -10, -10,   0,  10,   5,
-   -30, -30, -30, -30, -30, -30, -30, -30,
-   -50, -50, -50, -50, -50, -50, -50, -50,
-   -70, -70, -70, -70, -70, -70, -70, -70,
-   -70, -70, -70, -70, -70, -70, -70, -70,
-   -70, -70, -70, -70, -70, -70, -70, -70,
-   -70, -70, -70, -70, -70, -70, -70, -70,
-   -70, -70, -70, -70, -70, -70, -70, -70
-};
-
-constexpr int king_table_eg[] = {
-   -50, -10,   0,   0,   0,   0, -10, -50,
-   -10,   0,  10,  10,  10,  10,   0, -10,
-     0,  10,  20,  20,  20,  20,  10,   0,
-     0,  10,  20,  40,  40,  20,  10,   0,
-     0,  10,  20,  40,  40,  20,  10,   0,
-     0,  10,  20,  20,  20,  20,  10,   0,
-   -10,   0,  10,  10,  10,  10,   0, -10,
-   -50, -10,   0,   0,   0,   0, -10, -50
-};
-*/
 
 /* Flipped PESTO's PSQTs
  * see: https://www.chessprogramming.org/PeSTO%27s_Evaluation_Function
@@ -350,6 +206,9 @@ int knight_outposts_eg[SQUARE_NO] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
 };
+
+
+namespace {
 
 // Array of pointers to arrays
 constexpr const int *psqt_mg[] = {
@@ -525,7 +384,7 @@ int king_safety_score(const board_t *board, const int colour, int attackers) {
 
 
 // Returns the minimum distance of 'colour' king to its pawns
-int king_pawn_distance(const board_t *board, const int colour) {
+[[maybe_unused]] int king_pawn_distance(const board_t *board, const int colour) {
     bb_t friendly_pawns = board->bitboards[set_colour(P, colour)];
     const square_t king_sq = king_square(board, colour);
 
@@ -606,6 +465,10 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb_t pawns = black_pawns | white_pawns;
     bb_t bb = white_pawns;
 
+    /* Setup for pawn protected pieces */
+    bb_t pawn_protected[BOTH] = {se_shift(black_pawns) | sw_shift(black_pawns),
+                                 ne_shift(white_pawns) | nw_shift(white_pawns)};
+
     // (White pawns)
     // Pawn values
     eval->middlegame += CNT(bb) * value_mg[P];
@@ -635,6 +498,19 @@ int evaluate(const board_t *board, eval_t * eval) {
             // ...we also give a bonus for how far away from the pawn the enemy king is
             eval->endgame += -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
         }
+
+        // Candidate pawns (defined the same was as in Toga)
+        //-if is open
+        //-if # of enemy pawns on same and neighboring files is <= than # of friendly pawns on the same files
+        //-if # of attacking pawns is less or equal to the number of protecting pawns
+        /*
+        if ((fileBBMask[SQUARE_FILE(sq)] & black_pawns) == 0 &&
+            CNT(wPassedMask[sq] & black_pawns) <= CNT(n_shift(bPassedMask[sq]) & white_pawns) &&
+            CNT(pawn_protected[WHITE] & black_pawns) <= CNT(bPassedMask[sq] & rankBBMask[SQUARE_RANK(sq) - 1])) {
+            eval->middlegame +=  5 + passed_pawn[SQUARE_RANK(sq)] / 10;
+            eval->endgame    += 10 + passed_pawn[SQUARE_RANK(sq)] / 5;
+        }
+        */
 
         // Doubled pawn penalty
         // - if there's a pawn immediatley behind this one && the pawn isn't
@@ -683,6 +559,19 @@ int evaluate(const board_t *board, eval_t * eval) {
             eval->endgame -= -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
         }
 
+        // Candidate pawns (defined the same was as in Toga)
+        //-if is open
+        //-if # of enemy pawns on same and neighboring files is <= than # of friendly pawns on the same files
+        //-if # of attacking pawns is less or equal to the number of protecting pawns
+        /*
+        if ((fileBBMask[SQUARE_FILE(sq)] & white_pawns) == 0 &&
+            CNT(bPassedMask[sq] & white_pawns) <= CNT(s_shift(wPassedMask[sq]) & black_pawns) &&
+            CNT(pawn_protected[BLACK] & white_pawns) <= CNT(wPassedMask[sq] & rankBBMask[SQUARE_RANK(sq) + 1])) {
+            eval->middlegame -=  5 + passed_pawn[SQUARE_RANK_FOR(BLACK, sq)] / 10;
+            eval->endgame    -= 10 + passed_pawn[SQUARE_RANK_FOR(BLACK, sq)] / 5;
+        }
+        */
+
         // Doubled pawn penalty
         // - if there's a pawn immediatley behind this one && the pawn isn't
         //   supported
@@ -709,10 +598,6 @@ int evaluate(const board_t *board, eval_t * eval) {
     // King zone of the king we're attacking
     bb_t king_zone = get_king_zone(board, BLACK);
     bb_t king_attacks_score[BOTH] = {0, 0};
-
-    /* Setup for pawn protected pieces */
-    bb_t pawn_protected[BOTH] = {se_shift(black_pawns) | sw_shift(black_pawns),
-                                 ne_shift(white_pawns) | nw_shift(white_pawns)};
 
     // PSQTs + Material value
     bb  = board->sides_pieces[WHITE];
@@ -905,7 +790,6 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame -= knight_outposts_mg[sq];
         eval->endgame    -= knight_outposts_eg[sq];
     }
-
 
     // Tempo score (small bonus for the side to move)
     eval->middlegame += board->turn ? tempo_bonus_mg : -tempo_bonus_mg;

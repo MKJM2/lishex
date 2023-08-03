@@ -59,9 +59,9 @@ typedef struct board_t {
     // History of previous positions
     undo_t history[MAX_MOVES];
     // Killer moves for move ordering (cause a beta cutoff but aren't captures)
-    move_t killer1[MAX_DEPTH] = {};
-    move_t killer2[MAX_DEPTH] = {};
-    // History heuristic, table indexed by [piece][to square]
+    // move_t killer1[MAX_DEPTH] = {};
+    // move_t killer2[MAX_DEPTH] = {};
+    // History heuristic, table indexed by [stm][piece][to square]
     int32_t history_h[BOTH][PIECE_NO][SQUARE_NO] = {};
 } board_t;
 
