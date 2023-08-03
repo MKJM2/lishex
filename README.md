@@ -23,8 +23,8 @@ A UCI chess-engine built in C++.
 - Tapered PeSTO's [Piece-square tables](https://www.chessprogramming.org/Piece-Square_Tables) for static position evaluation interpolated between different game stages 
 - Static Exchange Evaluation (SEE) to detect losing captures
 - [Mobility scores](https://www.chessprogramming.org/Mobility)
-- [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (based on Texel's tuning method) - currently
-  we're using a rather basic implementation of the Particle Swarm Optimization algorithm
+- [Parameter fine-tuning](https://www.chessprogramming.org/Automated_Tuning) (based on Texel's tuning method) - stochastically optimized with 
+  a basic implementation of Adam (in mini-batch mode)
 
 ### How to 
 Lishex does not come with its own grapical user interface (GUI).  Instead, it implements the [UCI](https://www.chessprogramming.org/UCI) protocol making it compatible with most popular chess GUIs such as:
@@ -64,6 +64,7 @@ in the project root.
 - Endgame tablebase probing
 - Extension limiting
 - Smarter time control logic, estimated time to finish search
+- Chess960 (Fisher Random Chess) support
 - NNUE
 
 ### Acknowledgments

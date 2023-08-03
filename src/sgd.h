@@ -16,11 +16,32 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TUNE_H_
-#define TUNE_H_
+#ifndef SGD_H_
+#define SGD_H_
+
+#include <string>
+#include <vector>
 
 #include "types.h"
 
+typedef struct {
+    std::string fen;
+    double result;
+    double error;
+} datapoint_t;
+
+// TODO: Multiple threads can handle separate batches
+typedef struct {
+    std::vector<double> errors;
+    std::vector<datapoint_t> datapoints;
+} batch_t;
+
+
+typedef struct {
+    std::string name;
+    int *value;
+} param_t;
+
 void tune();
 
-#endif // TUNE_H_
+#endif // SGD_H_
