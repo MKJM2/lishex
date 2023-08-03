@@ -78,7 +78,7 @@ constexpr int MVV_LVA[PIECE_NO][PIECE_NO] = {
 };
 
 // Function to sort first n moves of an array of moves using insertion sort
-void movesort(scored_move_t moves[], int n) {
+[[maybe_unused]] void movesort(scored_move_t moves[], int n) {
     int i, j;
     scored_move_t move;
     for (i = 1; i < n; i++) {

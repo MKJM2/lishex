@@ -37,7 +37,7 @@
 #include "uci.h"
 #include "attack.h"
 #include "search.h"
-#include "sgd.h"
+//#include "sgd.h"
 
 int main(int argc, char* argv[]) {
 
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     init_magics<ROOK>();
     init_reductions();
 
-    tune();
+    //tune();
 
     // Start UCI driver loop
     loop(argc, argv);

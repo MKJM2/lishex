@@ -384,7 +384,7 @@ int king_safety_score(const board_t *board, const int colour, int attackers) {
 
 
 // Returns the minimum distance of 'colour' king to its pawns
-int king_pawn_distance(const board_t *board, const int colour) {
+[[maybe_unused]] int king_pawn_distance(const board_t *board, const int colour) {
     bb_t friendly_pawns = board->bitboards[set_colour(P, colour)];
     const square_t king_sq = king_square(board, colour);
 
@@ -790,7 +790,6 @@ int evaluate(const board_t *board, eval_t * eval) {
         eval->middlegame -= knight_outposts_mg[sq];
         eval->endgame    -= knight_outposts_eg[sq];
     }
-
 
     // Tempo score (small bonus for the side to move)
     eval->middlegame += board->turn ? tempo_bonus_mg : -tempo_bonus_mg;

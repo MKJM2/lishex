@@ -206,7 +206,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
         /* Reverse futility pruning */
         static const int margins[] = {value_mg[NO_PIECE], value_mg[PAWN], 2*value_mg[PAWN], value_mg[BISHOP],
                                   value_mg[ROOK], value_mg[QUEEN]};
-        if (depth <= 5 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth] >= β) {
+        if (depth <= 5 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth - improving] >= β) {
             // Fail-hard
             return β;
         }
@@ -271,8 +271,8 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
     // depth), order the PV move higher
     score_moves(board, &moves, ttmove, stack[board->ply].killer);
 
-    size_t moves_searched = 0;
-    size_t quiet_moves_searched = 0;
+    int moves_searched = 0;
+    int quiet_moves_searched = 0;
     int bestscore = score = -oo;
 
     // Iterate over the pseudolegal moves in the current position
