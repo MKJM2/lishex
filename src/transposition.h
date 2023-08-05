@@ -46,7 +46,8 @@ typedef struct alignas(16) tt_entry {
     // Best move in the current node
     uint16_t move = NULLMV;
     // Stored value in this node (either exact or lower/upperbound)
-    int32_t score = 0;
+    int16_t score = 0; // Score of a search to this->depth
+    int16_t eval = 0;  // Static evaluation score
     // Helpers
     //uint8_t get_flag() const {
         //return info & 0b11;
@@ -69,7 +70,7 @@ class TT {
     // Resets the statistics
     void reset_stats();
     // Probes the transposition table for a move and a score
-    int probe(const board_t*, tt_entry*, move_t&, int &score, int alpha, int beta, int depth);
+    tt_entry* probe(const board_t*, int& found, move_t&, int &score, int alpha, int beta, int depth);
     // Stores an entry in our transposition table
     void store(const board_t *board, move_t move, int score,
                const int flags, const int depth);

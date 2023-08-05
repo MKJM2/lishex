@@ -156,8 +156,8 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
     move_t ttmove = NULLMV;
 
     /* Transposition table probing */
-    tt_entry entry[1];
-    int tthit = tt.probe(board, entry, ttmove, score, α, β, depth);
+    int tthit;
+    tt_entry *entry = tt.probe(board, tthit, ttmove, score, α, β, depth);
 
     // Check if can get a cutoff
     if (!pv_node && tthit) {
@@ -170,14 +170,42 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
     }
 
     /* Get a static evaluation of the current position */
-    stack[board->ply].score = score = evaluate(board, &eval);
+
+    // TODO:
+    // First we try the value from the TT, the logic here being that even a
+    // shallow depth search should be more accurate than static eval by itself.
+    // Note that for that search score retrieved from the TT to be safe to use,
+    // the current eval has to be lower than that score and the score bound to
+    // be a lowerbound of the actual score (or exact) OR the static eval has to
+    // be higher than the score and the score needs to be an upperbound of the
+    // actual score (or exact)
+
+    // We first try to retrieve the static evaluation score from the TT entry
+    if (entry->key == board->key) {
+        // score = entry->eval; REVIEW: This seems to be losing Elo, need to find the bug
+        score = evaluate(board, &eval);
+
+        // If the position matches & bound type is correct (score is safe to use)
+        if (((entry->score > score) ? LOWER : UPPER ) & entry->flags) {
+            score = entry->score;
+        }
+    } else {
+        // We need to call our static evaluation function
+        score = evaluate(board, &eval);
+
+        // We can store this evaluation score in the transposition table
+        // so we can refer to it in the future
+        entry->eval = score;
+    }
+
+    // Store the score on the search stack so we know whether we're improving or not
+    stack[board->ply].score = score;
+
     // Is the side-to-move improving their position?
     const bool improving = board->ply >= 2 && score > stack[board->ply - 2].score;
 
     // Clear out killers for the next ply
     // (+2 since we want to clear killer moves for the SAME side-to-move player)
-    //board->killer1[board->ply + 2] = NULLMV;
-    //board->killer2[board->ply + 2] = NULLMV;
     stack[board->ply + 2].killer[0] = NULLMV;
     stack[board->ply + 2].killer[1] = NULLMV;
 
@@ -610,8 +638,9 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stac
     /* Transposition table probing */
     int score = -oo;
     move_t ttmove = NULLMV;
-    tt_entry entry[1];
-    int tthit = tt.probe(board, entry, ttmove, score, α, β, 0);
+    tt_entry *entry;
+    int tthit;
+    entry = tt.probe(board, tthit, ttmove, score, α, β, 0);
 
     // Check if can get a cutoff (don't cutoff on PV nodes)
     if (!pv_node && tthit) {
@@ -620,7 +649,32 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stac
     }
 
     /* Stand-pat score */
-    stack[board->ply].score = score = evaluate(board, &eval);
+
+    /*
+    // See negamax() for the reasoning behind the following logic
+    // We first try to retrieve the static evaluation score from the TT entry
+    if (entry->key == board->key) {
+        score = entry->eval;
+
+        // If the position matches & bound type is correct (score is safe to use)
+        if (entry->key == board->key &&
+            (((entry->score <= score) ? UPPER : LOWER ) & entry->flags)
+        ) {
+            stack[board->ply].score = score = entry->score;
+        }
+    } else {
+        // We need to call our static evaluation function
+        score = evaluate(board, &eval);
+
+        // We can store this evaluation score in the transposition table
+        // so we can refer to it in the future
+        entry->eval = score;
+    }
+    */
+    entry->eval = stack[board->ply].score = score = evaluate(board, &eval);
+
+    // Store the score on the search stack so we know whether we're improving or not
+    stack[board->ply].score = score;
 
     assert(-oo < score && score < +oo);
 

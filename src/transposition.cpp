@@ -86,19 +86,20 @@ void TT::clear() {
         // entry->age = 0;
         entry->move = NULLMV;
         entry->score = 0;
+        entry->eval = 0;
     }
     this->writes = 0;
     // this->gen = 0;
     reset_stats();
 }
 
-int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, int alpha, int beta, int depth) {
+tt_entry* TT::probe(const board_t *board, int &found, move_t &move, int &score, int alpha, int beta, int depth) {
 
     TRACE_TT("Probing " << board->key << " " << alpha << " " << beta << " " << depth);
 
     // TODO: Ensure size of TT is a power of 2 for efficient mod with &
     size_t idx = board->key % this->size;
-    *entry = table[idx];
+    tt_entry *entry = &table[idx];
 
     assert(0 <= idx && idx <= this->size - 1);
     assert(0 <= depth && depth < MAX_DEPTH);
@@ -107,10 +108,13 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
     assert(-oo <= beta && beta <= +oo);
     assert(0 <= board->ply && board->ply < MAX_DEPTH);
 
+    /* Initially, we tread the entry as invalid unless proven otherwise */
+    found = TTMISS;
+
     /* Check if the zobrist key matches */
     if (entry->key != board->key) {
         TRACE_TT("Key mismatch: " << entry->key << " vs " << board->key);
-        return TTMISS;
+        return entry;
     }
 
     /* We have a match! Check if search was deep enough */
@@ -119,10 +123,9 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
     move = static_cast<move_t>(entry->move);
 
     // If the previous search wasn't as deep as current
-    //if (depth > static_cast<int>(entry->depth)) {
     if (static_cast<int>(entry->depth) < depth) {
         TRACE_TT("Depth insufficient: " << (int)entry->depth << " vs " << depth);
-        return TTMISS;
+        return entry;
     }
 
     assert(0 <= entry->depth && entry->depth < MAX_DEPTH);
@@ -157,18 +160,17 @@ int TT::probe(const board_t *board, tt_entry *entry, move_t &move, int &score, i
      * */
 
     /* The entry can be useful. Check it's type */
-    ///switch (static_cast<int>(entry->get_flag())) { // the 2 lsb store the entry flag
     switch (static_cast<int>(entry->flags)) {
         case LOWER:
-            if (score < beta) return TTMISS;
+            if (score < beta) return entry;
             score = beta; break;
         case UPPER:
-            if (score > alpha) return TTMISS;
+            if (score > alpha) return entry;
             score = alpha; break;
         case EXACT: break;
         case BAD: TRACE_TT("TODO: Not handled"); assert(false); break;
     }
-    return TTHIT;
+    return found = true, entry;
 }
 
 // Always-replace replacement scheme
@@ -191,6 +193,7 @@ void TT::store(const board_t *board, move_t move, int score,
     } else {
         // TODO: We only store entries if they contain newer information /
         // better information (higher depth). Otherwise, we don't overwrite
+        // This requires transposition table ageing
         // TODO: if (entry->get_age() > this->gen || entry->depth > depth) return;
         ++overwrites;
     }
