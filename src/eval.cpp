@@ -22,45 +22,66 @@
 /* Piece values */
 
 /* PESTO's piece values */
-int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 50000,
-                              0, 0, 82, 337, 365, 477, 1025, 50000};
-int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 50000,
-                              0, 0, 94, 281, 297, 512, 936, 50000};
+int value_mg[PIECE_NO] = {0, 82, 337, 365, 477, 1025, 5000,
+                              0, 0, 82, 337, 365, 477, 1025, 5000};
+int value_eg[PIECE_NO] = {0, 94, 281, 297, 512, 936, 5000,
+                              0, 0, 94, 281, 297, 512, 936, 5000};
+
+score_t tmp_value[PIECETYPE_NO] = {{0, 0},      {82, 94},   {337, 281},
+                                   {365, 297},  {477, 512}, {1025, 936},
+                                   {5000, 5000}};
 
 // REVIEW: 4th PMO Tuning iteration parameters
 // Tempo score (a small bonus for the side to move)
 int tempo_bonus_mg = 6;
 int tempo_bonus_eg = 0;
+score_t tempo = {6, 0};
 // Pass and isolated pawn
 int isolated_pawn = -8;
+score_t tmp_isolated_pawn = {-8, -8};
 //// Doubled pawn penalty
 int doubled_pawn = -12;
+score_t tmp_doubled_pawn = {-12, 12};
 // REVIEW: Bonus for supported pawns
 int pawn_supported = 3;
+score_t tmp_pawn_supported = {3, 3};
 // Bonus for pieces supported by pawns
 int pawn_protected_bonus = 2;
+score_t tmp_pawn_protected_bonus = {2, 2};
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
+score_t tmp_passed_pawn[RANK_NO] = {{0, 0}, {5, 5}, {10, 10}, {20,20}, {35,35}, {60,60}, {100,100}, {200,200}};
 // REVIEW: Indexed by rank, bonus for good pawn structure
 int pawn_bonuses[RANK_NO] = { 0, 0, 0, 5, 22, 42, 50, 65 };
+score_t tmp_pawn_bonuses[RANK_NO] = {{0, 0}, {0, 0}, {0, 0}, {5, 5}, {22,22}, {42,42}, {50,50}, {65, 65}};
 // Bonus for having two bishops on board
 int bishop_pair_mg = 3;
 int bishop_pair_eg = 53;
+score_t tmp_bishop_pair = {3, 53};
 // Bonuses for rooks/queens on open/semi-open files
 int rook_open_file = 11;
+score_t tmp_rook_open_file = {11,11};
 int rook_semiopen_file = 5;
+score_t tmp_rook_semiopen_file = {5,5};
 int queen_open_file = 8;
+score_t tmp_queen_open_file = {8,8};
 int queen_semiopen_file = 2;
+score_t tmp_queen_semiopen_file = {2,2};
 // Mobility weights depending on the piece type
 int mobility_weights[PIECE_NO] = {0, 0, 2, 2, 1, 1, 0, 0, 0, 0, 2, 2, 1, 1, 0};
+score_t tmp_mobility_weights[PIECETYPE_NO] = {{0, 0}, {0, 0}, {2, 2}, {2, 2}, {1, 1}, {1, 1}, {0,0}};
 
 /* King safety parameters */
 int PAWN_SHIELD1_BONUS = 5;
+score_t tmp_PAWN_SHIELD1_BONUS = {5, 5};
 int PAWN_SHIELD2_BONUS = 4;
+score_t tmp_PAWN_SHIELD2_BONUS = {4, 4};
 int PAWN_STORM_PENALTY = 6;
+score_t tmp_PAWN_STORM_PENALTY = {6, 6};
 
 // Stronger pieces have a larger weight when attacking the enemy king
 int KING_ATTACK_WEIGHT[PIECE_NO] = {0, 0, 1, 1, 2, 4, 0, 0, 0, 0, 1, 1, 2, 4, 0};
+score_t tmp_KING_ATTACK_WEIGHT[PIECETYPE_NO] = {{0, 0}, {0, 0}, {1, 1}, {1, 1}, {2,2}, {4,4}, {0,0}};
 
 // 49 is the max size of the king zone (refer to get_king_zone())
 // We use the weighted number of attackers onto the king zone
@@ -76,10 +97,13 @@ int KING_SAFETY_TABLE[50] = {
 
 // REVIEW: These need to be tuned
 int KING_PAWN_DIST_BONUS = 9;
+score_t tmp_KING_PAWN_DIST_BONUS = {9, 9};
 int SAFE_PAWN_ATTACK = 18;
+score_t tmp_SAFE_PAWN_ATTACK = {18, 18};
 // Knight outpost bonuses
 int KNIGHT_OUTPOST_MG = 5;
 int KNIGHT_OUTPOST_EG = 2;
+score_t KNIGHT_OUTPOS = {5, 2};
 
 /* Piece-square tables */
 
@@ -107,6 +131,20 @@ int pawn_table_eg[SQUARE_NO] = {
      32,  24,  13,   5,  -2,   4,  17,  17,
      94, 100,  85,  67,  56,  53,  82,  84,
     178, 173, 158, 134, 147, 132, 165, 187,
+};
+
+// Tapered piece-square tables for middlegame and endgame
+score_t pawn_psqt[SQUARE_NO] = {
+    {0, 0},     {0, 0},   {0, 0},    {0, 0},    {0, 0},    {0, 0},    {0, 0},
+    {0, 0},     {-35, 0}, {-1, 0},   {-20, 0},  {-23, 0},  {-15, 0},  {24, 0},
+    {38, 0},    {-22, 0}, {-26, 13}, {-4, 8},   {-4, 8},   {-10, 10}, {3, 13},
+    {3, 0},     {33, 2},  {-12, -7}, {-27, 4},  {-2, 7},   {-5, -6},  {12, 1},
+    {17, 0},    {6, -5},  {10, -1},  {-25, -8}, {-14, 13}, {13, 9},   {6, -3},
+    {21, -7},   {23, -7}, {12, -8},  {17, 3},   {-23, -1}, {-6, 32},  {7, 24},
+    {26, 13},   {31, 5},  {65, -2},  {56, 4},   {25, 17},  {-20, 17}, {98, 94},
+    {134, 100}, {61, 85}, {95, 67},  {68, 56},  {126, 53}, {34, 82},  {-11, 84},
+    {0, 178},   {0, 173}, {0, 158},  {0, 134},  {0, 147},  {0, 132},  {0, 165},
+    {0, 187}
 };
 
 int knight_table_mg[SQUARE_NO] = {

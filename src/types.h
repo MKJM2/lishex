@@ -146,7 +146,7 @@ using piece_t = int;
 
 // Types
 enum : piece_t {
-  NONE = 0, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+  NONE = 0, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, PIECETYPE_NO
 };
 
 enum : piece_t {
@@ -448,5 +448,21 @@ const std::string test3_FEN = "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1";
 const std::string test4_FEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 const std::string test5_FEN = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10";
 
+// We represent a score as a pair of two signed 16bit numbers.
+// We need to make sure that the score is bounded in the -32,768 to 32,767 range
+typedef struct score_t {
+    int16_t mg;
+    int16_t eg;
+    score_t& operator+=(const score_t& other) {
+        mg += other.mg;
+        eg += other.eg;
+        return *this;
+    }
+    score_t& operator-=(const score_t& other) {
+        mg -= other.mg;
+        eg -= other.eg;
+        return *this;
+    }
+} score_t;
 
 #endif // TYPES_H_

@@ -232,8 +232,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
     ) {
 
         /* Reverse futility pruning */
-        static const int margins[] = {value_mg[NO_PIECE], value_mg[PAWN], 2*value_mg[PAWN], value_mg[BISHOP],
-                                  value_mg[ROOK], value_mg[QUEEN]};
+        static const int margins[] = {0, 82, 164, 365, 477, 1025};
         if (depth <= 5 && std::abs(β) < +oo - MAX_DEPTH && score - margins[depth - improving] >= β) {
             // Fail-hard
             return β;
@@ -711,12 +710,12 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stac
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + value_eg[PAWN] < α) {
+            if (score + value_mg[captured] + 94 < α) {
                 ++info->deltacut;
                 continue;
             }
             // SEE pruning: we prune the move if the capture is clearly losing
-            if (losing_capture(board, move, -value_eg[PAWN])) {
+            if (losing_capture(board, move, -94)) {
                 ++info->seecut;
                 continue;
             }
