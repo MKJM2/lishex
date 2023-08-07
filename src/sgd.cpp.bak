@@ -154,8 +154,8 @@ void register_parameters() {
     if constexpr (tune_material) {
         std::cout << "Tuning material values" << std::endl;
         for (int i = 0; i < PIECE_NO; ++i) {
-            parameters.push_back({"value_mg["+std::to_string(i)+"]", &value_mg[i]});
-            parameters.push_back({"value_eg["+std::to_string(i)+"]", &value_eg[i]});
+            parameters.push_back({"value["+std::to_string(i)+"].mg", &value[i]});
+            parameters.push_back({"value["+std::to_string(i)+"].eg", &value[i]});
         }
     }
 

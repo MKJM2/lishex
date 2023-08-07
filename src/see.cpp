@@ -131,10 +131,10 @@ int see(const board_t *board, const move_t m) {
     bb_t attadef = attacks_to(board, to);
 
     // Traverse through all attackers and defenders
-    gain[d] = value_mg[tgt_pce];
+    gain[d] = value[piece_type(tgt_pce)].mg;
     do {
         d++; // Next depth and side
-        gain[d] = value_mg[att_pce] - gain[d-1]; // Speculative store, if defended
+        gain[d] = value[piece_type(att_pce)].mg - gain[d-1]; // Speculative store, if defended
         TRACE_SEE("gain[" << d << ']' << " = " << gain[d]);
         if (std::max(-gain[d-1], gain[d]) < 0) break; // Pruning does not influence the result
         attadef ^= from_bb; // Reset bit in set to traverse

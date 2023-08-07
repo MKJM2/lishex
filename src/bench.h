@@ -19,9 +19,13 @@
 #ifndef BENCH_H_
 #define BENCH_H_
 
+#include <string>
+
 #include "types.h"
 #include "board.h"
 #include "threads.h"
+
+extern const std::string positions[];
 
 void bench(std::thread &search_thread, board_t *board, searchinfo_t *info);
 

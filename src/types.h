@@ -506,6 +506,15 @@ typedef struct score_t {
     void operator=(const int scalar) {
         mg = eg = scalar;
     }
+
+    // Explicit int casting
+    /*
+    explicit operator int() const {
+        // We only want to cast to an int if either mg or eg is zero:
+        assert(mg == 0 || eg == 0);
+        return mg;
+    };
+    */
 } score_t;
 
 inline score_t operator *(const score_t s, const int scalar) {
@@ -519,7 +528,5 @@ inline score_t operator *(const int scalar, const score_t s) {
    res *= scalar;
    return res;
 }
-
-const score_t ZERO_SCORE = {0, 0};
 
 #endif // TYPES_H_

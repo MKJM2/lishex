@@ -18,12 +18,10 @@
 
 #include "bench.h"
 
-#include <string>
-
 #include "time.h"
 
 // From Berserk
-static std::string positions[] = {
+const std::string positions[] = {
     "3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
     "r1b2k1r/5n2/p4q2/1ppn1Pp1/3pp1p1/NP2P3/P1PPBK2/1RQN2R1 w - - 0 22",
     "6k1/1R3p2/6p1/2Bp3p/3P2q1/P7/1P2rQ1K/5R2 b - - 4 44",

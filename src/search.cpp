@@ -311,8 +311,8 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
         // the material gain a move can generate is the biggest if we promote to a piece
         // while capturing an enemy piece. In addition, quiet moves have an
         // estimated gain of zero, a fact which we utilize when performing reductions
-        int est_gain = value_eg[get_promotion_type(move)] +
-                       value_eg[board->pieces[get_to(move)]];
+        int est_gain = value[get_promotion_type(move)].eg +
+                       value[piece_type(board->pieces[get_to(move)])].eg;
         if (depth < 8 &&
             !in_check &&
             move != ttmove &&
@@ -710,7 +710,7 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stac
 
         if (!is_promotion(move)) {
             // Try Delta pruning (TODO: insufficient material issues in the endgame)
-            if (score + value_mg[captured] + 94 < α) {
+            if (score + value[piece_type(captured)].mg + 94 < α) {
                 ++info->deltacut;
                 continue;
             }

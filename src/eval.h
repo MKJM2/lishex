@@ -95,52 +95,43 @@ int losing_capture(const board_t *board, move_t m, int threshold);
 void mirror_test(board_t *board);
 
 //Material
-extern int value_mg[PIECE_NO];
-extern int value_eg[PIECE_NO];
+extern score_t value[PIECETYPE_NO];
 // PSQTs
-extern int pawn_table_mg[SQUARE_NO];
-extern int pawn_table_eg[SQUARE_NO];
-extern int knight_table_mg[SQUARE_NO];
-extern int knight_table_eg[SQUARE_NO];
-extern int bishop_table_mg[SQUARE_NO];
-extern int bishop_table_eg[SQUARE_NO];
-extern int rook_table_mg[SQUARE_NO];
-extern int rook_table_eg[SQUARE_NO];
-extern int queen_table_mg[SQUARE_NO];
-extern int queen_table_eg[SQUARE_NO];
-extern int king_table_mg[SQUARE_NO];
-extern int king_table_eg[SQUARE_NO];
+extern score_t pawn_psqt[SQUARE_NO];
+extern score_t knight_psqt[SQUARE_NO];
+extern score_t bishop_psqt[SQUARE_NO];
+extern score_t rook_psqt[SQUARE_NO];
+extern score_t queen_psqt[SQUARE_NO];
+extern score_t king_psqt[SQUARE_NO];
 
 // Tempo score (a small bonus for the side to move)
-extern int tempo_bonus_mg;
-extern int tempo_bonus_eg;
+extern score_t tempo;
 // Pass and isolated pawn
-extern int isolated_pawn;
+extern score_t isolated_pawn;
 // Doubled pawn penalty
-extern int doubled_pawn;
+extern score_t doubled_pawn;
 // Bonus for supported pawns
-extern int pawn_supported;
-extern int pawn_protected_bonus;
+extern score_t pawn_supported;
+extern score_t pawn_protected_bonus;
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
-extern int passed_pawn[RANK_NO];
+extern score_t passed_pawn[RANK_NO];
 // Indexed by rank, bonus for good pawn structure
-extern int pawn_bonuses[RANK_NO];
+extern score_t pawn_bonuses[RANK_NO];
 // Bonus for having two bishops on board
-extern int bishop_pair_mg;
-extern int bishop_pair_eg;
+extern score_t bishop_pair;
 // Bonuses for rooks/queens on open/semi-open files
-extern int rook_open_file;
-extern int rook_semiopen_file;
-extern int queen_open_file;
-extern int queen_semiopen_file;
+extern score_t rook_open_file;
+extern score_t rook_semiopen_file;
+extern score_t queen_open_file;
+extern score_t queen_semiopen_file;
 // Mobility weights
-extern int mobility_weights[PIECE_NO];
+extern score_t mobility_weights[PIECETYPE_NO];
 // King safety parameters
-extern int PAWN_SHIELD1_BONUS;
-extern int PAWN_SHIELD2_BONUS;
-extern int PAWN_STORM_PENALTY;
-extern int KING_PAWN_DIST_BONUS;
-extern int SAFE_PAWN_ATTACK;
+extern score_t PAWN_SHIELD1_BONUS;
+extern score_t PAWN_SHIELD2_BONUS;
+extern score_t PAWN_STORM_PENALTY;
+extern score_t KING_PAWN_DIST_BONUS;
+extern score_t SAFE_PAWN_ATTACK;
 
 
 #endif // EVAL_H_

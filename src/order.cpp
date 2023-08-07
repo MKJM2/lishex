@@ -176,7 +176,7 @@ void score_moves(const board_t *board, movelist_t *moves, move_t pv_move, move_t
                 move.score += MVV_LVA[board->pieces[to]][board->pieces[from]];
 
             // Losing captures are searched at the very end
-            if (losing_capture(board, move, -value_eg[PAWN] - 50)) {
+            if (losing_capture(board, move, -value[PAWN].eg - 50)) {
                 move.score -= 2 * CAPTURE_BONUS;
             }
             continue;

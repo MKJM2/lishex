@@ -36,6 +36,8 @@
 #include "rng.h"
 #include "threads.h"
 #include "see.h"
+#include "bench.h"
+#include "eval.h"
 
 #ifdef DEBUG
 size_t boards = 0;
@@ -386,6 +388,13 @@ void test_see(board_t *board) {
 
 
 void test(board_t *board) {
+
+    for (int i = 0; i < 50; ++i) {
+        setup(board, positions[i]);
+        int static_eval = evaluate(board);
+        std::cout << i << ") " << static_eval << std::endl;
+    }
+    /*
     setup(board, "1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -");
     print(board);
     mirror_test(board);
@@ -414,6 +423,7 @@ void test(board_t *board) {
     mirror_test(board);
     print(board);
     mirror_test(board);
+    */
 }
 
 
