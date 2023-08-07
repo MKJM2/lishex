@@ -51,6 +51,7 @@ score_t tmp_pawn_protected_bonus = {2, 2};
 // Indexed by rank, i.e. the closer to promoting, the higher the bonus
 int passed_pawn[RANK_NO] = {0, 5, 10, 20, 35, 60, 100, 200};
 score_t tmp_passed_pawn[RANK_NO] = {{0, 0}, {5, 5}, {10, 10}, {20,20}, {35,35}, {60,60}, {100,100}, {200,200}};
+
 // REVIEW: Indexed by rank, bonus for good pawn structure
 int pawn_bonuses[RANK_NO] = { 0, 0, 0, 5, 22, 42, 50, 65 };
 score_t tmp_pawn_bonuses[RANK_NO] = {{0, 0}, {0, 0}, {0, 0}, {5, 5}, {22,22}, {42,42}, {50,50}, {65, 65}};
@@ -163,6 +164,20 @@ int knight_table_eg[SQUARE_NO] = {
     -9,  -25, -24, -52, -58, -38, -13, -28, -31, -27, -63, -99
 };
 
+score_t knight_psqt[SQUARE_NO] = {
+    {-105, -29}, {-21, -51}, {-58, -23},  {-33, -15},  {-17, -22}, {-28, -18},
+    {-19, -50},  {-23, -64}, {-29, -42},  {-53, -20},  {-12, -10}, {-3, -5},
+    {-1, -2},    {18, -20},  {-14, -23},  {-19, -44},  {-23, -23}, {-9, -3},
+    {12, -1},    {10, 15},   {19, 10},    {17, -3},    {25, -20},  {-16, -22},
+    {-13, -18},  {4, -6},    {16, 16},    {13, 25},    {28, 16},   {19, 17},
+    {21, 4},     {-8, -18},  {-9, -17},   {17, 3},     {19, 22},   {53, 22},
+    {37, 22},    {69, 11},   {18, 8},     {22, -18},   {-47, -24}, {60, -20},
+    {37, 10},    {65, 9},    {84, -1},    {129, -9},   {73, -19},  {44, -41},
+    {-73, -25},  {-41, -8},  {72, -25},   {36, -2},    {23, -9},   {62, -25},
+    {7, -24},    {-17, -52}, {-167, -58}, {-89, -38},  {-34, -13}, {-49, -28},
+    {61, -31},   {-97, -27}, {-15, -63},  {-107, -99}
+};
+
 int bishop_table_mg[SQUARE_NO]{
     -33, -3, -14, -21, -13, -12, -39, -21, 4,   15, 16,  0,   7,   21,  33, 1,
     0,   15, 15,  15,  14,  27,  18,  10,  -6,  13, 13,  26,  34,  12,  10, 4,
@@ -177,6 +192,20 @@ int bishop_table_eg[SQUARE_NO]{
     -8,  -4, 7,   -12, -3, -13, -4, -14, -14, -21, -11, -8, -7, -9, -17, -24
 };
 
+score_t bishop_psqt[SQUARE_NO] = {
+    {-33, -23}, {-3, -9},   {-14, -23}, {-21, -5},  {-13, -9},  {-12, -16},
+    {-39, -5},  {-21, -17}, {4, -14},   {15, -18},  {16, -7},   {0, -1},
+    {7, 4},     {21, -9},   {33, -15},  {1, -27},   {0, -12},   {15, -3},
+    {15, 8},    {15, 10},   {14, 13},   {27, 3},    {18, -7},   {10, -15},
+    {-6, -6},   {13, 3},    {13, 13},   {26, 19},   {34, 7},    {12, 10},
+    {10, -3},   {4, -9},    {-4, -3},   {5, 9},     {19, 12},   {50, 9},
+    {37, 14},   {37, 10},   {7, 3},     {-2, 2},    {-16, 2},   {37, -8},
+    {43, 0},    {40, -1},   {35, -2},   {50, 6},    {37, 0},    {-2, 4},
+    {-26, -8},  {16, -4},   {-18, 7},   {-13, -12}, {30, -3},   {59, -13},
+    {18, -4},   {-47, -14}, {-29, -14}, {4, -21},   {-82, -11}, {-37, -8},
+    {-25, -7},  {-42, -9},  {7, -17},   {-8, -24}
+};
+
 int rook_table_mg[SQUARE_NO]{
     -19, -13, 1,   17,  16, 7,  -37, -26, -44, -16, -20, -9, -1, 11, -6, -71,
     -45, -25, -16, -17, 3,  0,  -5,  -33, -36, -26, -12, -1, 9,  -7, 6,  -23,
@@ -189,6 +218,20 @@ int rook_table_eg[SQUARE_NO]{
     -4, 0,  -5, -1, -7, -12, -8, -16, 3,  5,  8,  4,  -5, -6, -8,  -11,
     4,  3,  13, 1,  2,  1,   -1, 2,   7,  7,  7,  5,  4,  -3, -5,  -3,
     11, 13, 13, 11, -3, 3,   8,  3,   13, 10, 18, 15, 12, 12, 8,   5
+};
+
+score_t rook_psqt[SQUARE_NO] = {
+    {-19, -9}, {-13, 2},   {1, 3},    {17, -1},  {16, -5},  {7, -13},
+    {-37, 4},  {-26, -20}, {-44, -6}, {-16, -6}, {-20, 0},  {-9, 2},
+    {-1, -9},  {11, -9},   {-6, -11}, {-71, -3}, {-45, -4}, {-25, 0},
+    {-16, -5}, {-17, -1},  {3, -7},   {0, -12},  {-5, -8},  {-33, -16},
+    {-36, 3},  {-26, 5},   {-12, 8},  {-1, 4},   {9, -5},   {-7, -6},
+    {6, -8},   {-23, -11}, {-24, 4},  {-11, 3},  {7, 13},   {26, 1},
+    {24, 2},   {35, 1},    {-8, -1},  {-20, 2},  {-5, 7},   {19, 7},
+    {26, 7},   {36, 5},    {17, 4},   {45, -3},  {61, -5},  {16, -3},
+    {27, 11},  {32, 13},   {58, 13},  {62, 11},  {80, -3},  {67, 3},
+    {26, 8},   {44, 3},    {32, 13},  {42, 10},  {32, 18},  {51, 15},
+    {63, 12},  {9, 12},    {31, 8},   {43, 5}
 };
 
 int queen_table_mg[SQUARE_NO]{
@@ -206,6 +249,20 @@ int queen_table_eg[SQUARE_NO]{
     58,  25,  30,  0,   -9,  22,  22,  27,  27,  19,  10,  20
 };
 
+score_t queen_psqt[SQUARE_NO] = {
+    {-1, -33},  {-18, -28}, {-9, -22},  {10, -43}, {-15, -5},  {-25, -32},
+    {-31, -20}, {-50, -41}, {-35, -22}, {-8, -23}, {11, -30},  {2, -16},
+    {8, -16},   {15, -23},  {-3, -36},  {1, -32},  {-14, -16}, {2, -27},
+    {-11, 15},  {-2, 6},    {-5, 9},    {2, 17},   {14, 10},   {5, 5},
+    {-9, -18},  {-26, 28},  {-9, 19},   {-10, 47}, {-2, 31},   {-4, 34},
+    {3, 39},    {-3, 23},   {-27, 3},   {-27, 22}, {-16, 24},  {-16, 45},
+    {-1, 57},   {17, 40},   {-2, 57},   {1, 36},   {-13, -20}, {-17, 6},
+    {7, 9},     {8, 49},    {29, 47},   {56, 35},  {47, 19},   {57, 9},
+    {-24, -17}, {-39, 20},  {-5, 32},   {1, 41},   {-16, 58},  {57, 25},
+    {28, 30},   {54, 0},    {-28, -9},  {0, 22},   {29, 22},   {12, 27},
+    {59, 27},   {44, 19},   {43, 10},   {45, 20},
+};
+
 int king_table_mg[SQUARE_NO] = {
     -15, 36,  12,  -54, 8,   -28, 24,  14,  1,   7,   -8,  -64, -43,
     -16, 9,   8,   -14, -14, -22, -46, -44, -30, -15, -27, -49, -1,
@@ -220,6 +277,20 @@ int king_table_eg[SQUARE_NO] = {
     21,  24,  27,  23,  9,   -11, -8,  22,  24,  27,  26, 33,  26,
     3,   10,  17,  23,  15,  20,  45,  44,  13,  -12, 17, 14,  17,
     17,  38,  23,  11,  -74, -35, -18, -18, -11, 15,  4,  -17
+};
+
+score_t king_psqt[SQUARE_NO] = {
+    {-15, -53}, {36, -34},  {12, -21},  {-54, -11}, {8, -28},   {-28, -14},
+    {24, -24},  {14, -43},  {1, -27},   {7, -11},   {-8, 4},    {-64, 13},
+    {-43, 14},  {-16, 4},   {9, -5},    {8, -17},   {-14, -19}, {-14, -3},
+    {-22, 11},  {-46, 21},  {-44, 23},  {-30, 16},  {-15, 7},   {-27, -9},
+    {-49, -18}, {-1, -4},   {-27, 21},  {-39, 24},  {-46, 27},  {-44, 23},
+    {-33, 9},   {-51, -11}, {-17, -8},  {-20, 22},  {-12, 24},  {-27, 27},
+    {-30, 26},  {-25, 33},  {-14, 26},  {-36, 3},   {-9, 10},   {24, 17},
+    {2, 23},    {-16, 15},  {-20, 20},  {6, 45},    {22, 44},   {-22, 13},
+    {29, -12},  {-1, 17},   {-20, 14},  {-7, 17},   {-8, 17},   {-4, 38},
+    {-38, 23},  {-29, 11},  {-65, -74}, {23, -35},  {16, -18},  {-15, -18},
+    {-56, -11}, {-34, 15},  {2, 4},     {13, -17}
 };
 
 // TOGA Log Manual inspired
@@ -245,51 +316,45 @@ int knight_outposts_eg[SQUARE_NO] = {
     0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+score_t knight_outposts[SQUARE_NO] = {
+     {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+     {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+     {0, 0}, {0, 0}, {3, 2}, {4, 3}, {4, 3}, {3, 2}, {0, 0}, {0, 0},
+     {0, 0}, {2, 1}, {4, 2}, {8, 4}, {8, 4}, {4, 2}, {2, 1}, {0, 0},
+     {0, 0}, {2, 1}, {4, 2}, {8, 4}, {8, 4}, {4, 2}, {2, 1}, {0, 0},
+     {0, 0}, {0, 0}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 0}, {0, 0},
+     {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+     {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
+};
 
 namespace {
 
-// Array of pointers to arrays
-constexpr const int *psqt_mg[] = {
-    nullptr, // NO_PIECE
-    pawn_table_mg,
-    knight_table_mg,
-    bishop_table_mg,
-    rook_table_mg,
-    queen_table_mg,
-    king_table_mg,
-    nullptr,
-    nullptr,
-    pawn_table_mg,
-    knight_table_mg,
-    bishop_table_mg,
-    rook_table_mg,
-    queen_table_mg,
-    king_table_mg,
-};
+  // Array of pointers to arrays
+  constexpr const int *psqt_mg[] = {
+      nullptr, // NO_PIECE
+      pawn_table_mg,  knight_table_mg, bishop_table_mg, rook_table_mg,
+      queen_table_mg, king_table_mg,   nullptr,         nullptr,
+      pawn_table_mg,  knight_table_mg, bishop_table_mg, rook_table_mg,
+      queen_table_mg, king_table_mg,
+  };
 
-constexpr const int *psqt_eg[] = {
-    nullptr, // NO_PIECE
-    pawn_table_eg,
-    knight_table_eg,
-    bishop_table_eg,
-    rook_table_eg,
-    queen_table_eg,
-    king_table_eg,
-    nullptr,
-    nullptr,
-    pawn_table_eg,
-    knight_table_eg,
-    bishop_table_eg,
-    rook_table_eg,
-    queen_table_eg,
-    king_table_eg,
-};
+  constexpr const int *psqt_eg[] = {
+      nullptr, // NO_PIECE
+      pawn_table_eg,  knight_table_eg, bishop_table_eg, rook_table_eg,
+      queen_table_eg, king_table_eg,   nullptr,         nullptr,
+      pawn_table_eg,  knight_table_eg, bishop_table_eg, rook_table_eg,
+      queen_table_eg, king_table_eg,
+  };
 
-/* Pawn structure helpers */
+  constexpr const score_t *psqt[] = {
+    nullptr, pawn_psqt, knight_psqt, bishop_psqt, rook_psqt, queen_psqt, king_psqt
+  };
 
-// Friendly pawns on the same rank & adjacent files
-// for the pawn on square sq
-inline bool is_phalanx(const board_t *board, const square_t sq) {
+  /* Pawn structure helpers */
+
+  // Friendly pawns on the same rank & adjacent files
+  // for the pawn on square sq
+  inline bool is_phalanx(const board_t *board, const square_t sq) {
     // To avoid color setting logic
     const piece_t &p = board->pieces[sq];
     bb_t tmp = SQ_TO_BB(sq);
@@ -339,6 +404,21 @@ inline int pawn_struct_score(const board_t *board, const square_t sq) {
 
     return pawn_supported * supporting +
             pawn_bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
+                (2 + phalanx - is_opposed(board, sq));
+}
+
+inline score_t tmp_pawn_struct_score(const board_t *board, const square_t sq) {
+    const piece_t &p = board->pieces[sq];
+
+    int supporting = is_supported(board, sq); // # of supporting pawns
+    int phalanx = is_phalanx(board, sq);
+
+    // If the pawn is disconnected from other friendly pawns on the board
+    if (supporting + phalanx == 0)
+        return 0;
+
+    return tmp_pawn_supported * supporting +
+            tmp_pawn_bonuses[SQUARE_RANK_FOR(piece_color(p), sq)] *
                 (2 + phalanx - is_opposed(board, sq));
 }
 
@@ -473,19 +553,18 @@ int material_draw(const board_t *board) {
     return 0;
 }
 
-
 } // namespace
 
-
+// TODO: Optimize
 // Evaluates the position from the side's POV
-int evaluate(const board_t *board, eval_t * eval) {
+
+int evaluate(const board_t *board) {
     assert(check(board));
 
     /* Setup */
-    eval->middlegame = 0;
-    eval->endgame = 0;
+    eval_t eval[1];                 // Evaluation data, useful for debugging etc
+    score_t score = 0;              // Tapered score
     eval->set_phase(board);
-    int score = 0;
     bb_t occupied = all_pieces(board);
 
     if (!pawns(board) && material_draw(board)) {
@@ -509,32 +588,29 @@ int evaluate(const board_t *board, eval_t * eval) {
 
     // (White pawns)
     // Pawn values
-    eval->middlegame += CNT(bb) * value_mg[P];
-    eval->endgame    += CNT(bb) * value_eg[P];
+    score += CNT(bb) * tmp_value[PAWN];
+
     // Passed & isolated pawns
     while (bb) {
         // Get the square of a white pawn
         sq = POPLSB(bb);
 
         // PSQTs
-        eval->middlegame += pawn_table_mg[sq];
-        eval->endgame    += pawn_table_eg[sq];
+        score += pawn_psqt[sq];
 
         // Isolated pawns penalty
         if ((white_pawns & isolatedMask[sq]) == 0) {
-            eval->middlegame += isolated_pawn;
-            eval->endgame    += isolated_pawn;
+            score += tmp_isolated_pawn;
         }
 
         // Pass pawns bonus  /* black pawns */
         if ((black_pawns & wPassedMask[sq]) == 0) {
-            eval->middlegame += passed_pawn[SQUARE_RANK(sq)];
-            eval->endgame    += passed_pawn[SQUARE_RANK(sq)];
+            score += tmp_passed_pawn[SQUARE_RANK(sq)];
 
             // In addition, in the endgame we encourage the king to protect the pawn
-            eval->endgame +=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
+            score.eg +=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
             // ...we also give a bonus for how far away from the pawn the enemy king is
-            eval->endgame += -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
+            score.eg += -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
         }
 
         // Candidate pawns (defined the same was as in Toga)
@@ -556,45 +632,39 @@ int evaluate(const board_t *board, eval_t * eval) {
         bb_t tmp = SQ_TO_BB(sq);
         if ((s_shift(tmp) & white_pawns) &&
             ((se_shift(tmp) | sw_shift(tmp)) & white_pawns) == 0ULL) {
-            eval->middlegame += doubled_pawn;
-            eval->endgame    += doubled_pawn;
+            score += tmp_doubled_pawn;
         }
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
         int connected_bonus = pawn_struct_score(board, sq);
-        eval->middlegame += connected_bonus;
-        eval->endgame    += connected_bonus;
+        score += connected_bonus;
     }
 
     // (Black pawns)
     // Pawn values
     bb = black_pawns;
-    eval->middlegame -= CNT(bb) * value_mg[p];
-    eval->endgame    -= CNT(bb) * value_eg[p];
+    score -= CNT(bb) * tmp_value[PAWN];
     while (bb) {
         // Get the square of a black pawn
         sq = POPLSB(bb);
 
         // PSQTs
-        eval->middlegame -= pawn_table_mg[mirror(sq)];
-        eval->endgame    -= pawn_table_eg[mirror(sq)];
+        score -= pawn_psqt[mirror(sq)];
 
         // Isolated pawns
         if ((black_pawns & isolatedMask[sq]) == 0) {
-            eval->middlegame -= isolated_pawn;
-            eval->endgame    -= isolated_pawn;
+            score -= tmp_isolated_pawn;
         }
 
         // Pass pawns  /* white pawns */
         if ((white_pawns & bPassedMask[sq]) == 0) {
-            eval->middlegame -= passed_pawn[SQUARE_RANK(mirror(sq))];
-            eval->endgame    -= passed_pawn[SQUARE_RANK(mirror(sq))];
+            score -= tmp_passed_pawn[SQUARE_RANK(mirror(sq))];
 
             // In addition, in the endgame we encourage the king to protect the pawn
-            eval->endgame -=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
+            score.eg -=  KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, BLACK)));
             // ...we also give a bonus for how far away from the pawn the enemy king is
-            eval->endgame -= -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
+            score.eg -= -KING_PAWN_DIST_BONUS*(6 - dist(sq, king_square(board, WHITE)));
         }
 
         // Candidate pawns (defined the same was as in Toga)
@@ -616,15 +686,13 @@ int evaluate(const board_t *board, eval_t * eval) {
         bb_t tmp = SQ_TO_BB(sq);
         if ((n_shift(tmp) & black_pawns) &&
             ((ne_shift(tmp) | nw_shift(tmp)) & black_pawns) == 0ULL) {
-            eval->middlegame -= doubled_pawn;
-            eval->endgame    -= doubled_pawn;
+            score -= tmp_doubled_pawn;
         }
 
         // Whether the pawn is connected to friendly pawns
         // (supported || phalanx) + penalty for opposed pawns
         int connected_bonus = pawn_struct_score(board, sq);
-        eval->middlegame -= connected_bonus;
-        eval->endgame    -= connected_bonus;
+        score -= connected_bonus;
     }
 
 
@@ -637,14 +705,12 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb_t king_zone = get_king_zone(board, BLACK);
     bb_t king_attacks_score[BOTH] = {0, 0};
 
-    // PSQTs + Material value
     bb  = board->sides_pieces[WHITE];
     bb ^= white_pawns;
     bb ^= board->bitboards[K];
 
     // We give a small bonus for each piece protected by a pawn
-    eval->middlegame += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
-    eval->endgame    += CNT(bb & pawn_protected[WHITE]) * pawn_protected_bonus;
+    score += CNT(bb & pawn_protected[WHITE]) * tmp_pawn_protected_bonus;
 
     // Include opponent's pawn attacks in their incrementally updated attack bitboard
     sides_attacks[BLACK] |= pawn_protected[BLACK];
@@ -655,32 +721,26 @@ int evaluate(const board_t *board, eval_t * eval) {
     while (bb) {
         sq = POPLSB(bb);
         pce = board->pieces[sq];
-        eval->middlegame += value_mg[pce];
-        eval->middlegame += psqt_mg[pce][sq];
-        eval->endgame    += value_eg[pce];
-        eval->endgame    += psqt_eg[pce][sq];
+        score += tmp_value[piece_type(pce)];
+        score += psqt[piece_type(pce)][sq];
         // In addition to piece values and psqts, we reward pieces on open files
         switch (piece_type(pce)) {
             case QUEEN:
                 // Is on open file?
                 if (not (pawns & fileBBMask[SQUARE_FILE(sq)])) {
-                    eval->middlegame += queen_open_file;
-                    eval->endgame += queen_open_file;
+                    score += tmp_queen_open_file;
                 // Is on semi-open file?
                 } else if (not (black_pawns & fileBBMask[SQUARE_FILE(sq)])) {
-                    eval->middlegame += queen_semiopen_file;
-                    eval->endgame += queen_semiopen_file;
+                    score += tmp_queen_semiopen_file;
                 }
                 break;
             case ROOK:
                 // Is on open file?
                 if (not (pawns & fileBBMask[SQUARE_FILE(sq)])) {
-                    eval->middlegame += rook_open_file;
-                    eval->endgame += rook_open_file;
+                    score += tmp_rook_open_file;
                 // Is on semi-open file?
                 } else if (not (black_pawns & fileBBMask[SQUARE_FILE(sq)])) {
-                    eval->middlegame += rook_semiopen_file;
-                    eval->endgame += rook_semiopen_file;
+                    score += tmp_rook_semiopen_file;
                 }
                 break;
             default:
@@ -693,8 +753,7 @@ int evaluate(const board_t *board, eval_t * eval) {
 
         king_attacks_score[BLACK] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
-        eval->middlegame += CNT(attacks_bb) * mobility_weights[pce];
-        eval->endgame    += CNT(attacks_bb) * mobility_weights[pce];
+        score += CNT(attacks_bb) * tmp_mobility_weights[piece_type(pce)];
     }
 
     // Black
@@ -706,38 +765,31 @@ int evaluate(const board_t *board, eval_t * eval) {
     bb ^= board->bitboards[k];
 
     // We give a small bonus for each piece protected by a pawn
-    eval->middlegame -= CNT(bb & pawn_protected[BLACK]) * pawn_protected_bonus;
-    eval->endgame    -= CNT(bb & pawn_protected[BLACK]) * pawn_protected_bonus;
+    score -= CNT(bb & pawn_protected[BLACK]) * tmp_pawn_protected_bonus;
 
     while (bb) {
         sq = POPLSB(bb);
         pce = board->pieces[sq];
-        eval->middlegame -= value_mg[pce];
-        eval->middlegame -= psqt_mg[pce][mirror(sq)];
-        eval->endgame    -= value_eg[pce];
-        eval->endgame    -= psqt_eg[pce][mirror(sq)];
+        score -= tmp_value[piece_type(pce)];
+        score -= psqt[piece_type(pce)][mirror(sq)];
         // In addition to piece values and psqts, we reward pieces on open files
         switch (piece_type(pce)) {
             case QUEEN:
                 // Is on open file?
                 if (not (pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
-                    eval->middlegame -= queen_open_file;
-                    eval->endgame -= queen_open_file;
+                    score -= tmp_queen_open_file;
                 // Is on semi-open file?
                 } else if (not (white_pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
-                    eval->middlegame -= queen_semiopen_file;
-                    eval->endgame -= queen_semiopen_file;
+                    score -= queen_semiopen_file;
                 }
                 break;
             case ROOK:
                 // Is on open file?
                 if (not (pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
-                    eval->middlegame -= rook_open_file;
-                    eval->endgame -= rook_open_file;
+                    score -= tmp_rook_open_file;
                 // Is on semi-open file?
                 } else if (not (white_pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
-                    eval->middlegame -= rook_semiopen_file;
-                    eval->endgame -= rook_semiopen_file;
+                    score -= tmp_rook_semiopen_file;
                 }
                 break;
             default:
@@ -751,8 +803,7 @@ int evaluate(const board_t *board, eval_t * eval) {
         king_attacks_score[WHITE] +=
             KING_ATTACK_WEIGHT[pce] * CNT(king_zone & attacks_bb);
 
-        eval->middlegame -= CNT(attacks_bb) * mobility_weights[pce];
-        eval->endgame    -= CNT(attacks_bb) * mobility_weights[pce];
+        score -= CNT(attacks_bb) * tmp_mobility_weights[piece_type(pce)];
     }
 
     /* Bishop pair bonus */
@@ -770,8 +821,7 @@ int evaluate(const board_t *board, eval_t * eval) {
             }
         }
         if (on_white >= 1 && on_black >= 1) {
-            eval->middlegame += bishop_pair_mg;
-            eval->endgame    += bishop_pair_eg;
+            score += tmp_bishop_pair;
         }
     }
 
@@ -787,64 +837,52 @@ int evaluate(const board_t *board, eval_t * eval) {
             }
         }
         if (on_white >= 1 && on_black >= 1) {
-            eval->middlegame -= bishop_pair_mg;
-            eval->endgame    -= bishop_pair_eg;
+            score -= tmp_bishop_pair;
         }
     }
 
-    // King safety in the middle game:
-    eval->middlegame += king_safety_score(board, WHITE, king_attacks_score[WHITE]);
-    eval->middlegame -= king_safety_score(board, BLACK, king_attacks_score[BLACK]);
 
-    // REVIEW: Seems not to be gaining any Elo in self-testing
-    // King pawn distance in the end game
-    //eval->endgame += KING_PAWN_DIST_BONUS * king_pawn_distance(board, WHITE);
-    //eval->endgame -= KING_PAWN_DIST_BONUS * king_pawn_distance(board, BLACK);
+    // King safety in the middle game:
+    score.mg += king_safety_score(board, WHITE, king_attacks_score[WHITE]);
+    score.mg -= king_safety_score(board, BLACK, king_attacks_score[BLACK]);
 
     // We give a relatively large bonus for safe pawns threatening to capture an enemy piece
     bb_t safe_pawns[BOTH] = {sides_attacks[WHITE] & black_pawns, sides_attacks[BLACK] & white_pawns};
     //-- White
-    eval->middlegame += SAFE_PAWN_ATTACK*CNT((ne_shift(safe_pawns[WHITE]) | nw_shift(safe_pawns[WHITE])) & (board->sides_pieces[BLACK] ^ black_pawns));
-    eval->endgame    += SAFE_PAWN_ATTACK*CNT((ne_shift(safe_pawns[WHITE]) | nw_shift(safe_pawns[WHITE])) & (board->sides_pieces[BLACK] ^ black_pawns));
+    score += SAFE_PAWN_ATTACK*CNT((ne_shift(safe_pawns[WHITE]) | nw_shift(safe_pawns[WHITE])) & (board->sides_pieces[BLACK] ^ black_pawns));
     //-- Black
-    eval->middlegame -= SAFE_PAWN_ATTACK*CNT((se_shift(safe_pawns[BLACK]) | sw_shift(safe_pawns[BLACK])) & (board->sides_pieces[WHITE] ^ white_pawns));
-    eval->endgame    -= SAFE_PAWN_ATTACK*CNT((se_shift(safe_pawns[BLACK]) | sw_shift(safe_pawns[BLACK])) & (board->sides_pieces[WHITE] ^ white_pawns));
+    score -= SAFE_PAWN_ATTACK*CNT((se_shift(safe_pawns[BLACK]) | sw_shift(safe_pawns[BLACK])) & (board->sides_pieces[WHITE] ^ white_pawns));
 
     // Knight outposts:
     // - knight is protected by friendly pawn
     // - not attacked by enemy
     //-- White
-    /* REVIEW: Seem to be loosing Elo */
+    /* REVIEW: Seems to be loosing Elo */
     bb = board->bitboards[N] & ~sides_attacks[BLACK] & pawn_protected[WHITE];
     while (bb) {
-        sq = POPLSB(bb);
-        eval->middlegame += knight_outposts_mg[sq];
-        eval->endgame    += knight_outposts_eg[sq];
+        score += knight_outposts[POPLSB(bb)];
     }
     //-- Black
     bb = board->bitboards[n] & ~sides_attacks[WHITE] & pawn_protected[BLACK];
     while (bb) {
-        sq = mirror(POPLSB(bb));
-        eval->middlegame -= knight_outposts_mg[sq];
-        eval->endgame    -= knight_outposts_eg[sq];
+        score -= knight_outposts[mirror(POPLSB(bb))];
     }
 
     // Tempo score (small bonus for the side to move)
-    eval->middlegame += board->turn ? tempo_bonus_mg : -tempo_bonus_mg;
-    eval->endgame    += board->turn ? tempo_bonus_eg : -tempo_bonus_eg;
+    score += board->turn ? tempo : -tempo;
 
     /* Tapered evaluation */
-    score = eval->get_tapered_score();
+    eval->middlegame = score.mg;
+    eval->endgame = score.eg;
+    int tapered_eval = eval->get_tapered_score();
 
     // We return the score relative to the side playing
-    return board->turn ? score : -score;
+    return board->turn ? tapered_eval : -tapered_eval;
 }
 
 void mirror_test(board_t *board) {
-    eval_t eval[1];
     print(board);
-    int ev1 = evaluate(board, eval);
-    eval->print();
+    int ev1 = evaluate(board);
 
     // TODO: Mirror the board
 
@@ -892,8 +930,7 @@ void mirror_test(board_t *board) {
     assert(check(board));
 
     print(board);
-    int ev2 = evaluate(board, eval);
-    eval->print();
+    int ev2 = evaluate(board);
     if (ev1 != ev2) {
         std::cout << "Test failed!" << std::endl;
         assert(ev1 == ev2);

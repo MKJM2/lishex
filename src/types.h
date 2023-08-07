@@ -453,6 +453,10 @@ const std::string test5_FEN = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1P
 typedef struct score_t {
     int16_t mg;
     int16_t eg;
+
+    score_t(const int value) : mg(value), eg(value) {}
+    score_t(const int m, const int e) : mg(m), eg(e) {}
+
     score_t& operator+=(const score_t& other) {
         mg += other.mg;
         eg += other.eg;
@@ -463,6 +467,59 @@ typedef struct score_t {
         eg -= other.eg;
         return *this;
     }
+    score_t& operator *=(const int scalar) {
+        mg *= scalar;
+        eg *= scalar;
+        return *this;
+    }
+    score_t& operator +=(const int scalar) {
+        mg += scalar;
+        eg += scalar;
+        return *this;
+    }
+    /*
+    score_t operator*(const int scalar) const {
+        score_t res = *this; // copy through assignment
+        res.mg *= scalar;
+        res.eg *= scalar;
+        return res;
+    }
+    */
+    score_t operator+(const score_t& other) const {
+        score_t res = *this;
+        res.mg += other.mg;
+        res.eg += other.mg;
+        return res;
+    }
+    score_t operator-(const score_t& other) const {
+        score_t res = *this;
+        res.mg -= other.mg;
+        res.eg -= other.mg;
+        return res;
+    }
+    score_t operator-() const {
+        score_t res = *this;
+        res.mg = -mg;
+        res.eg = -eg;
+        return res;
+    }
+    void operator=(const int scalar) {
+        mg = eg = scalar;
+    }
 } score_t;
+
+inline score_t operator *(const score_t s, const int scalar) {
+   score_t res = s;
+   res *= scalar;
+   return res;
+}
+
+inline score_t operator *(const int scalar, const score_t s) {
+   score_t res = s;
+   res *= scalar;
+   return res;
+}
+
+const score_t ZERO_SCORE = {0, 0};
 
 #endif // TYPES_H_

@@ -78,10 +78,8 @@ typedef struct eval_t {
  rook/queen on open/semi-open files, basic king safety, bishop pairs,
 
  @param board boards state to evaluate
- @param eval eval_t struct storing evaluation data, used for the 'eval' command
- among others
  */
-int evaluate(const board_t *board, eval_t *eval);
+int evaluate(const board_t *board);
 
 
 /**

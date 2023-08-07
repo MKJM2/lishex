@@ -141,7 +141,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
 
     // Are we too deep into the search tree?
     if (board->ply >= MAX_DEPTH - 1) {
-        return evaluate(board, &eval);
+        return evaluate(board);
     }
 
     // Mate distance pruning (https://www.chessprogramming.org/Mate_Distance_Pruning)
@@ -183,7 +183,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
     // We first try to retrieve the static evaluation score from the TT entry
     if (entry->key == board->key) {
         // score = entry->eval; REVIEW: This seems to be losing Elo, need to find the bug
-        score = evaluate(board, &eval);
+        score = evaluate(board);
 
         // If the position matches & bound type is correct (score is safe to use)
         if (((entry->score > score) ? LOWER : UPPER ) & entry->flags) {
@@ -191,7 +191,7 @@ int negamax(int α, int β, int depth, board_t *board, searchinfo_t *info, stack
         }
     } else {
         // We need to call our static evaluation function
-        score = evaluate(board, &eval);
+        score = evaluate(board);
 
         // We can store this evaluation score in the transposition table
         // so we can refer to it in the future
@@ -663,14 +663,14 @@ int quiescence(int α, int β, board_t *board, searchinfo_t *info, stack_t *stac
         }
     } else {
         // We need to call our static evaluation function
-        score = evaluate(board, &eval);
+        score = evaluate(board);
 
         // We can store this evaluation score in the transposition table
         // so we can refer to it in the future
         entry->eval = score;
     }
     */
-    entry->eval = stack[board->ply].score = score = evaluate(board, &eval);
+    entry->eval = stack[board->ply].score = score = evaluate(board);
 
     // Store the score on the search stack so we know whether we're improving or not
     stack[board->ply].score = score;

@@ -320,9 +320,8 @@ void process_uci_cmd(std::istringstream &iss, searchinfo_t *info, std::thread &s
         // search(board, info);
         search_start(search_thread, board, info);
     } else if (token == "eval") {
-        eval_t eval[1];
-        evaluate(board, eval);
-        eval->print();
+        // TODO:
+        evaluate(board);
     } else if (token == "dumphistory") {
         std::cout << "White:\n";
         for (piece_t p = NO_PIECE; p < PIECE_NO; ++p) {
