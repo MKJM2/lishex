@@ -82,7 +82,7 @@ std::vector<param_t> best_parameters;
 std::vector<double> gradients;
 
 // Error squared for a single datapoint x
-double error(datapoint_t& x) {
+inline double error(datapoint_t& x) {
     board_t b[1];
     searchinfo_t i[1];
     stack_t s[MAX_MOVES];
@@ -103,7 +103,7 @@ double MSE(int batch = -1) {
     return total_error / double(batch);
 }
 
-std::string dataset = "/home/mkjm/Projects/lishex/tune/dataset.csv";
+std::string dataset = "/home/mkjm/Projects/lishex/tune/dataset2.csv";
 
 void load_datapoints(std::string &filename) {
 
@@ -154,86 +154,106 @@ void register_parameters() {
     if constexpr (tune_material) {
         std::cout << "Tuning material values" << std::endl;
         for (int i = 0; i < PIECE_NO; ++i) {
-            parameters.push_back({"value["+std::to_string(i)+"].mg", &value[i]});
-            parameters.push_back({"value["+std::to_string(i)+"].eg", &value[i]});
+            parameters.push_back({"value["+std::to_string(i)+"].mg", &(value[i].mg)});
+            parameters.push_back({"value["+std::to_string(i)+"].eg", &(value[i].eg)});
         }
     }
 
     if constexpr (tune_pawn_psqt) {
         std::cout << "Tuning pawn piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"pawn_table_mg["+std::to_string(i)+"]", &pawn_table_mg[i]});
-            parameters.push_back({"pawn_table_eg["+std::to_string(i)+"]", &pawn_table_eg[i]});
+            parameters.push_back({"pawn_psqt["+std::to_string(i)+"].mg", &pawn_psqt[i].mg});
+            parameters.push_back({"pawn_psqt["+std::to_string(i)+"].eg", &pawn_psqt[i].eg});
         }
     }
 
     if constexpr (tune_knight_psqt) {
         std::cout << "Tuning knight piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"knight_table_mg["+std::to_string(i)+"]", &knight_table_mg[i]});
-            parameters.push_back({"knight_table_eg["+std::to_string(i)+"]", &knight_table_eg[i]});
+            parameters.push_back({"knight_psqt["+std::to_string(i)+"]", &knight_psqt[i].mg});
+            parameters.push_back({"knight_psqt["+std::to_string(i)+"]", &knight_psqt[i].eg});
         }
     }
 
     if constexpr (tune_bishop_psqt) {
         std::cout << "Tuning bishop piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"bishop_table_mg["+std::to_string(i)+"]", &bishop_table_mg[i]});
-            parameters.push_back({"bishop_table_eg["+std::to_string(i)+"]", &bishop_table_eg[i]});
+            parameters.push_back({"bishop_psqt["+std::to_string(i)+"]", &bishop_psqt[i].mg});
+            parameters.push_back({"bishop_psqt["+std::to_string(i)+"]", &bishop_psqt[i].eg});
         }
     }
 
     if constexpr (tune_rook_psqt) {
         std::cout << "Tuning rook piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"rook_table_mg["+std::to_string(i)+"]", &rook_table_mg[i]});
-            parameters.push_back({"rook_table_eg["+std::to_string(i)+"]", &rook_table_eg[i]});
+            parameters.push_back({"rook_psqt["+std::to_string(i)+"]", &rook_psqt[i].mg});
+            parameters.push_back({"rook_psqt["+std::to_string(i)+"]", &rook_psqt[i].eg});
         }
     }
 
     if constexpr (tune_queen_psqt) {
         std::cout << "Tuning queen piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"queen_table_mg["+std::to_string(i)+"]", &queen_table_mg[i]});
-            parameters.push_back({"queen_table_eg["+std::to_string(i)+"]", &queen_table_eg[i]});
+            parameters.push_back({"queen_psqt["+std::to_string(i)+"]", &queen_psqt[i].mg});
+            parameters.push_back({"queen_psqt["+std::to_string(i)+"]", &queen_psqt[i].eg});
         }
     }
 
     if constexpr (tune_king_psqt) {
         std::cout << "Tuning king piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"king_table_mg["+std::to_string(i)+"]", &king_table_mg[i]});
-            parameters.push_back({"king_table_eg["+std::to_string(i)+"]", &king_table_eg[i]});
+            parameters.push_back({"king_psqt["+std::to_string(i)+"]", &king_psqt[i].mg});
+            parameters.push_back({"king_psqt["+std::to_string(i)+"]", &king_psqt[i].eg});
         }
     }
 
     if constexpr (tune_king_safety) {
         std::cout << "Tuning king safety" << std::endl;
-        parameters.push_back({"PAWN_SHIELD1_BONUS", &PAWN_SHIELD1_BONUS});
-        parameters.push_back({"PAWN_SHIELD2_BONUS", &PAWN_SHIELD2_BONUS});
-        parameters.push_back({"PAWN_STORM_PENALTY", &PAWN_STORM_PENALTY});
+        parameters.push_back({"PAWN_SHIELD1_BONUS.mg", &PAWN_SHIELD1_BONUS.mg});
+        parameters.push_back({"PAWN_SHIELD1_BONUS.eg", &PAWN_SHIELD1_BONUS.eg});
+        parameters.push_back({"PAWN_SHIELD2_BONUS.mg", &PAWN_SHIELD2_BONUS.mg});
+        parameters.push_back({"PAWN_SHIELD2_BONUS.eg", &PAWN_SHIELD2_BONUS.eg});
+        parameters.push_back({"PAWN_STORM_PENALTY.mg", &PAWN_STORM_PENALTY.mg});
+        parameters.push_back({"PAWN_STORM_PENALTY.eg", &PAWN_STORM_PENALTY.eg});
     }
 
     if constexpr (tune_pawn_eval) {
         std::cout << "Tuning miscellaneous pawn evaluation parameters" << std::endl;
-        parameters.push_back({"isolated_pawn", &isolated_pawn});
-        parameters.push_back({"doubled_pawn", &doubled_pawn});
-        parameters.push_back({"pawn_supported", &pawn_supported});
-        parameters.push_back({"pawn_protected_bonus", &pawn_protected_bonus});
-        parameters.push_back({"SAFE_PAWN_ATTACK", &SAFE_PAWN_ATTACK});
+        parameters.push_back({"isolated_pawn.mg", &isolated_pawn.mg});
+        parameters.push_back({"isolated_pawn.eg", &isolated_pawn.eg});
+        parameters.push_back({"doubled_pawn.mg", &doubled_pawn.mg});
+        parameters.push_back({"doubled_pawn.eg", &doubled_pawn.eg});
+        parameters.push_back({"pawn_supported.mg", &pawn_supported.mg});
+        parameters.push_back({"pawn_supported.eg", &pawn_supported.eg});
+        parameters.push_back({"pawn_protected_bonus.mg", &pawn_protected_bonus.mg});
+        parameters.push_back({"pawn_protected_bonus.eg", &pawn_protected_bonus.eg});
+        parameters.push_back({"SAFE_PAWN_ATTACK.mg", &SAFE_PAWN_ATTACK.mg});
+        parameters.push_back({"SAFE_PAWN_ATTACK.eg", &SAFE_PAWN_ATTACK.eg});
         // Note: no pawns on rank 1 and 8 (rank indices 0 and 7)
-        parameters.push_back({"passed_pawn[1]", &passed_pawn[1]});
-        parameters.push_back({"passed_pawn[2]", &passed_pawn[2]});
-        parameters.push_back({"passed_pawn[3]", &passed_pawn[3]});
-        parameters.push_back({"passed_pawn[4]", &passed_pawn[4]});
-        parameters.push_back({"passed_pawn[5]", &passed_pawn[5]});
-        parameters.push_back({"passed_pawn[6]", &passed_pawn[6]});
-        parameters.push_back({"pawn_bonuses[1]", &pawn_bonuses[1]});
-        parameters.push_back({"pawn_bonuses[2]", &pawn_bonuses[2]});
-        parameters.push_back({"pawn_bonuses[3]", &pawn_bonuses[3]});
-        parameters.push_back({"pawn_bonuses[4]", &pawn_bonuses[4]});
-        parameters.push_back({"pawn_bonuses[5]", &pawn_bonuses[5]});
-        parameters.push_back({"pawn_bonuses[6]", &pawn_bonuses[6]});
+        parameters.push_back({"passed_pawn[1].mg", &passed_pawn[1].mg});
+        parameters.push_back({"passed_pawn[2].mg", &passed_pawn[2].mg});
+        parameters.push_back({"passed_pawn[3].mg", &passed_pawn[3].mg});
+        parameters.push_back({"passed_pawn[4].mg", &passed_pawn[4].mg});
+        parameters.push_back({"passed_pawn[5].mg", &passed_pawn[5].mg});
+        parameters.push_back({"passed_pawn[6].mg", &passed_pawn[6].mg});
+        parameters.push_back({"passed_pawn[1].eg", &passed_pawn[1].eg});
+        parameters.push_back({"passed_pawn[2].eg", &passed_pawn[2].eg});
+        parameters.push_back({"passed_pawn[3].eg", &passed_pawn[3].eg});
+        parameters.push_back({"passed_pawn[4].eg", &passed_pawn[4].eg});
+        parameters.push_back({"passed_pawn[5].eg", &passed_pawn[5].eg});
+        parameters.push_back({"passed_pawn[6].eg", &passed_pawn[6].eg});
+        parameters.push_back({"pawn_bonuses[1].mg", &pawn_bonuses[1].mg});
+        parameters.push_back({"pawn_bonuses[2].mg", &pawn_bonuses[2].mg});
+        parameters.push_back({"pawn_bonuses[3].mg", &pawn_bonuses[3].mg});
+        parameters.push_back({"pawn_bonuses[4].mg", &pawn_bonuses[4].mg});
+        parameters.push_back({"pawn_bonuses[5].mg", &pawn_bonuses[5].mg});
+        parameters.push_back({"pawn_bonuses[6].mg", &pawn_bonuses[6].mg});
+        parameters.push_back({"pawn_bonuses[1].eg", &pawn_bonuses[1].eg});
+        parameters.push_back({"pawn_bonuses[2].eg", &pawn_bonuses[2].eg});
+        parameters.push_back({"pawn_bonuses[3].eg", &pawn_bonuses[3].eg});
+        parameters.push_back({"pawn_bonuses[4].eg", &pawn_bonuses[4].eg});
+        parameters.push_back({"pawn_bonuses[5].eg", &pawn_bonuses[5].eg});
+        parameters.push_back({"pawn_bonuses[6].eg", &pawn_bonuses[6].eg});
     }
 
 }
@@ -258,6 +278,7 @@ void estimate_gradient(const double old_L, const int batch, const int delta = 1)
         *parameters[i].value -= delta;
     }
 }
+
 
 // Adam: Adaptive Moment Estimation variant of SGD (https://arxiv.org/abs/1412.6980)
 void adam() {
@@ -302,7 +323,7 @@ void adam() {
         std::cout << "Batch MSE before the step: " << L_t
                   << ", after the step: " << L_t1 << std::endl;
 
-        if (epoch % 10 == 0) {
+        if (epoch % 5 == 0) {
             L_t1 = MSE();
             std::cout << "New MSE over the entire dataset: " << L_t1 << std::endl;
             if (L_t1 > best_mse) {

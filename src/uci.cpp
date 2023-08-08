@@ -125,6 +125,7 @@ void parse_position(board_t *board, const std::string& pos_str) {
 }
 
 void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
+    // Initial search param values unless specified by the 'go' cmd
     int movestogo = 35, movetime = -1;
     int time = -1, inc = 0;
     info->time_set = false;
@@ -173,9 +174,6 @@ void parse_go(board_t *board, searchinfo_t *info, std::istringstream &iss) {
     if (movetime != -1) {
       time = movetime;
       movestogo = 1;
-    } else {
-      //movestogo = est_moves_left(*this);
-      movestogo = 30;
     }
 
     info->start = now();

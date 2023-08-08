@@ -38,6 +38,7 @@
 #include "attack.h"
 #include "search.h"
 //#include "sgd.h"
+#include "eval.h"
 
 int main(int argc, char* argv[]) {
 
