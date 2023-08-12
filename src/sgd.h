@@ -39,7 +39,11 @@ typedef struct {
 
 typedef struct {
     std::string name;
+    #ifndef TUNING
     int16_t *value;
+    #else
+    double *value;
+    #endif
 } param_t;
 
 void tune();

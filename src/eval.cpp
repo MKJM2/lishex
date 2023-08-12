@@ -23,7 +23,7 @@
 
 /* PESTO's piece values */
 score_t value[PIECETYPE_NO] = {
-    {0, 0}, {82, 94},{337, 281}, {365, 297}, {477, 512}, {1025, 936}, {5000, 5000}
+    {0, 0}, {82, 94}, {337, 281}, {365, 297}, {477, 512}, {1025, 936}, {5000, 5000}
 };
 
 // REVIEW: 4th PMO Tuning iteration parameters
@@ -49,6 +49,15 @@ score_t rook_open_file = {11,11};
 score_t rook_semiopen_file = {5,5};
 score_t queen_open_file = {8,8};
 score_t queen_semiopen_file = {2,2};
+
+score_t open_file[PIECETYPE_NO] = {
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {11, 11}, {8, 8}, {0, 0}
+};
+
+score_t semiopen_file[PIECETYPE_NO] = {
+    {0, 0}, {0, 0}, {0, 0}, {0, 0}, {5, 5}, {2, 2}, {0, 0}
+};
+
 // Mobility weights depending on the piece type
 score_t mobility_weights[PIECETYPE_NO] = {{0, 0}, {0, 0}, {2, 2}, {2, 2},
                                               {1, 1}, {1, 1}, {0, 0}};
@@ -77,7 +86,7 @@ int KING_SAFETY_TABLE[50] = {
 score_t KING_PAWN_DIST_BONUS = {0, 9};
 score_t SAFE_PAWN_ATTACK = {18, 18};
 // Knight outpost bonuses
-score_t KNIGHT_OUTPOS = {5, 2};
+score_t KNIGHT_OUTPOST = {5, 2};
 
 /* Piece-square tables */
 
@@ -553,6 +562,7 @@ int evaluate(const board_t *board) {
         pce = board->pieces[sq];
         score += value[piece_type(pce)];
         score += psqt[piece_type(pce)][sq];
+        /*
         // In addition to piece values and psqts, we reward pieces on open files
         switch (piece_type(pce)) {
             case QUEEN:
@@ -575,6 +585,15 @@ int evaluate(const board_t *board) {
                 break;
             default:
                 break;
+        }
+        */
+
+        // Is on open file?
+        if (not (pawns & fileBBMask[SQUARE_FILE(sq)])) {
+            score += open_file[piece_type(pce)];
+        // Is on semi-open file?
+        } else if (not (black_pawns & fileBBMask[SQUARE_FILE(sq)])) {
+            score += semiopen_file[piece_type(pce)];
         }
 
         // Mobility and attacks on the enemy king
@@ -604,6 +623,7 @@ int evaluate(const board_t *board) {
         pce = board->pieces[sq];
         score -= value[piece_type(pce)];
         score -= psqt[piece_type(pce)][mirror(sq)];
+        /*
         // In addition to piece values and psqts, we reward pieces on open files
         switch (piece_type(pce)) {
             case QUEEN:
@@ -626,6 +646,15 @@ int evaluate(const board_t *board) {
                 break;
             default:
                 break;
+        }
+        */
+
+        // Is on open file?
+        if (not (pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+            score -= open_file[piece_type(pce)];
+        // Is on semi-open file?
+        } else if (not (white_pawns & fileBBMask[SQUARE_FILE(mirror(sq))])) {
+            score -= semiopen_file[piece_type(pce)];
         }
 
         // Mobility and attacks on the enemy king

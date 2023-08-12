@@ -37,6 +37,7 @@
 
 // Assertions for debug mode
 // #define DEBUG
+// #define TUNING
 
 #ifndef DEBUG
 #define assert(n)
@@ -451,8 +452,13 @@ const std::string test5_FEN = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1P
 // We represent a score as a pair of two signed 16bit numbers.
 // We need to make sure that the score is bounded in the -32,768 to 32,767 range
 typedef struct score_t {
+    #ifndef TUNING
     int16_t mg;
     int16_t eg;
+    #else
+    double mg;
+    double eg;
+    #endif
 
     score_t(const int value) : mg(value), eg(value) {}
     score_t(const int m, const int e) : mg(m), eg(e) {}

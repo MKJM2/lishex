@@ -37,24 +37,26 @@ namespace {
 constexpr double initial_a = 2; // Initial step size
 constexpr double b1 = 0.9;         // Decay (forgetting) factor for gradients
 constexpr double b2 = 0.999;       // Decay factor for second moments of gradients
-constexpr double epsilon = 1e-8;   // Avoid div-by-zero
+constexpr double epsilon = 1e-8;   // Avoid div-by-zeroG
 
 // Tuning Parameters
-constexpr bool tune_material    = 0;
-constexpr bool tune_pawn_psqt   = 0;
-constexpr bool tune_knight_psqt = 0;
-constexpr bool tune_bishop_psqt = 0;
-constexpr bool tune_rook_psqt   = 0;
-constexpr bool tune_queen_psqt  = 0;
-constexpr bool tune_king_psqt   = 0;
+constexpr bool tune_material    = 1;
+constexpr bool tune_pawn_psqt   = 1;
+constexpr bool tune_knight_psqt = 1;
+constexpr bool tune_bishop_psqt = 1;
+constexpr bool tune_rook_psqt   = 1;
+constexpr bool tune_queen_psqt  = 1;
+constexpr bool tune_king_psqt   = 1;
 constexpr bool tune_king_safety = 0;
-constexpr bool tune_pawn_eval   = 1;
-constexpr int datapoints_no = 2'000'000;
-constexpr int epochs_no = 500;
-size_t batch_size = 262144;
-//int batch_size = 128;
+constexpr bool tune_pawn_eval   = 0;
+constexpr bool tune_misc_eval   = 0;
+constexpr int datapoints_no = 725'000;
+constexpr int epochs_no = 5000;
+//size_t batch_size = 262144;
+size_t batch_size = 30000;
 
-double K = 0.8649;
+double K = 1.562245;
+//double K = 1.0;
 // https://www.chessprogramming.org/Pawn_Advantage,_Win_Percentage,_and_Elo
 // Sigmoid(s)=1/(1+10^(-K/400))
 // where K is a scaling constant
@@ -84,10 +86,13 @@ std::vector<double> gradients;
 // Error squared for a single datapoint x
 inline double error(datapoint_t& x) {
     board_t b[1];
-    searchinfo_t i[1];
-    stack_t s[MAX_MOVES];
+    //searchinfo_t i[1];
+    //stack_t s[MAX_MOVES];
     setup(b, x.fen);
-    int score = quiescence(-oo, +oo, b, i, s);
+    //int score = quiescence(-oo, +oo, b, i, s);
+    const int score = evaluate(b);
+    //std::cout << "Position result: " << x.result;
+    //std::cout << " Static evaluation: " << winning_prob(score) << std::endl;
     return std::pow(x.result - winning_prob(score), 2);
 }
 
@@ -103,7 +108,8 @@ double MSE(int batch = -1) {
     return total_error / double(batch);
 }
 
-std::string dataset = "/home/mkjm/Projects/lishex/tune/dataset2.csv";
+//std::string dataset = "/home/mkjm/Projects/lishex/tune/dataset2.csv";
+std::string dataset = "/home/mkjm/Projects/lishex/tune/quiet.csv";
 
 void load_datapoints(std::string &filename) {
 
@@ -153,7 +159,7 @@ void register_parameters() {
 
     if constexpr (tune_material) {
         std::cout << "Tuning material values" << std::endl;
-        for (int i = 0; i < PIECE_NO; ++i) {
+        for (piece_t i = PAWN; i <= QUEEN; ++i) {
             parameters.push_back({"value["+std::to_string(i)+"].mg", &(value[i].mg)});
             parameters.push_back({"value["+std::to_string(i)+"].eg", &(value[i].eg)});
         }
@@ -161,7 +167,7 @@ void register_parameters() {
 
     if constexpr (tune_pawn_psqt) {
         std::cout << "Tuning pawn piece-square tables" << std::endl;
-        for (int i = 0; i < SQUARE_NO; ++i) {
+        for (int i = A2; i <= H7; ++i) { /* Note: There's never any pawns on ranks 1 and 8*/
             parameters.push_back({"pawn_psqt["+std::to_string(i)+"].mg", &pawn_psqt[i].mg});
             parameters.push_back({"pawn_psqt["+std::to_string(i)+"].eg", &pawn_psqt[i].eg});
         }
@@ -170,40 +176,40 @@ void register_parameters() {
     if constexpr (tune_knight_psqt) {
         std::cout << "Tuning knight piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"knight_psqt["+std::to_string(i)+"]", &knight_psqt[i].mg});
-            parameters.push_back({"knight_psqt["+std::to_string(i)+"]", &knight_psqt[i].eg});
+            parameters.push_back({"knight_psqt["+std::to_string(i)+"].mg", &knight_psqt[i].mg});
+            parameters.push_back({"knight_psqt["+std::to_string(i)+"].eg", &knight_psqt[i].eg});
         }
     }
 
     if constexpr (tune_bishop_psqt) {
         std::cout << "Tuning bishop piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"bishop_psqt["+std::to_string(i)+"]", &bishop_psqt[i].mg});
-            parameters.push_back({"bishop_psqt["+std::to_string(i)+"]", &bishop_psqt[i].eg});
+            parameters.push_back({"bishop_psqt["+std::to_string(i)+"].mg", &bishop_psqt[i].mg});
+            parameters.push_back({"bishop_psqt["+std::to_string(i)+"].eg", &bishop_psqt[i].eg});
         }
     }
 
     if constexpr (tune_rook_psqt) {
         std::cout << "Tuning rook piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"rook_psqt["+std::to_string(i)+"]", &rook_psqt[i].mg});
-            parameters.push_back({"rook_psqt["+std::to_string(i)+"]", &rook_psqt[i].eg});
+            parameters.push_back({"rook_psqt["+std::to_string(i)+"].mg", &rook_psqt[i].mg});
+            parameters.push_back({"rook_psqt["+std::to_string(i)+"].eg", &rook_psqt[i].eg});
         }
     }
 
     if constexpr (tune_queen_psqt) {
         std::cout << "Tuning queen piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"queen_psqt["+std::to_string(i)+"]", &queen_psqt[i].mg});
-            parameters.push_back({"queen_psqt["+std::to_string(i)+"]", &queen_psqt[i].eg});
+            parameters.push_back({"queen_psqt["+std::to_string(i)+"].mg", &queen_psqt[i].mg});
+            parameters.push_back({"queen_psqt["+std::to_string(i)+"].eg", &queen_psqt[i].eg});
         }
     }
 
     if constexpr (tune_king_psqt) {
         std::cout << "Tuning king piece-square tables" << std::endl;
         for (int i = 0; i < SQUARE_NO; ++i) {
-            parameters.push_back({"king_psqt["+std::to_string(i)+"]", &king_psqt[i].mg});
-            parameters.push_back({"king_psqt["+std::to_string(i)+"]", &king_psqt[i].eg});
+            parameters.push_back({"king_psqt["+std::to_string(i)+"].mg", &king_psqt[i].mg});
+            parameters.push_back({"king_psqt["+std::to_string(i)+"].eg", &king_psqt[i].eg});
         }
     }
 
@@ -254,6 +260,41 @@ void register_parameters() {
         parameters.push_back({"pawn_bonuses[4].eg", &pawn_bonuses[4].eg});
         parameters.push_back({"pawn_bonuses[5].eg", &pawn_bonuses[5].eg});
         parameters.push_back({"pawn_bonuses[6].eg", &pawn_bonuses[6].eg});
+    }
+
+    if constexpr (tune_misc_eval) {
+        std::cout << "Tuning miscellaneous evaluation parameters" << std::endl;
+        parameters.push_back({"tempo.mg", &tempo.mg});
+        parameters.push_back({"tempo.eg", &tempo.eg});
+
+        parameters.push_back({"bishop_pair.mg", &bishop_pair.mg});
+        parameters.push_back({"bishop_pair.eg", &bishop_pair.eg});
+
+        //parameters.push_back({"rook_open_file.mg", &rook_open_file.mg});
+        //parameters.push_back({"rook_open_file.eg", &rook_open_file.eg});
+        //parameters.push_back({"rook_semiopen_file.mg", &rook_semiopen_file.mg});
+        //parameters.push_back({"rook_semiopen_file.eg", &rook_semiopen_file.eg});
+
+        //parameters.push_back({"queen_open_file.mg", &queen_open_file.mg});
+        //parameters.push_back({"queen_open_file.eg", &queen_open_file.eg});
+        //parameters.push_back({"queen_semiopen_file.mg", &queen_open_file.mg});
+        //parameters.push_back({"queen_semiopen_file.eg", &queen_open_file.eg});
+
+        parameters.push_back({"KING_PAWN_DIST_BONUS.mg", &KING_PAWN_DIST_BONUS.mg});
+        parameters.push_back({"KING_PAWN_DIST_BONUS.eg", &KING_PAWN_DIST_BONUS.eg});
+
+        for (piece_t pce = PAWN; pce <= QUEEN; ++pce) {
+            parameters.push_back({"open_file["+std::to_string(pce)+"].mg", &open_file[pce].mg});
+            parameters.push_back({"open_file["+std::to_string(pce)+"].eg", &open_file[pce].eg});
+
+            parameters.push_back({"semiopen_file["+std::to_string(pce)+"].mg", &semiopen_file[pce].mg});
+            parameters.push_back({"semiopen_file["+std::to_string(pce)+"].eg", &semiopen_file[pce].eg});
+        }
+    }
+
+    std::cout << "The following will be optimized: " << std::endl;
+    for (const param_t& p : parameters) {
+        std::cout << p.name << " @ " << p.value << std::endl;
     }
 
 }
@@ -340,8 +381,42 @@ void adam() {
                 print_parameters(parameters);
                 best_mse = L_t1;
             }
+
+            // every 10th epoch print best parameters
+            if (epoch % 10 == 0) {
+                std::cout << "Printing best parameters" << std::endl;
+                print_parameters(best_parameters);
+            }
         }
     }
+}
+
+
+// https://github.com/ed-apostol/InvictusChess/blob/master/src/tune.cpp#L84
+[[maybe_unused]] void determineK() {
+  double min = 0, max = 2, delta = 1, best = 1, error = 100;
+
+  for (int p = 0; p < 7; p++) {
+    printf("Determining K: (%.6f, %.6f, %.7f)\n", min, max, delta);
+
+    while (min < max) {
+      K = min;
+      double e = MSE();
+      if (e < error) {
+        error = e;
+        best = K;
+        printf("New best K of %.6f, Error %.10f\n", K, error);
+      }
+      min += delta;
+    }
+
+    min = best - delta;
+    max = best + delta;
+    delta /= 10;
+  }
+
+  K = best;
+  printf("Using K of %.6f\n", K);
 }
 
 
@@ -353,6 +428,8 @@ void tune() {
     gradients.resize(parameters.size());
     load_datapoints(dataset);
     batch_size = MIN(batch_size, positions.size());
+
+    //determineK();
 
     adam();
 

@@ -124,6 +124,8 @@ extern score_t rook_open_file;
 extern score_t rook_semiopen_file;
 extern score_t queen_open_file;
 extern score_t queen_semiopen_file;
+extern score_t open_file[];
+extern score_t semiopen_file[];
 // Mobility weights
 extern score_t mobility_weights[PIECETYPE_NO];
 // King safety parameters
